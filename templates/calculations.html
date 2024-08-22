@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block title %}Calculations{% endblock %}
+
+{% block content %}
+    <div class="calc">
+        <div class="container">
+            <a href="{% url 'home' %}" class="button">Back to Home</a>
+            <br><br>
+            <h1>Calculations for {{ now.year }}</h1>
+            
+            <div class="row">
+                <div class="column">
+                    <h2>Monthly Totals</h2>
+                    <div class="chart-container">
+                        <canvas id="monthlyChart"></canvas>
+                    </div>
+                    <div class="totals-text">
+                        <p>Total Fuel Cost for {{ now|date:"F Y" }}: <strong>€{{ monthly_fuel_cost|floatformat:2 }}</strong></p>
+                        <p>Total Agent Fees for {{ now|date:"F Y" }}: <strong>€{{ monthly_total_agent_fees|floatformat:2 }}</strong></p>
+                        <p>Total Driver Fees for {{ now|date:"F Y" }}: <strong>€{{ monthly_total_driver_fees|floatformat:2 }}</strong></p>
+                        <p>Total Profit for {{ now|date:"F Y" }}: <strong>€{{ monthly_total_profit|floatformat:2 }}</strong></p>
+                    </div>
+                </div>
+
+                <div class="column">
+                    <h2>Yearly Totals</h2>
+                    <div class="chart-container">
+                        <canvas id="yearlyChart"></canvas>
+                    </div>
+                    <div class="totals-text">
+                        <p>Total Fuel Cost for {{ now.year }}: <strong>€{{ yearly_fuel_cost|floatformat:2 }}</strong></p>
+                        <p>Total Agent Fees for {{ now.year }}: <strong>€{{ yearly_total_agent_fees|floatformat:2 }}</strong></p>
+                        <p>Total Driver Fees for {{ now.year }}: <strong>€{{ yearly_total_driver_fees|floatformat:2 }}</strong></p>
+                        <p>Total Profit for {{ now.year }}: <strong>€{{ yearly_total_profit|floatformat:2 }}</strong></p>
+                    </div>
+                </div>
+            </div>
+
+            <h2>Breakdown by Job</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Customer Name</th>
+                        <th>Job Date</th>
+                        <th>Job Price</th>
+                        <th class="tablet">Fuel Cost</th>
+                        <th class="tablet">Driver Fee</th>
+                        <th>Agent Name</th>
+                        <th>Agent Fee</th>
+                        <th>Agent Fee Amount</th>
+                        <th>Profit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for job in job_breakdowns %}
+                        <tr>
+                            <td>{{ job.customer_name|truncate_words_chars }}</td>
+                            <td>{{ job.job_date }}</td>
+                            <td>€{{ job.job_price|floatformat:2 }}</td>
+                            <td class="tablet">€{{ job.fuel_cost|floatformat:2 }}</td>
+                            <td class="tablet">€{{ job.driver_fee|floatformat:2 }}</td>
+                            <td>{{ job.agent_name }}</td>
+                            <td>{{ job.agent_fee }}</td>
+                            <td>€{{ job.agent_fee_amount|floatformat:2 }}</td>
+                            <td>€{{ job.profit|floatformat:2 }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <h2>Agent Totals</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Agent Name</th>
+                        <th>Monthly Total</th>
+                        <th>Yearly Total</th>
+                        <th>Overall Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for agent, totals in agent_totals.items %}
+                        <tr>
+                            <td>{{ agent }}</td>
+                            <td>€{{ totals.monthly.agent_fees|floatformat:2 }}</td>
+                            <td>€{{ totals.yearly.agent_fees|floatformat:2 }}</td>
+                            <td>€{{ totals.overall.agent_fees|floatformat:2 }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <br>
+            <a href="{% url 'billing:all_calculations' %}" class="button">View All Jobs</a>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_scripts %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    window.chartData = {
+        monthly_fuel_cost: "{{ monthly_fuel_cost|floatformat:2 }}",
+        monthly_total_agent_fees: "{{ monthly_total_agent_fees|floatformat:2 }}",
+        monthly_total_driver_fees: "{{ monthly_total_driver_fees|floatformat:2 }}",
+        monthly_total_profit: "{{ monthly_total_profit|floatformat:2 }}",
+        yearly_fuel_cost: "{{ yearly_fuel_cost|floatformat:2 }}",
+        yearly_total_agent_fees: "{{ yearly_total_agent_fees|floatformat:2 }}",
+        yearly_total_driver_fees: "{{ yearly_total_driver_fees|floatformat:2 }}",
+        yearly_total_profit: "{{ yearly_total_profit|floatformat:2 }}"
+    };
+    console.log("Chart data loaded:", window.chartData);
+</script>
+{% endblock %}

@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block title %}All Calculations{% endblock %}
+
+{% block content %}
+    <div class="calc">
+        <div class="container">
+            <a href="{% url 'home' %}" class="button">Back to Home</a>
+            <br><br>
+            <h1>All Calculations</h1>
+
+            <div class="all">
+                <div class="row">
+                    <div class="column" style="display: flex; flex-direction: column; align-items: center;">
+                        <h2>Overall Trends</h2>
+                        <div class="chart-container" style="position: relative; height:40vh; width:50vw; margin-right: 80px;">
+                            <canvas id="lineChart" width="800" height="400"></canvas>
+                        </div>
+                        <div class="overall_totals-text">
+                            <p>Overall Total Fuel Cost: <strong>€{{ overall_fuel_cost|floatformat:2 }}</strong></p>
+                            <p>Overall Total Agent Fees: <strong>€{{ overall_total_agent_fees|floatformat:2 }}</strong></p>
+                            <p>Overall Total Driver Fees: <strong>€{{ overall_total_driver_fees|floatformat:2 }}</strong></p>
+                            <p>Overall Total Profit: <strong>€{{ overall_total_profit|floatformat:2 }}</strong></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h2>Breakdown by Job</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Customer Name</th>
+                        <th>Job Date</th>
+                        <th>Job Price</th>
+                        <th class="tablet">Fuel Cost</th>
+                        <th class="tablet">Driver Fee</th>
+                        <th>Agent Name</th>
+                        <th>Agent Fee</th>
+                        <th>Agent Fee Amount</th>
+                        <th>Profit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for job in job_breakdowns %}
+                        <tr>
+                            <td>{{ job.customer_name|truncate_words_chars }}</td>
+                            <td>{{ job.job_date }}</td>
+                            <td>€{{ job.job_price|floatformat:2 }}</td>
+                            <td class="tablet">€{{ job.fuel_cost|floatformat:2 }}</td>
+                            <td class="tablet">€{{ job.driver_fee|floatformat:2 }}</td>
+                            <td>{{ job.agent_name }}</td>
+                            <td>{{ job.agent_fee }}</td>
+                            <td>€{{ job.agent_fee_amount|floatformat:2 }}</td>
+                            <td>€{{ job.profit|floatformat:2 }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <h2>Agent Totals</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Agent Name</th>
+                        <th>Overall Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for agent, totals in agent_totals.items %}
+                        <tr>
+                            <td>{{ agent }}</td>
+                            <td>€{{ totals.overall.agent_fees|floatformat:2 }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const ctx = document.getElementById('lineChart').getContext('2d');
+        const lineChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: {{ job_dates|safe }},
+                datasets: [
+                    {
+                        label: 'Fuel Cost',
+                        data: {{ fuel_costs|safe }},
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        pointRadius: 2,
+                        pointHoverRadius: 5,
+                        fill: false
+                    },
+                    {
+                        label: 'Agent Fees',
+                        data: {{ agent_fees|safe }},
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        pointRadius: 2,
+                        pointHoverRadius: 5,
+                        fill: false
+                    },
+                    {
+                        label: 'Driver Fees',
+                        data: {{ driver_fees|safe }},
+                        borderColor: 'rgba(255, 206, 86, 1)',
+                        backgroundColor: 'rgba(255, 206, 86, 0.2)',
+                        pointRadius: 2,
+                        pointHoverRadius: 5,
+                        fill: false
+                    },
+                    {
+                        label: 'Profit',
+                        data: {{ profits|safe }},
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        pointRadius: 2,
+                        pointHoverRadius: 5,
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'year'
+                        }
+                    },
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

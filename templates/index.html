@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="buttons">
+        <a href="{% url 'jobs:add_job' %}" class="button">Add Job</a>
+        <a href="{% url 'jobs:past_jobs' %}" class="button">Past Jobs</a>
+        <a href="{% url 'billing:calculations' %}" class="button phone">Calculations</a>
+        <a href="{% url 'people:manage' %}" class="button phone">Manage</a>
+    </div>
+    <br>
+    
+    <h2>Upcoming Jobs</h2>
+    <ul>
+        {% for job in upcoming_jobs %}
+        <li class="job-container">
+                <span class="customer-name">{{ job.customer_name|truncate_words_chars }}</span>
+                <div class="job-info">
+                    <span class="slim">{{ job.job_date }}</span>
+                    <span class="phone">{{ job.job_time|time_format }}</span>
+                    <span class="tablet">{{ job.job_price }} {{ job.currency }}</span>
+                    <span class="phone">{{ job.job_description|truncate_words_chars }}</span>
+                </div>
+                <div class="button-group">
+                    <a href="{% url 'edit_job' job.id %}" class="button phone">Edit</a>
+                    <a href="{% url 'view_job' job.id %}" class="button">View</a>
+                </div>
+            </li>
+        {% empty %}
+            <li>No upcoming jobs.</li>
+        {% endfor %}
+    </ul>
+    <br>
+
+    <h2>Recent Jobs (Past 2 Days)</h2>
+    <ul>
+        {% for job in recent_jobs %}
+        <li class="job-container ">
+                <span class="customer-name">{{ job.customer_name|truncate_words_chars }}</span>
+                <div class="job-info">
+                    <span class="slim">{{ job.job_date }}</span>
+                    <span class="phone">{{ job.job_time|time_format }}</span>
+                    <span class="tablet">{{ job.job_price }} {{ job.currency }}</span>
+                    <span class="phone">{{ job.job_description|truncate_words_chars }}</span>
+                </div>
+                <div class="button-group">
+                    <a href="{% url 'edit_job' job.id %}" class="button phone">Edit</a>
+                    <a href="{% url 'view_job' job.id %}" class="button">View</a>
+                </div>
+            </li>
+        {% empty %}
+            <li>No recent jobs.</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'script.js' %}"></script>
+{% endblock %}

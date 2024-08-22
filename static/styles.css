@@ -1,0 +1,515 @@
+
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    display: flex;
+    flex-direction: column;
+}
+
+.header {
+    width: 100%;
+    text-align: left;
+    background-color: #007bff;
+    color: #fff;
+}
+
+.logot {
+    background-color: #007bff;
+    box-shadow: none;
+    text-align: right;
+}
+
+.hunfrd {
+    margin-right: 10px;
+}
+
+.lne {
+    display: flex;
+    justify-content: end;
+    padding-right: 30px;
+}
+
+.lne button {
+    background-color: #fff;
+    color: #007bff;
+}
+
+.lne button:hover {
+    background-color: #d9d9d9 !important;
+    color: #007bff;
+}
+
+.lne h1 {
+    position: absolute;
+    padding-left: 25px;
+    left: 0;
+    align-self: center;
+}
+
+.buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+a.button, button {
+    font-size: 1em;
+    font-weight: bold;
+    text-decoration: none;
+    color: white;
+    background-color: #007bff;
+    border: none;
+    padding: 10px 20px;
+    margin: 10px 0px;
+    border-radius: 5px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+a.button:hover, button:hover {
+    background-color: #0056b3;
+}
+
+.cancel-button:hover {
+    background-color: #b70517 !important;
+    transition: background-color 0.3s ease;
+}
+
+form button {
+    width: auto; /* Adjust width to fit the content */
+}
+
+form .button-group {
+    display: flex;
+    justify-content: center;
+    gap: 10px; /* Ensure there is space between the buttons */
+}
+
+ul {
+    list-style: none;
+    padding: 0;
+}
+
+li {
+    background-color: white;
+    padding: 10px 20px;
+    margin: 10px 0;
+    border-radius: 10px;
+    box-shadow: inset 0px 0px 10px rgba(0, 123, 255, 0.2);
+    font-weight: bold;
+    color: #333;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    min-height: 60px;
+}
+.smaller li{
+    width: 95%;
+}
+
+form {
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    display: inline-block;
+}
+
+form label {
+    font-size: 1em;
+    margin-bottom: 5px;
+}
+
+form input, form textarea, form select {
+    font-size: 1em;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+form input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: none;
+}
+
+form input::-webkit-outer-spin-button,
+form input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.container {
+    min-width: 40%;
+    max-width: 80%;
+    margin: 20px auto 0;
+}
+
+.errors li{
+    background-color: #ffe6e6;
+    box-shadow: inset 0px 0px 10px rgb(255, 0, 0);
+    color: red;
+    /* padding: 10px; */
+    /* margin-top: 10px; */
+    /* border-radius: 5px; */
+}
+
+.time-input-container {
+    display: flex;
+    align-items: center;
+}
+
+.time-input {
+    width: 40px;
+    margin-right: 5px;
+    text-align: center;
+}
+
+.time-input:focus {
+    outline: none;
+}
+
+.job-info {
+    flex-grow: 1;
+}
+
+.job-container {
+    display: flex;
+    align-items: center;
+    padding: 10px 20px;
+    margin: 10px 0;
+    /* background-color: white; */
+    border-radius: 10px;
+    box-shadow: inset 0px 0px 10px rgba(0, 123, 255, 0.2);
+    font-weight: bold;
+    color: #333;
+    width: 100%;
+}
+
+.job-container .customer-name {
+    text-align: left;
+    min-width: 150px;
+}
+
+.job-container .job-info {
+    display: flex;
+    flex: 3;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px; /* Adjust gap as needed */
+}
+
+.job-container .job-info span {
+    flex: 1;
+    text-align: center;
+}
+
+.job-container .button-group {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.view-job {
+    padding: 50px;
+}
+
+.button-group {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+}
+
+.sbig {
+    width: 15px; /* Set a specific width */
+    height: 15px; /* Set a specific height */
+    transform: scale(1.5); /* Scale the checkbox */
+    -webkit-transform: scale(1.5); /* For Safari */
+    -moz-transform: scale(1.5); /* For Firefox */
+    -ms-transform: scale(1.5); /* For Internet Explorer */
+    -o-transform: scale(1.5); /* For Opera */
+    margin: 5px; /* Adjust margin as needed */
+    vertical-align: middle;
+    margin-left: 10px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-size: 1em;
+    text-align: left;
+}
+
+table th, table td {
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+}
+
+table th {
+    background-color: #007bff;
+    color: white;
+}
+
+table tbody tr:nth-child(even) {
+    background-color: #f4f4f4;
+}
+
+table tbody tr:hover {
+    background-color: #f1f1f1;
+}
+
+.row {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+.column {
+    text-align: center;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+    border-radius: 5px;
+    flex: 1;
+    padding: 10px;
+    min-width: 300px;
+    margin: 10px;
+}
+
+.chart-container {
+    position: relative;
+    width: 100%;
+}
+
+.overall_totals-text {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+}
+
+.chart-box {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    width: 32%;
+    box-sizing: border-box;
+}
+
+.chart-box h3 {
+    text-align: center;
+}
+
+.chart-container canvas {
+    display: block;
+    margin: 0 auto;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group-inline {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.form-group-inline .field-wrapper {
+    flex: 1;
+}
+
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.loading-spinner {
+    border: 16px solid #f3f3f3;
+    border-top: 16px solid #3498db;
+    border-radius: 50%;
+    width: 120px;
+    height: 120px;
+    animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.completed-job {
+    box-shadow: inset 0px 0px 10px rgba(42, 179, 8, 0.944);
+    background-color: #8fed8f !important;
+}
+  
+.incomplete-job {
+    background-color: rgb(255, 189, 68) !important;
+    box-shadow: inset 0px 0px 10px rgba(153, 118, 3, 0.94);
+}
+
+.future-job {
+    background-color: white;
+}
+
+.cancel-button {
+    text-align: center;
+    background-color: red !important;
+}
+
+.sze {
+    min-width: 70px;
+}
+
+.wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.content {
+    flex: 1;
+    padding: 20px;
+    width: 100%; /* Ensure content width is 100% */
+    box-sizing: border-box; /* Include padding and border in element's total width and height */
+}
+
+.footer {
+    text-align: center;
+    width: 100%;
+    background-color: #f4f4f4; /* Match the body background color */
+    padding: 10px 0;
+}
+
+/* Ipad screens */
+@media (max-width: 900px) {
+    .tablet {
+        display: none;
+    }
+
+    .job-container .customer-name {
+        min-width: 90px;
+    }
+
+    .calc .container {
+        max-width: 95%;
+        margin: 10px;
+    }
+
+    .row {
+        flex-wrap: nowrap;
+    }
+
+    #monthlyChart {
+        width: 220px;
+        height: 220px;
+    }
+
+    #yearlyChart {
+        width: 220px;
+        height: 220px;
+    }
+
+    .column {
+        min-width: 80px;
+        max-width: 500px;
+        max-height: 600px;
+    }
+
+    #lineChart {
+        max-width: 600px;
+        margin: 0px -90px 0px 0px;
+    }
+
+    .all .column {
+        max-width: 700px !important;
+        justify-self: end;
+    }
+
+
+    /* regular Mobile screens */
+    @media (max-width: 600px) {
+        .container {
+            max-width: 90%;
+        }
+
+        .lne {
+            padding-right: 0px;
+        }
+
+        .lne h1 {
+            padding-left: 25px;
+            font-size: 1.4em;
+        };
+
+        .container {
+            min-width: 40%;
+            max-width: 95%;
+        }
+
+        .job-container {
+            width: auto;
+        }
+
+        form {
+            width: auto;
+        }
+
+        li {
+            width: auto;
+        }
+
+        .job-container .customer-name {
+            min-width: 60px;
+        }
+
+        h2 {
+            font-size: 1em;
+        }
+
+        .view-job {
+            padding: 10px;
+        }
+
+        .phone {
+            display: none;
+        }
+
+        @media (max-width: 415px) {
+            .lne h1 {
+                position: relative;
+            }
+
+            .container {
+                max-width: 95%;
+            }
+
+            .content {
+                padding: 5px;
+            }
+
+            @media (max-width: 295px) {
+
+            .slim {
+                display: none;
+            }
+        }
+
+        }
+    }
+}

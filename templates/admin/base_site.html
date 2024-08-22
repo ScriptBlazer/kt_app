@@ -1,0 +1,9 @@
+{% extends "admin/base.html" %}
+{% load static %}  <!-- Add this line -->
+
+{% block extrahead %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="{% static 'admin_custom.css' %}">
+{% endblock %}
+
+{% block title %}My Custom Admin | {{ block.super }}{% endblock %}

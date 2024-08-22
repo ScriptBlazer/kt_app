@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Delete Job{% endblock %}
+
+{% block content %}
+<div class="container delete">
+    <h1>Delete Job</h1>
+    <form method="post">
+        {% csrf_token %}
+        <h3>Are you sure you want to delete the job for {{ job.customer_name }} on {{ job.job_date }} at {{ job.job_time|time_format }}? </h3>
+        <h2>This action cannot be undone!!</h2>
+        <a href="{% url 'jobs:view_job' job.id %}" class="button">Cancel</a>
+        <button type="submit" class="button cancel-button">Confirm Delete</button>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'script.js' %}"></script>
+{% endblock %}
