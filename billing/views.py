@@ -1,10 +1,10 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
-from django.db.models import Q, Sum  # Import Sum here
-from decimal import Decimal  # Import Decimal here
-from .models import Job  # Job belongs to Jobs app
-from billing.models import Calculation  # Import Calculation from Billing app
-from people.models import Agent  # Import Agent from People app
+from django.db.models import Q, Sum
+from decimal import Decimal
+from .models import Job
+from billing.models import Calculation
+from people.models import Agent
 from jobs.forms import JobForm, CalculationForm
 from datetime import timedelta
 import json
@@ -48,12 +48,12 @@ def calculations(request):
             'profit': calc.calculate_profit()
         }
         job_breakdowns.append(job_data)
-        
+
         if calc.job.job_date.month == current_month:
             monthly_total_agent_fees += calc.calculate_agent_fee_amount()
             monthly_total_profit += calc.calculate_profit()
             monthly_total_driver_fees += calc.driver_fee_in_euros or Decimal('0.00')
-        
+
         yearly_total_agent_fees += calc.calculate_agent_fee_amount()
         yearly_total_profit += calc.calculate_profit()
         yearly_total_driver_fees += calc.driver_fee_in_euros or Decimal('0.00')
@@ -63,7 +63,7 @@ def calculations(request):
             if agent_name not in agent_totals:
                 agent_totals[agent_name] = {
                     'monthly': {'fuel_cost': Decimal('0.00'), 'agent_fees': Decimal('0.00'), 'profit': Decimal('0.00')},
-                    'yearly': {'fuel_cost': Decimal('0.00'), 'agent_fees': Decimal('0.00'), 'profit': Decimal('0.00')},
+                    'yearly': {'fuel_cost': Decimal('0.00'), 'agent_fees': Decimal('0.00'), 'profit': Decimal('0.00')}
                 }
 
             if calc.job.job_date.month == current_month:
@@ -114,7 +114,7 @@ def all_calculations(request):
         overall_total_agent_fees += agent_fee_amount
         overall_total_profit += profit
         overall_total_driver_fees += driver_fee
-        
+
         job_data = {
             'customer_name': calc.job.customer_name,
             'job_date': calc.job.job_date,
@@ -133,7 +133,7 @@ def all_calculations(request):
         agent_fees.append(float(agent_fee_amount))
         driver_fees.append(float(driver_fee))
         profits.append(float(profit))
-        
+
         if calc.agent:
             agent_name = calc.agent.name
             if agent_name not in agent_totals:

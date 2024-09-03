@@ -36,18 +36,18 @@ class AgentViewTest(TestCase):
 
     def test_add_agent_view(self):
         response = self.client.post(reverse('people:manage'), {'name': 'New Agent'})
-        self.assertEqual(response.status_code, 302)  # Redirect after successful post
+        self.assertEqual(response.status_code, 302)
         self.assertTrue(Agent.objects.filter(name='New Agent').exists())
 
     def test_edit_agent_view(self):
         agent = Agent.objects.create(name='Original Agent')
         response = self.client.post(reverse('people:edit_agent', args=[agent.id]), {'name': 'Updated Agent'})
-        self.assertEqual(response.status_code, 302)  # Redirect after successful post
+        self.assertEqual(response.status_code, 302)
         agent.refresh_from_db()
         self.assertEqual(agent.name, 'Updated Agent')
 
     def test_delete_agent_view(self):
         agent = Agent.objects.create(name='Delete Agent')
         response = self.client.post(reverse('people:delete_agent', args=[agent.id]))
-        self.assertEqual(response.status_code, 302)  # Redirect after successful post
+        self.assertEqual(response.status_code, 302)
         self.assertFalse(Agent.objects.filter(name='Delete Agent').exists())

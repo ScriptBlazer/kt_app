@@ -13,7 +13,7 @@ def fetch_and_cache_exchange_rate(currency):
         response.raise_for_status()
         data = response.json()
         rate = Decimal(data['conversion_rates']['EUR'])
-        cache.set(f'exchange_rate_{currency}', rate, timeout=86400)  # Cache for 1 day
+        cache.set(f'exchange_rate_{currency}', rate, timeout=86400)
         return rate
     except requests.RequestException as e:
         logger.error(f'Error fetching exchange rate for {currency}: {e}')
@@ -25,7 +25,7 @@ def fetch_and_cache_exchange_rate(currency):
 def get_exchange_rate(currency):
     if currency == 'EUR':
         return Decimal('1.00')
-
+    
     cache_key = f'exchange_rate_{currency}'
     rate = cache.get(cache_key)
     if rate is None:

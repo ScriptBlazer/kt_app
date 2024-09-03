@@ -1,16 +1,19 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from django.db.models import Q
-from .models import Job  # Job belongs to the Jobs app
-from billing.models import Calculation  # Calculation belongs to the Billing app
+from .models import Job
+from billing.models import Calculation
 from jobs.forms import JobForm
-from billing.forms import CalculationForm  # Import CalculationForm from the Billing app
+from billing.forms import CalculationForm
 from datetime import timedelta
 import json
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
+import logging
+
+logger = logging.getLogger(__name__)
 
 @login_required
 def home(request):
@@ -38,8 +41,6 @@ def add_job(request):
             calculation = calculation_form.save(commit=False)
             calculation.job = job
             calculation.save()
-            
-            # Fix: Add namespace 'jobs' to the view_job redirect
             return redirect('jobs:view_job', job_id=job.id)
     else:
         job_form = JobForm()
@@ -64,8 +65,6 @@ def edit_job(request, job_id):
             job_form.save()
             if calculation_form.is_valid():
                 calculation_form.save()
-            
-            # Fix: Add namespace 'jobs' to the view_job redirect
             return redirect('jobs:view_job', job_id=job.id)
     else:
         job_form = JobForm(instance=job)
@@ -79,12 +78,10 @@ def past_jobs(request):
     query = request.GET.get('q', '')
 
     if query:
-        past_jobs = Job.objects.filter(
-            job_date__lt=now
-        ).filter(
-            Q(customer_name__icontains=query) |  # or Q(customer__name__icontains=query) if using a ForeignKey
+        past_jobs = Job.objects.filter(job_date__lt=now).filter(
+            Q(customer_name__icontains=query) |
             Q(job_description__icontains=query)
-        ).order_by('-job_date')  # Ensure this parenthesis is closed
+        ).order_by('-job_date')
     else:
         past_jobs = Job.objects.filter(job_date__lt=now).order_by('-job_date')
 
@@ -107,15 +104,10 @@ def delete_job(request, job_id):
     if request.method == 'POST':
         try:
             job.delete()
-            # Fix: Add namespace 'jobs' to the home redirect
             return redirect('jobs:home')
         except Exception as e:
             return render(request, 'delete_job.html', {'job': job, 'error': str(e)})
     return render(request, 'delete_job.html', {'job': job})
-
-import logging
-
-logger = logging.getLogger(__name__)
 
 @csrf_exempt
 @require_POST

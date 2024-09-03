@@ -46,9 +46,7 @@ class CalculationFormTest(TestCase):
         del optional_data['fuel_cost']
 
         form = CalculationForm(data=optional_data)
-        self.assertTrue(form.is_valid())  # Now we expect the form to be valid even without 'fuel_cost'
-
-        # Additionally, we can check if 'fuel_cost' is indeed None
+        self.assertTrue(form.is_valid())
         calculation = form.save(commit=False)
         self.assertIsNone(calculation.fuel_cost)
 

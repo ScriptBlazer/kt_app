@@ -10,7 +10,7 @@ def manage(request):
         form = AgentForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('people:manage')  # Updated
+            return redirect('people:manage')
     else:
         form = AgentForm()
     return render(request, 'manage.html', {'form': form, 'agents': agents})
@@ -22,7 +22,7 @@ def edit_agent(request, agent_id):
         form = AgentForm(request.POST, instance=agent)
         if form.is_valid():
             form.save()
-            return redirect('people:manage')  # Updated
+            return redirect('people:manage')
     else:
         form = AgentForm(instance=agent)
     return render(request, 'edit_agent.html', {'form': form, 'agent': agent})
@@ -31,4 +31,4 @@ def edit_agent(request, agent_id):
 def delete_agent(request, agent_id):
     agent = get_object_or_404(Agent, pk=agent_id)
     agent.delete()
-    return redirect('people:manage')  # Updated
+    return redirect('people:manage')

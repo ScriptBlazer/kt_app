@@ -229,14 +229,14 @@ form input::-webkit-inner-spin-button {
 }
 
 .sbig {
-    width: 15px; /* Set a specific width */
-    height: 15px; /* Set a specific height */
-    transform: scale(1.5); /* Scale the checkbox */
+    width: 15px;
+    height: 15px;
+    transform: scale(1.5);
     -webkit-transform: scale(1.5); /* For Safari */
     -moz-transform: scale(1.5); /* For Firefox */
     -ms-transform: scale(1.5); /* For Internet Explorer */
     -o-transform: scale(1.5); /* For Opera */
-    margin: 5px; /* Adjust margin as needed */
+    margin: 5px;
     vertical-align: middle;
     margin-left: 10px;
 }
@@ -385,14 +385,14 @@ table tbody tr:hover {
 .content {
     flex: 1;
     padding: 20px;
-    width: 100%; /* Ensure content width is 100% */
-    box-sizing: border-box; /* Include padding and border in element's total width and height */
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .footer {
     text-align: center;
     width: 100%;
-    background-color: #f4f4f4; /* Match the body background color */
+    background-color: #f4f4f4;
     padding: 10px 0;
 }
 

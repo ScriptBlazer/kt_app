@@ -50,7 +50,7 @@ document.addEventListener("DOMContentLoaded", () => {
           body: JSON.stringify({ is_completed: isCompleted }),
         })
           .then((response) => {
-            console.log(response); // Check the response object
+            console.log(response);
             if (!response.ok) {
               throw new Error(
                 `Network response was not ok: ${response.statusText}`

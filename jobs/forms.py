@@ -72,8 +72,8 @@ class JobForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['vehicle_type'].initial = 'Car'  # Set default value for vehicle_type
-        self.fields['vehicle_type'].empty_label = None  # Remove the empty option
+        self.fields['vehicle_type'].initial = 'Car'
+        self.fields['vehicle_type'].empty_label = None
 
     def clean(self):
         cleaned_data = super().clean()

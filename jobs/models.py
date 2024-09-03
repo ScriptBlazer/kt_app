@@ -22,7 +22,7 @@ class Job(models.Model):
     driver_name = models.CharField(max_length=100, null=True, blank=True)
     number_plate = models.CharField(max_length=20, null=True, blank=True)
     is_completed = models.BooleanField(default=False)
-    
+
     VEHICLE_CHOICES = [
         ('Car', 'Car'),
         ('Minivan', 'Minivan'),
@@ -30,7 +30,7 @@ class Job(models.Model):
         ('Bus', 'Bus')
     ]
     vehicle_type = models.CharField(max_length=10, choices=VEHICLE_CHOICES)
-    
+
     PAYMENT_CHOICES = [
         ('Cash', 'Cash'),
         ('Card', 'Card'),
@@ -43,7 +43,7 @@ class Job(models.Model):
     def convert_to_euros(self):
         if self.currency != 'EUR' and self.job_price is not None:
             if not self.exchange_rate:
-                rate = get_exchange_rate(self.currency)  # Ensure this function is defined elsewhere
+                rate = get_exchange_rate(self.currency)
                 if rate is None:
                     raise ValueError(f"Exchange rate for {self.currency} is not available.")
                 self.exchange_rate = rate

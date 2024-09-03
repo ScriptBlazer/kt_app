@@ -2,15 +2,15 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from jobs import views as jobs_views  # Assuming your home view is in the Jobs app
+from jobs import views as jobs_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('accounts/', include('django.contrib.auth.urls')),  # Includes login, logout, password management views
-    path('jobs/', include('jobs.urls', namespace='jobs')),  # Jobs app URLs
-    path('people/', include('people.urls', namespace='people')),  # People app URLs
-    path('billing/', include('billing.urls', namespace='billing')),  # Billing app URLs
-    path('', jobs_views.home, name='home'),  # Set the home view for the root URL
+    path('accounts/', include('django.contrib.auth.urls')),
+    path('jobs/', include('jobs.urls', namespace='jobs')),
+    path('people/', include('people.urls', namespace='people')),
+    path('billing/', include('billing.urls', namespace='billing')),
+    path('', jobs_views.home, name='home'),
 ]
 
 if settings.DEBUG:
