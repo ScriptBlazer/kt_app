@@ -12,6 +12,7 @@ import json
 class JobFormTest(TestCase):
 
     def setUp(self):
+        # Set up valid data for the JobForm tests
         self.valid_data = {
             'customer_name': 'John Doe',
             'customer_number': '+123456789',
@@ -27,10 +28,12 @@ class JobFormTest(TestCase):
             'payment_type': 'Cash'
         }
 
+    # Test case for valid JobForm submission
     def test_job_form_valid(self):
         form = JobForm(data=self.valid_data)
         self.assertTrue(form.is_valid())
 
+    # Test case for missing required fields in JobForm
     def test_job_form_missing_required_fields(self):
         invalid_data = self.valid_data.copy()
         del invalid_data['customer_name']
@@ -38,6 +41,7 @@ class JobFormTest(TestCase):
         self.assertFalse(form.is_valid())
         self.assertIn('customer_name', form.errors)
 
+    # Test case for invalid data types in JobForm
     def test_job_form_invalid_data_types(self):
         invalid_data = self.valid_data.copy()
         invalid_data['no_of_passengers'] = 'four'
@@ -45,6 +49,7 @@ class JobFormTest(TestCase):
         self.assertFalse(form.is_valid())
         self.assertIn('no_of_passengers', form.errors)
 
+    # Test case for invalid currency choices in JobForm
     def test_job_form_currency_choices(self):
         invalid_data = self.valid_data.copy()
         invalid_data['currency'] = 'YEN'
@@ -52,6 +57,7 @@ class JobFormTest(TestCase):
         self.assertFalse(form.is_valid())
         self.assertIn('currency', form.errors)
 
+    # Test case for job price conversion to euros
     def test_job_form_price_conversion(self):
         form = JobForm(data=self.valid_data)
         if form.is_valid():
@@ -62,6 +68,7 @@ class JobFormTest(TestCase):
         else:
             self.fail("Form should be valid.")
 
+    # Test case for editing a job
     def test_edit_job(self):
         form = JobForm(data=self.valid_data)
         if form.is_valid():
@@ -77,6 +84,7 @@ class JobFormTest(TestCase):
 
 class EdgeCaseHandlingTest(TestCase):
 
+    # Test case for handling extremely high job price
     def test_extremely_high_job_price(self):
         job_data = {
             'customer_name': 'Test Customer',
@@ -94,6 +102,7 @@ class EdgeCaseHandlingTest(TestCase):
             print(job_form.errors)  # Print errors to debug
         self.assertTrue(job_form.is_valid())
 
+    # Test case for handling zero passengers
     def test_zero_passengers(self):
         job_data = {
             'customer_name': 'Test Customer',
@@ -116,6 +125,7 @@ class EdgeCaseHandlingTest(TestCase):
 class CurrencyConversionTest(TestCase):
 
     @patch('requests.get')
+    # Test job price conversion from HUF to EUR
     def test_job_price_conversion(self, mock_get):
         mock_get.return_value.status_code = 200
         mock_get.return_value.json.return_value = {
@@ -141,6 +151,7 @@ class CurrencyConversionTest(TestCase):
         self.assertEqual(job.price_in_euros.quantize(Decimal('0.01')), Decimal('254.00'))
 
     @patch('requests.get')
+    # Test job uses cached exchange rate for GBP
     def test_job_uses_cached_exchange_rate_gbp(self, mock_get):
         mock_get.return_value.status_code = 200
         mock_get.return_value.json.return_value = {
@@ -169,6 +180,7 @@ class CurrencyConversionTest(TestCase):
         mock_get.assert_called_once()  # Ensure API was called
 
     @patch('requests.get')
+    # Test job uses cached exchange rate for USD
     def test_job_uses_cached_exchange_rate_usd(self, mock_get):
         mock_get.return_value.status_code = 200
         mock_get.return_value.json.return_value = {
@@ -197,6 +209,7 @@ class CurrencyConversionTest(TestCase):
         mock_get.assert_called_once()
 
     @patch('requests.get')
+    # Test job uses cached exchange rate when API fails for HUF
     def test_job_uses_cached_exchange_rate_huf(self, mock_get):
         mock_get.return_value.status_code = 404  # Simulate API being unavailable
 
@@ -222,20 +235,24 @@ class CurrencyConversionTest(TestCase):
 class ViewTest(TestCase):
 
     def setUp(self):
+        # Set up client and user for testing views
         self.client = Client()
         self.user = User.objects.create_user(username='testuser', password='12345')
         self.client.login(username='testuser', password='12345')
 
+    # Test the home view for successful response and correct template
     def test_home_view(self):
         response = self.client.get(reverse('home'))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'index.html')
 
+    # Test the add job view for successful response and correct template
     def test_add_job_view(self):
         response = self.client.get(reverse('jobs:add_job'))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'add_job.html')
 
+    # Test the edit job view for successful response and correct template
     def test_edit_job_view(self):
         job = Job.objects.create(
             customer_name='Test Customer',
@@ -254,6 +271,7 @@ class ViewTest(TestCase):
         self.assertTemplateUsed(response, 'edit_job.html')
 
 class ToggleCompletedTestCase(TestCase):
+    
     def setUp(self):
         # Create a user and a job for testing
         self.user = User.objects.create_user(username='testuser', password='testpassword')
@@ -267,24 +285,24 @@ class ToggleCompletedTestCase(TestCase):
             vehicle_type="Car",
             price_in_euros=100,
             currency="EUR",
-            job_price=100,  # Ensure you include this if it's required
+            job_price=100,
             is_completed=False,
             driver_name="Driver One",
             number_plate="XYZ 1234"
         )
-        self.client.login(username='testuser', password='testpassword')  # Login the user
+        self.client.login(username='testuser', password='testpassword')
 
+    # Test toggling the completed status of a job
     def test_toggle_completed(self):
-        # URL to toggle completed status
         url = reverse('jobs:toggle_completed', args=[self.job.id])
         
-        # Test setting is_completed to True
+        # Set is_completed to True
         response = self.client.post(url, json.dumps({'is_completed': True}), content_type='application/json')
-        self.job.refresh_from_db()  # Refresh the job instance from the database
+        self.job.refresh_from_db()
         self.assertEqual(response.status_code, 200)
         self.assertEqual(self.job.is_completed, True)
 
-        # Test setting is_completed to False
+        # Set is_completed to False
         response = self.client.post(url, json.dumps({'is_completed': False}), content_type='application/json')
         self.job.refresh_from_db()
         self.assertEqual(response.status_code, 200)

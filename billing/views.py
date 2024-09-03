@@ -1,40 +1,32 @@
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render
 from django.utils import timezone
-from django.db.models import Q, Sum
+from django.db.models import Sum
 from decimal import Decimal
 from .models import Job
 from billing.models import Calculation
-from people.models import Agent
-from jobs.forms import JobForm, CalculationForm
-from datetime import timedelta
-import json
-from django.http import JsonResponse
-from django.views.decorators.http import require_POST
-from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
+import json
 
 @login_required
 def calculations(request):
+    # Get current date and filter calculations for the current month and year
     now = timezone.now()
     current_month = now.month
     current_year = now.year
-
     current_year_calculations = Calculation.objects.filter(job__job_date__year=current_year)
     current_month_calculations = current_year_calculations.filter(job__job_date__month=current_month)
 
-    monthly_totals = current_month_calculations.aggregate(
-        total_fuel_cost=Sum('fuel_cost_in_euros', default=Decimal('0.00'))
-    )
-    yearly_totals = current_year_calculations.aggregate(
-        total_fuel_cost=Sum('fuel_cost_in_euros', default=Decimal('0.00'))
-    )
+    # Aggregate monthly and yearly fuel costs
+    monthly_totals = current_month_calculations.aggregate(total_fuel_cost=Sum('fuel_cost_in_euros', default=Decimal('0.00')))
+    yearly_totals = current_year_calculations.aggregate(total_fuel_cost=Sum('fuel_cost_in_euros', default=Decimal('0.00')))
 
+    # Initialize totals and job breakdowns
     monthly_total_agent_fees, monthly_total_driver_fees, monthly_total_profit = Decimal('0.00'), Decimal('0.00'), Decimal('0.00')
     yearly_total_agent_fees, yearly_total_driver_fees, yearly_total_profit = Decimal('0.00'), Decimal('0.00'), Decimal('0.00')
-
     agent_totals = {}
     job_breakdowns = []
 
+    # Collect job data and calculate totals
     for calc in current_year_calculations:
         job_data = {
             'customer_name': calc.job.customer_name,
@@ -49,6 +41,7 @@ def calculations(request):
         }
         job_breakdowns.append(job_data)
 
+        # Update monthly and yearly totals
         if calc.job.job_date.month == current_month:
             monthly_total_agent_fees += calc.calculate_agent_fee_amount()
             monthly_total_profit += calc.calculate_profit()
@@ -58,6 +51,7 @@ def calculations(request):
         yearly_total_profit += calc.calculate_profit()
         yearly_total_driver_fees += calc.driver_fee_in_euros or Decimal('0.00')
 
+        # Track agent totals
         if calc.agent:
             agent_name = calc.agent.name
             if agent_name not in agent_totals:
@@ -65,16 +59,15 @@ def calculations(request):
                     'monthly': {'fuel_cost': Decimal('0.00'), 'agent_fees': Decimal('0.00'), 'profit': Decimal('0.00')},
                     'yearly': {'fuel_cost': Decimal('0.00'), 'agent_fees': Decimal('0.00'), 'profit': Decimal('0.00')}
                 }
-
             if calc.job.job_date.month == current_month:
                 agent_totals[agent_name]['monthly']['fuel_cost'] += calc.fuel_cost_in_euros or Decimal('0.00')
                 agent_totals[agent_name]['monthly']['agent_fees'] += calc.calculate_agent_fee_amount()
                 agent_totals[agent_name]['monthly']['profit'] += calc.calculate_profit()
-
             agent_totals[agent_name]['yearly']['fuel_cost'] += calc.fuel_cost_in_euros or Decimal('0.00')
             agent_totals[agent_name]['yearly']['agent_fees'] += calc.calculate_agent_fee_amount()
             agent_totals[agent_name]['yearly']['profit'] += calc.calculate_profit()
 
+    # Prepare context for rendering
     context = {
         'job_breakdowns': job_breakdowns,
         'now': timezone.now(),
@@ -93,16 +86,15 @@ def calculations(request):
 
 @login_required
 def all_calculations(request):
+    # Retrieve all calculations and calculate overall totals
     overall_calculations = Calculation.objects.all().order_by('job__job_date')
-
-    overall_totals = overall_calculations.aggregate(
-        total_fuel_cost=Sum('fuel_cost_in_euros', default=Decimal('0.00'))
-    )
+    overall_totals = overall_calculations.aggregate(total_fuel_cost=Sum('fuel_cost_in_euros', default=Decimal('0.00')))
+    
     overall_total_agent_fees, overall_total_driver_fees, overall_total_profit = Decimal('0.00'), Decimal('0.00'), Decimal('0.00')
-
     agent_totals = {}
     job_breakdowns = []
 
+    # Collect job data for overall calculations
     job_dates, fuel_costs, agent_fees, driver_fees, profits = [], [], [], [], []
 
     for calc in overall_calculations:
@@ -128,23 +120,25 @@ def all_calculations(request):
         }
         job_breakdowns.append(job_data)
 
+        # Collect data for charting purposes
         job_dates.append(calc.job.job_date.strftime('%Y-%m-%d'))
         fuel_costs.append(float(fuel_cost))
         agent_fees.append(float(agent_fee_amount))
         driver_fees.append(float(driver_fee))
         profits.append(float(profit))
 
+        # Track agent totals
         if calc.agent:
             agent_name = calc.agent.name
             if agent_name not in agent_totals:
                 agent_totals[agent_name] = {
                     'overall': {'fuel_cost': Decimal('0.00'), 'agent_fees': Decimal('0.00'), 'profit': Decimal('0.00')}
                 }
-
             agent_totals[agent_name]['overall']['fuel_cost'] += fuel_cost
             agent_totals[agent_name]['overall']['agent_fees'] += agent_fee_amount
             agent_totals[agent_name]['overall']['profit'] += profit
 
+    # Prepare context for rendering the all calculations page
     context = {
         'overall_fuel_cost': overall_totals['total_fuel_cost'].quantize(Decimal('0.01')),
         'overall_total_agent_fees': overall_total_agent_fees.quantize(Decimal('0.01')),

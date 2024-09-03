@@ -2,6 +2,7 @@ from django.db import models
 from decimal import Decimal
 from common.utils import get_exchange_rate
 
+# Choices for currency options
 CURRENCY_CHOICES = [
     ('EUR', 'Euros'),
     ('GBP', 'Pound Sterling'),
@@ -22,7 +23,8 @@ class Job(models.Model):
     driver_name = models.CharField(max_length=100, null=True, blank=True)
     number_plate = models.CharField(max_length=20, null=True, blank=True)
     is_completed = models.BooleanField(default=False)
-    
+
+    # Choices for vehicle type
     VEHICLE_CHOICES = [
         ('Car', 'Car'),
         ('Minivan', 'Minivan'),
@@ -31,6 +33,7 @@ class Job(models.Model):
     ]
     vehicle_type = models.CharField(max_length=10, choices=VEHICLE_CHOICES)
     
+    # Choices for payment method
     PAYMENT_CHOICES = [
         ('Cash', 'Cash'),
         ('Card', 'Card'),
@@ -38,12 +41,15 @@ class Job(models.Model):
         ('Quick Pay', 'Quick Pay')
     ]
     payment_type = models.CharField(max_length=10, choices=PAYMENT_CHOICES, null=True, blank=True)
+    
+    # Field for exchange rate used for currency conversion
     exchange_rate = models.DecimalField(max_digits=10, decimal_places=6, null=True, blank=True)
 
+    # Method to convert job price to Euros based on the current exchange rate
     def convert_to_euros(self):
         if self.currency != 'EUR' and self.job_price is not None:
             if not self.exchange_rate:
-                rate = get_exchange_rate(self.currency)  # Ensure this function is defined elsewhere
+                rate = get_exchange_rate(self.currency)
                 if rate is None:
                     raise ValueError(f"Exchange rate for {self.currency} is not available.")
                 self.exchange_rate = rate
@@ -51,6 +57,7 @@ class Job(models.Model):
         else:
             self.price_in_euros = self.job_price
 
+    # Override save method to convert price before saving to the database
     def save(self, *args, **kwargs):
         self.convert_to_euros()
         super().save(*args, **kwargs)

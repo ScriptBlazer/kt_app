@@ -5,6 +5,7 @@ from billing.models import Calculation
 from people.models import Agent 
 from django.core.exceptions import ValidationError
 
+# Currency choices for the job and calculation forms
 CURRENCY_CHOICES = [
     ('EUR', 'Euros'),
     ('GBP', 'Pound Sterling'),
@@ -12,12 +13,14 @@ CURRENCY_CHOICES = [
     ('USD', 'US Dollar')
 ]
 
+# Agent fee options for calculations
 AGENT_FEE_CHOICES = [
     ('5%', '5% total'),
     ('10%', '10% total'),
     ('50%', '50% profit')
 ]
 
+# Custom time field to validate time format
 class CustomTimeField(forms.TimeField):
     input_formats = ['%H:%M']
     default_error_messages = {
@@ -30,6 +33,7 @@ class CustomTimeField(forms.TimeField):
         except ValidationError:
             raise ValidationError(self.error_messages['invalid'], code='invalid')
 
+# Form for creating and editing Job instances
 class JobForm(forms.ModelForm):
     currency = forms.ChoiceField(choices=CURRENCY_CHOICES, widget=forms.Select, error_messages={
         'required': 'Please select a currency.'
@@ -75,6 +79,7 @@ class JobForm(forms.ModelForm):
         self.fields['vehicle_type'].initial = 'Car'
         self.fields['vehicle_type'].empty_label = None
 
+    # Clean and validate the entire form
     def clean(self):
         cleaned_data = super().clean()
         job_price = cleaned_data.get('job_price')
@@ -88,6 +93,7 @@ class JobForm(forms.ModelForm):
 
         return cleaned_data
 
+    # Clean specific fields for additional validation
     def clean_job_price(self):
         price = self.cleaned_data.get('job_price')
         if price and price < 0:
@@ -107,6 +113,7 @@ class JobForm(forms.ModelForm):
             raise ValidationError("Invalid currency selected.")
         return currency
 
+    # Override save method to convert job price to euros before saving
     def save(self, commit=True):
         instance = super().save(commit=False)
         instance.convert_to_euros()
@@ -114,6 +121,7 @@ class JobForm(forms.ModelForm):
             instance.save()
         return instance
 
+# Form for creating and editing Calculation instances
 class CalculationForm(forms.ModelForm):
     fuel_currency = forms.ChoiceField(choices=CURRENCY_CHOICES, widget=forms.Select, error_messages={
         'required': 'Please select a currency for fuel cost.'
@@ -144,6 +152,7 @@ class CalculationForm(forms.ModelForm):
             }
         }
 
+    # Override save method to convert amounts to euros before saving
     def save(self, commit=True):
         instance = super().save(commit=False)
         instance.convert_to_euros()
@@ -151,6 +160,7 @@ class CalculationForm(forms.ModelForm):
             instance.save()
         return instance
 
+# Form for creating and editing Agent instances
 class AgentForm(forms.ModelForm):
     class Meta:
         model = Agent
