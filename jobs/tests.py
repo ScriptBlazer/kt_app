@@ -74,6 +74,7 @@ class JobFormTest(TestCase):
             job = form.save()
             self.assertEqual(job.customer_name, 'Jane Doe')
 
+
 class EdgeCaseHandlingTest(TestCase):
 
     def test_extremely_high_job_price(self):
@@ -89,6 +90,8 @@ class EdgeCaseHandlingTest(TestCase):
             'vehicle_type': 'Car'
         }
         job_form = JobForm(data=job_data)
+        if not job_form.is_valid():
+            print(job_form.errors)  # Print errors to debug
         self.assertTrue(job_form.is_valid())
 
     def test_zero_passengers(self):
@@ -104,8 +107,11 @@ class EdgeCaseHandlingTest(TestCase):
             'vehicle_type': 'Car'
         }
         job_form = JobForm(data=job_data)
+        if job_form.is_valid():
+            print(job_form.errors)  # Print errors to debug
         self.assertFalse(job_form.is_valid())
         self.assertIn('no_of_passengers', job_form.errors)
+
 
 class CurrencyConversionTest(TestCase):
 
@@ -158,8 +164,9 @@ class CurrencyConversionTest(TestCase):
         job_form = JobForm(data=job_data)
         self.assertTrue(job_form.is_valid())
         job = job_form.save()
+
         self.assertEqual(job.price_in_euros.quantize(Decimal('0.01')), (Decimal('100') * Decimal('0.85')).quantize(Decimal('0.01')))
-        mock_get.assert_called_once()
+        mock_get.assert_called_once()  # Ensure API was called
 
     @patch('requests.get')
     def test_job_uses_cached_exchange_rate_usd(self, mock_get):
@@ -185,12 +192,13 @@ class CurrencyConversionTest(TestCase):
         job_form = JobForm(data=job_data)
         self.assertTrue(job_form.is_valid())
         job = job_form.save()
+
         self.assertEqual(job.price_in_euros.quantize(Decimal('0.01')), (Decimal('100') * Decimal('0.85')).quantize(Decimal('0.01')))
         mock_get.assert_called_once()
 
     @patch('requests.get')
     def test_job_uses_cached_exchange_rate_huf(self, mock_get):
-        mock_get.return_value.status_code = 404
+        mock_get.return_value.status_code = 404  # Simulate API being unavailable
 
         job_data = {
             'customer_name': 'Test Customer',
@@ -207,8 +215,9 @@ class CurrencyConversionTest(TestCase):
         job_form = JobForm(data=job_data)
         self.assertTrue(job_form.is_valid())
         job = job_form.save()
+
         self.assertEqual(job.price_in_euros.quantize(Decimal('0.01')), (Decimal('100000') * Decimal('0.00254')).quantize(Decimal('0.01')))
-        mock_get.assert_not_called()
+        mock_get.assert_not_called()  # Ensure API was not called again
 
 class ViewTest(TestCase):
 
@@ -258,21 +267,24 @@ class ToggleCompletedTestCase(TestCase):
             vehicle_type="Car",
             price_in_euros=100,
             currency="EUR",
-            job_price=100,
+            job_price=100,  # Ensure you include this if it's required
             is_completed=False,
             driver_name="Driver One",
             number_plate="XYZ 1234"
         )
-        self.client.login(username='testuser', password='testpassword')
+        self.client.login(username='testuser', password='testpassword')  # Login the user
 
     def test_toggle_completed(self):
+        # URL to toggle completed status
         url = reverse('jobs:toggle_completed', args=[self.job.id])
         
+        # Test setting is_completed to True
         response = self.client.post(url, json.dumps({'is_completed': True}), content_type='application/json')
-        self.job.refresh_from_db()
+        self.job.refresh_from_db()  # Refresh the job instance from the database
         self.assertEqual(response.status_code, 200)
         self.assertEqual(self.job.is_completed, True)
 
+        # Test setting is_completed to False
         response = self.client.post(url, json.dumps({'is_completed': False}), content_type='application/json')
         self.job.refresh_from_db()
         self.assertEqual(response.status_code, 200)
