@@ -13,18 +13,39 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
 from decimal import Decimal
 import logging
+import pytz
 
 logger = logging.getLogger('kt_app')
 
+# Set the timezone to Hungary
+hungary_tz = pytz.timezone('Europe/Budapest')
+
 @login_required
 def home(request):
-    now = timezone.now()
-    past_two_days = now - timedelta(days=2)
-    
-    recent_jobs = Job.objects.filter(job_date__gte=past_two_days, job_date__lte=now).order_by('-job_date')
-    upcoming_jobs = Job.objects.filter(job_date__gt=now).order_by('-job_date')
-    
-    return render(request, 'index.html', {'recent_jobs': recent_jobs, 'upcoming_jobs': upcoming_jobs})
+    # Get the current time in Budapest
+    now_hungary = timezone.now().astimezone(hungary_tz)
+
+    # Define the timeframe for recent jobs (within the last 2 days)
+    two_days_ago = now_hungary - timedelta(days=2)
+
+    # Query for upcoming jobs
+    upcoming_jobs = Job.objects.filter(
+        Q(job_date__gt=now_hungary.date()) |
+        (Q(job_date=now_hungary.date()) & Q(job_time__gt=now_hungary.time()))  # Today's jobs with future time
+    ).order_by('job_date', 'job_time')
+
+    # Query for recent jobs
+    recent_jobs = Job.objects.filter(
+        Q(job_date__lt=now_hungary.date()) |
+        (Q(job_date=now_hungary.date()) & Q(job_time__lt=now_hungary.time()))  # Today's jobs with past time
+    ).filter(
+        job_date__gte=two_days_ago.date() 
+    ).order_by('-job_date', '-job_time')
+
+    return render(request, 'index.html', {
+        'recent_jobs': recent_jobs,
+        'upcoming_jobs': upcoming_jobs,
+    })
 
 @login_required
 def manage(request):
@@ -39,7 +60,7 @@ def add_job(request):
 
         # Ensure that both forms are valid before proceeding
         if job_form.is_valid() and calculation_form.is_valid():
-            job = job_form.save()  # Save the job instance
+            job = job_form.save()
 
             # Calculate the CC fee only if the payment type is 'Card'
             cc_fee_percentage = PaymentSettings.objects.first().cc_fee_percentage / Decimal('100')
@@ -47,9 +68,9 @@ def add_job(request):
                 job.cc_fee = job.job_price * cc_fee_percentage  # Calculate CC fee based on job price
                 logger.debug(f"Job Price: {job.job_price}, Calculated CC Fee: {job.cc_fee}")
             else:
-                job.cc_fee = Decimal('0.00')  # No fee for other payment types
+                job.cc_fee = Decimal('0.00')
             
-            job.save()  # Save the job instance again to save the cc_fee
+            job.save()
             
             logger.info(f"Job created with ID: {job.id}, CC Fee: {job.cc_fee}")
             
@@ -71,14 +92,14 @@ def edit_job(request, job_id):
     try:
         calculation = Calculation.objects.get(job=job)
     except Calculation.DoesNotExist:
-        calculation = Calculation()  # Create a new instance if it doesn't exist
+        calculation = Calculation() 
 
     if request.method == 'POST':
         job_form = JobForm(request.POST, instance=job)
         calculation_form = CalculationForm(request.POST, instance=calculation)
         
         if job_form.is_valid():
-            job = job_form.save(commit=False)  # Don't save yet, we need to recalculate the CC fee
+            job = job_form.save(commit=False)
             
             # Recalculate CC fee
             cc_fee_percentage = PaymentSettings.objects.first().cc_fee_percentage / Decimal('100')
@@ -86,14 +107,14 @@ def edit_job(request, job_id):
                 job.cc_fee = job.job_price * cc_fee_percentage  # Calculate CC fee based on job price
                 logger.debug(f"Updated Job Price: {job.job_price}, Recalculated CC Fee: {job.cc_fee}")
             else:
-                job.cc_fee = Decimal('0.00')  # No fee for other payment types
+                job.cc_fee = Decimal('0.00')
             
-            job.save()  # Save the job instance with the updated cc_fee
+            job.save()
             
             # Set the job before saving the calculation
-            calculation = calculation_form.save(commit=False)  # Don't save yet
-            calculation.job = job  # Assign the job to the calculation
-            calculation.save()  # Now save the calculation
+            calculation = calculation_form.save(commit=False)
+            calculation.job = job
+            calculation.save() 
             
             return redirect('jobs:view_job', job_id=job.id)
     else:
@@ -111,9 +132,9 @@ def past_jobs(request):
         past_jobs = Job.objects.filter(
             job_date__lt=now
         ).filter(
-            Q(customer_name__icontains=query) |  # or Q(customer__name__icontains=query) if using a ForeignKey
+            Q(customer_name__icontains=query) |
             Q(job_description__icontains=query)
-        ).order_by('-job_date')  # Ensure this parenthesis is closed
+        ).order_by('-job_date')
     else:
         past_jobs = Job.objects.filter(job_date__lt=now).order_by('-job_date')
 
@@ -137,7 +158,6 @@ def delete_job(request, job_id):
     if request.method == 'POST':
         try:
             job.delete()
-            # Fix: Add namespace 'jobs' to the home redirect
             return redirect('jobs:home')
         except Exception as e:
             return render(request, 'delete_job.html', {'job': job, 'error': str(e)})

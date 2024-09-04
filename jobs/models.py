@@ -55,22 +55,24 @@ class Job(models.Model):
     # Field for exchange rate used for currency conversion
     exchange_rate = models.DecimalField(max_digits=10, decimal_places=6, null=True, blank=True)
 
-    # Updated conversion method
     def convert_to_euros(self):
-        if self.currency != 'EUR' and self.job_price is not None:
-            if not self.exchange_rate:
-                rate = get_exchange_rate(self.currency)
-                if rate is None:
-                    raise ValueError(f"Exchange rate for {self.currency} is not available.")
-                self.exchange_rate = rate
-                
-            # Update the conversion logic
-            self.price_in_euros = (self.job_price * self.exchange_rate).quantize(Decimal('0.01'))
+        """Converts the job price to Euros based on the currency and exchange rate."""
+        if self.job_price is not None:
+            if self.currency == 'EUR':
+                # No conversion needed if already in Euros
+                self.price_in_euros = self.job_price
+                logger.debug(f"No conversion needed for {self.job_price} EUR")
+            else:
+                # Retrieve the exchange rate if it's not already set
+                if self.exchange_rate is None:
+                    rate = get_exchange_rate(self.currency)
+                    if rate is None:
+                        raise ValueError(f"Exchange rate for {self.currency} is not available.")
+                    self.exchange_rate = rate
 
-            # Log the conversion for debugging
-            logger.debug(f"Converted {self.job_price} {self.currency} to {self.price_in_euros} EUR using rate {self.exchange_rate}")
-        else:
-            self.price_in_euros = self.job_price
+                # Convert the job price to Euros
+                self.price_in_euros = (self.job_price * self.exchange_rate).quantize(Decimal('0.01'))
+                logger.debug(f"Converted {self.job_price} {self.currency} to {self.price_in_euros} EUR using rate {self.exchange_rate}")
 
     # Override save method to convert price before saving to the database
     def save(self, *args, **kwargs):

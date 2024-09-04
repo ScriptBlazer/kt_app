@@ -25,7 +25,8 @@ SECRET_KEY = 'django-insecure-!ak@0^9b-t478b^u+pyw5iaua4axodko8&@su20@pm490&bvjo
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+# ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '10.111.1.189']
 
 
 # Application definition
@@ -152,9 +153,12 @@ LOGGING = {
             'handlers': ['console'],
             'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
         },
-        'your_app_name': {  # Change 'your_app_name' to the actual name of your app
+        'jobs': { 
             'handlers': ['console'],
             'level': 'DEBUG',
         },
     },
 }
+
+TIME_ZONE = 'Europe/Budapest'
+USE_TZ = True

@@ -58,15 +58,20 @@ class JobFormTest(TestCase):
         self.assertIn('currency', form.errors)
 
     # Test case for job price conversion to euros
-    def test_job_form_price_conversion(self):
+    @patch('requests.get')
+    def test_job_form_price_conversion(self, mock_get):
+        mock_get.return_value.status_code = 200
+        mock_get.return_value.json.return_value = {
+            'conversion_rates': {
+                'EUR': 1.0,  # 1 EUR = 1 EUR
+            }
+        }
+
         form = JobForm(data=self.valid_data)
-        if form.is_valid():
-            job = form.save(commit=False)
-            job.convert_to_euros()
-            job.save()
-            self.assertEqual(job.price_in_euros, Decimal('100.00'))
-        else:
-            self.fail("Form should be valid.")
+        self.assertTrue(form.is_valid())
+        job = form.save(commit=False)
+        job.convert_to_euros()  # Ensure conversion logic is called
+        self.assertEqual(job.price_in_euros, Decimal('100.00'))
 
     # Test case for editing a job
     def test_edit_job(self):
@@ -80,7 +85,6 @@ class JobFormTest(TestCase):
             self.assertTrue(form.is_valid())
             job = form.save()
             self.assertEqual(job.customer_name, 'Jane Doe')
-
 
 class EdgeCaseHandlingTest(TestCase):
 
@@ -121,7 +125,6 @@ class EdgeCaseHandlingTest(TestCase):
         self.assertFalse(job_form.is_valid())
         self.assertIn('no_of_passengers', job_form.errors)
 
-
 class CurrencyConversionTest(TestCase):
 
     @patch('requests.get')
@@ -156,7 +159,7 @@ class CurrencyConversionTest(TestCase):
         mock_get.return_value.status_code = 200
         mock_get.return_value.json.return_value = {
             'conversion_rates': {
-                'EUR': '0.85'
+                'EUR': 0.85
             }
         }
 
@@ -185,7 +188,7 @@ class CurrencyConversionTest(TestCase):
         mock_get.return_value.status_code = 200
         mock_get.return_value.json.return_value = {
             'conversion_rates': {
-                'EUR': '0.85'
+                'EUR': 0.85
             }
         }
 

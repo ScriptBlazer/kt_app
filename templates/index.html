@@ -40,7 +40,8 @@
     <h2>Recent Jobs (Past 2 Days)</h2>
     <ul>
         {% for job in recent_jobs %}
-        <li class="job-container ">
+        <li class="job-container {% if job.is_completed %}completed-job{% else %}incomplete-job{% endif %}" data-job-date="{{ job.job_date }}" data-is-completed="{{ job.is_completed }}">
+        
                 <span class="customer-name">{{ job.customer_name|truncate_words_chars }}</span>
                 <div class="job-info">
                     <span class="slim">{{ job.job_date }}</span>
