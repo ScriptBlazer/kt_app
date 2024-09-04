@@ -21,7 +21,26 @@
     <p><strong>Vehicle Type:</strong> {{ job.vehicle_type }}</p>
     <p><strong>Kilometers:</strong> {{ calculation.kilometers }}</p>
     <p><strong>Payment Type:</strong> {{ job.payment_type }}</p>
-    <p><strong>Job Price:</strong> €{{ job.price_in_euros }}{% if job.currency != 'EUR' %} ({{ job.job_price }} {{ job.currency }}){% endif %}</p>
+    <p>
+        <strong>Job Price:</strong> 
+        €{{ job.price_in_euros }} 
+        {% if job.currency != 'EUR' %} 
+            ({{ job.job_price }} {{ job.currency }}) 
+        {% endif %}
+        
+        {% if job.payment_type == 'Card' %} 
+            <strong> | Credit Card Fee:</strong> 
+            {% if job.currency == 'EUR' %}
+                €{{ job.cc_fee }}
+            {% elif job.currency == 'GBP' %}
+                £{{ job.cc_fee }}
+            {% elif job.currency == 'HUF' %}
+                Ft {{ job.cc_fee }}
+            {% elif job.currency == 'USD' %}
+                ${{ job.cc_fee }}
+            {% endif %}
+        {% endif %}
+    </p>
     <p><strong>Fuel Cost:</strong> €{{ calculation.fuel_cost_in_euros }}{% if calculation.fuel_currency != 'EUR' %} ({{ calculation.fuel_cost }} {{ calculation.fuel_currency }}){% endif %}</p>
     <p><strong>Driver Fee:</strong> €{{ calculation.driver_fee_in_euros }}{% if calculation.driver_currency != 'EUR' %} ({{ calculation.driver_fee }} {{ calculation.driver_currency }}){% endif %}</p>
     <p><strong>Driver Name:</strong> {{ job.driver_name }}</p>

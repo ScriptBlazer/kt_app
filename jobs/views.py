@@ -1,16 +1,20 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from django.db.models import Q
-from .models import Job  # Job belongs to the Jobs app
-from billing.models import Calculation  # Calculation belongs to the Billing app
+from .models import Job, PaymentSettings
+from billing.models import Calculation  
 from jobs.forms import JobForm
-from billing.forms import CalculationForm  # Import CalculationForm from the Billing app
+from billing.forms import CalculationForm 
 from datetime import timedelta
 import json
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
+from decimal import Decimal
+import logging
+
+logger = logging.getLogger('kt_app')
 
 @login_required
 def home(request):
@@ -32,14 +36,27 @@ def add_job(request):
     if request.method == 'POST':
         job_form = JobForm(request.POST)
         calculation_form = CalculationForm(request.POST)
-        
+
+        # Ensure that both forms are valid before proceeding
         if job_form.is_valid() and calculation_form.is_valid():
-            job = job_form.save()
+            job = job_form.save()  # Save the job instance
+
+            # Calculate the CC fee only if the payment type is 'Card'
+            cc_fee_percentage = PaymentSettings.objects.first().cc_fee_percentage / Decimal('100')
+            if job.payment_type == 'Card':
+                job.cc_fee = job.job_price * cc_fee_percentage  # Calculate CC fee based on job price
+                logger.debug(f"Job Price: {job.job_price}, Calculated CC Fee: {job.cc_fee}")
+            else:
+                job.cc_fee = Decimal('0.00')  # No fee for other payment types
+            
+            job.save()  # Save the job instance again to save the cc_fee
+            
+            logger.info(f"Job created with ID: {job.id}, CC Fee: {job.cc_fee}")
+            
             calculation = calculation_form.save(commit=False)
-            calculation.job = job
+            calculation.job = job  # Associate the calculation with the job
             calculation.save()
             
-            # Fix: Add namespace 'jobs' to the view_job redirect
             return redirect('jobs:view_job', job_id=job.id)
     else:
         job_form = JobForm()
@@ -54,18 +71,30 @@ def edit_job(request, job_id):
     try:
         calculation = Calculation.objects.get(job=job)
     except Calculation.DoesNotExist:
-        calculation = None
+        calculation = Calculation()  # Create a new instance if it doesn't exist
 
     if request.method == 'POST':
         job_form = JobForm(request.POST, instance=job)
         calculation_form = CalculationForm(request.POST, instance=calculation)
         
         if job_form.is_valid():
-            job_form.save()
-            if calculation_form.is_valid():
-                calculation_form.save()
+            job = job_form.save(commit=False)  # Don't save yet, we need to recalculate the CC fee
             
-            # Fix: Add namespace 'jobs' to the view_job redirect
+            # Recalculate CC fee
+            cc_fee_percentage = PaymentSettings.objects.first().cc_fee_percentage / Decimal('100')
+            if job.payment_type == 'Card':
+                job.cc_fee = job.job_price * cc_fee_percentage  # Calculate CC fee based on job price
+                logger.debug(f"Updated Job Price: {job.job_price}, Recalculated CC Fee: {job.cc_fee}")
+            else:
+                job.cc_fee = Decimal('0.00')  # No fee for other payment types
+            
+            job.save()  # Save the job instance with the updated cc_fee
+            
+            # Set the job before saving the calculation
+            calculation = calculation_form.save(commit=False)  # Don't save yet
+            calculation.job = job  # Assign the job to the calculation
+            calculation.save()  # Now save the calculation
+            
             return redirect('jobs:view_job', job_id=job.id)
     else:
         job_form = JobForm(instance=job)
@@ -93,7 +122,8 @@ def past_jobs(request):
 @login_required
 def view_job(request, job_id):
     job = get_object_or_404(Job, pk=job_id)
-    
+    logger.debug(f"Viewing Job ID: {job.id}, CC Fee: {job.cc_fee}")
+
     try:
         calculation = Calculation.objects.get(job=job)
     except Calculation.DoesNotExist:

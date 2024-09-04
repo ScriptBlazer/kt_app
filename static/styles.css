@@ -503,6 +503,10 @@ table tbody tr:hover {
                 padding: 5px;
             }
 
+            .small-phone {
+                display: none;
+            }
+
             @media (max-width: 295px) {
 
             .slim {

@@ -3,6 +3,7 @@ from decimal import Decimal
 from common.utils import get_exchange_rate
 from jobs.models import Job
 from people.models import Agent
+import logging
 
 CURRENCY_CHOICES = [
     ('EUR', 'Euros'),
@@ -10,6 +11,14 @@ CURRENCY_CHOICES = [
     ('HUF', 'Hungarian Forint'),
     ('USD', 'US Dollar')
 ]
+
+logger = logging.getLogger(__name__)
+
+class PaymentSettings(models.Model):
+    cc_fee_percentage = models.DecimalField(max_digits=5, decimal_places=2)
+
+    def __str__(self):
+        return f"CC Fee Percentage: {self.cc_fee_percentage}"
 
 class Calculation(models.Model):
     job = models.OneToOneField(Job, on_delete=models.CASCADE)
