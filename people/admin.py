@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Agent
+from people.models import Agent
 
 @admin.register(Agent)
 class AgentAdmin(admin.ModelAdmin):

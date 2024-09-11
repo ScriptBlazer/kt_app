@@ -26,6 +26,92 @@ document.addEventListener("DOMContentLoaded", () => {
     event.preventDefault();
   }
 
+  // Initialize decimal fields
+  const decimalFieldsWithCommaAndDot = document.querySelectorAll(
+    '[name="job_price"], [name="fuel_cost"], [name="driver_fee"]'
+  );
+
+  const decimalFieldsWithDotOnly = document.querySelectorAll(
+    '[name="kilometers"], [name="no_of_passengers"]'
+  );
+
+  // Helper function to set the cursor position
+  function setCaretPosition(elem, pos) {
+    if (elem.setSelectionRange) {
+      elem.focus();
+      elem.setSelectionRange(pos, pos);
+    } else if (elem.createTextRange) {
+      var range = elem.createTextRange();
+      range.collapse(true);
+      range.moveEnd("character", pos);
+      range.moveStart("character", pos);
+      range.select();
+    }
+  }
+
+  // Handle input for fields that allow commas and dots
+  decimalFieldsWithCommaAndDot.forEach((input) => {
+    input.addEventListener("input", (e) => {
+      let caretPosition = input.selectionStart; // Save the cursor position
+
+      console.log(`Input detected in ${input.name}:`, e.target.value);
+
+      // Allow numbers, commas, and dots only
+      let oldValue = e.target.value;
+      e.target.value = e.target.value.replace(/[^0-9.,]/g, "");
+
+      // Replace multiple commas or dots, only allow one decimal separator
+      const valueWithSingleCommaOrDot = e.target.value.replace(
+        /[,.]/g,
+        (match, index, fullString) => {
+          // Only allow one decimal separator (either dot or comma), and convert comma to dot for standardization
+          if (
+            fullString.indexOf(".") === index ||
+            fullString.indexOf(",") === index
+          ) {
+            return fullString.indexOf(".") === index ? "." : ".";
+          }
+          return "";
+        }
+      );
+
+      e.target.value = valueWithSingleCommaOrDot;
+
+      // Restore the cursor position if no drastic change occurred
+      if (oldValue.length >= e.target.value.length) {
+        setCaretPosition(input, caretPosition); // Restore the cursor position
+      }
+
+      console.log(`Validated input for ${input.name}:`, e.target.value);
+    });
+  });
+
+  // Handle input for fields that allow only dots
+  decimalFieldsWithDotOnly.forEach((input) => {
+    input.addEventListener("input", (e) => {
+      let caretPosition = input.selectionStart; // Save the cursor position
+
+      console.log(`Input detected in ${input.name}:`, e.target.value);
+
+      // Replace any invalid characters (anything other than numbers and a decimal point)
+      let oldValue = e.target.value;
+      e.target.value = e.target.value.replace(/[^0-9.]/g, "");
+
+      // Ensure there is only one decimal point allowed
+      const parts = e.target.value.split(".");
+      if (parts.length > 2) {
+        e.target.value = parts[0] + "." + parts[1]; // Keep only the first decimal part
+      }
+
+      // Restore the cursor position if no drastic change occurred
+      if (oldValue.length >= e.target.value.length) {
+        setCaretPosition(input, caretPosition); // Restore the cursor position
+      }
+
+      console.log(`Validated input for ${input.name}:`, e.target.value);
+    });
+  });
+
   // Checkbox toggle status
   const csrfTokenElement = document.querySelector("[name=csrfmiddlewaretoken]");
   const csrfToken = csrfTokenElement ? csrfTokenElement.value : null;

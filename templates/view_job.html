@@ -12,41 +12,65 @@
     </div>
     <br>
     <h1>View Job</h1>
-    <p><strong>Customer Name:</strong> {{ job.customer_name }}</p>
-    <p><strong>Customer Number:</strong> {{ job.customer_number }}</p>
-    <p><strong>Job Date:</strong> {{ job.job_date }}</p>
-    <p><strong>Job Time:</strong> {{ job.job_time|time_format }}</p>
-    <p><strong>Job Description:</strong> {{ job.job_description }}</p>
-    <p><strong>No of Passengers:</strong> {{ job.no_of_passengers }}</p>
-    <p><strong>Vehicle Type:</strong> {{ job.vehicle_type }}</p>
-    <p><strong>Kilometers:</strong> {{ calculation.kilometers }}</p>
-    <p><strong>Payment Type:</strong> {{ job.payment_type }}</p>
+    <p><strong>Customer Name:</strong> {{ job.customer_name|default_if_none:"" }}</p>
+    <p><strong>Customer Number:</strong> {{ job.customer_number|default_if_none:"" }}</p>
+    <p><strong>Job Date:</strong> {{ job.job_date|default_if_none:"" }}</p>
+    <p><strong>Job Time:</strong> {{ job.job_time|time_format|default_if_none:"" }}</p>
+    <p><strong>Job Description:</strong> {{ job.job_description|default_if_none:"" }}</p>
+    <p><strong>No of Passengers:</strong> {{ job.no_of_passengers|default_if_none:"" }}</p>
+    <p><strong>Vehicle Type:</strong> {{ job.vehicle_type|default_if_none:"" }}</p>
+    <p><strong>Kilometers:</strong> {{ calculation.kilometers|default_if_none:"" }}</p>
+    <p><strong>Payment Type:</strong> {{ job.payment_type|default_if_none:"" }}</p>
     <p>
         <strong>Job Price:</strong> 
-        €{{ job.price_in_euros }} 
-        {% if job.currency != 'EUR' %} 
-            ({{ job.job_price }} {{ job.currency }}) 
+        €{{ job.job_price_in_euros|default_if_none:"" }} 
+        {% if job.job_currency != 'EUR' %} 
+            ({% if job.job_currency == 'GBP' %}£{% elif job.job_currency == 'USD' %}${% elif job.job_currency == 'HUF' %}Ft {% else %}{{ job.job_currency }}{% endif %}{{ job.job_price|default_if_none:"" }}) 
         {% endif %}
         
         {% if job.payment_type == 'Card' %} 
             <strong> | Credit Card Fee:</strong> 
-            {% if job.currency == 'EUR' %}
-                €{{ job.cc_fee }}
-            {% elif job.currency == 'GBP' %}
-                £{{ job.cc_fee }}
-            {% elif job.currency == 'HUF' %}
-                Ft {{ job.cc_fee }}
-            {% elif job.currency == 'USD' %}
-                ${{ job.cc_fee }}
+            {% if job.job_currency == 'EUR' %}
+                €{{ job.cc_fee|default_if_none:"" }} 
+                (€{{ total_with_cc_fee|default_if_none:"" }})
+            {% elif job.job_currency == 'GBP' %}
+                £{{ job.cc_fee|default_if_none:"" }} 
+                (£{{ total_with_cc_fee|default_if_none:"" }})
+            {% elif job.job_currency == 'HUF' %}
+                Ft {{ job.cc_fee|default_if_none:"" }} 
+                (Ft {{ total_with_cc_fee|default_if_none:"" }})
+            {% elif job.job_currency == 'USD' %}
+                ${{ job.cc_fee|default_if_none:"" }} 
+                (${{ total_with_cc_fee|default_if_none:"" }})
             {% endif %}
         {% endif %}
     </p>
-    <p><strong>Fuel Cost:</strong> €{{ calculation.fuel_cost_in_euros }}{% if calculation.fuel_currency != 'EUR' %} ({{ calculation.fuel_cost }} {{ calculation.fuel_currency }}){% endif %}</p>
-    <p><strong>Driver Fee:</strong> €{{ calculation.driver_fee_in_euros }}{% if calculation.driver_currency != 'EUR' %} ({{ calculation.driver_fee }} {{ calculation.driver_currency }}){% endif %}</p>
-    <p><strong>Driver Name:</strong> {{ job.driver_name }}</p>
-    <p><strong>Number Plate:</strong> {{ job.number_plate }}</p>
-    <p><strong>Agent Name:</strong> {{ calculation.agent.name }}</p>
-    <p><strong>Agent Fee:</strong> {{ calculation.agent_fee }}</p>
+
+    <p>
+        <strong>Fuel Cost:</strong> 
+        {% if job.fuel_cost_in_euros %}
+            €{{ job.fuel_cost_in_euros }}  
+            {% if job.fuel_currency != 'EUR' %} 
+                ({% if job.fuel_currency == 'GBP' %}£{% elif job.fuel_currency == 'USD' %}${% elif job.fuel_currency == 'HUF' %}Ft {% else %}{{ job.fuel_currency }}{% endif %}{{ job.fuel_cost }})
+            {% endif %}
+        {% endif %}
+    </p>
+    
+    <p>
+        <strong>Driver Fee:</strong> 
+        {% if job.driver_fee_in_euros %}
+            €{{ job.driver_fee_in_euros }}  
+            {% if job.driver_currency != 'EUR' %} 
+                ({% if job.driver_currency == 'GBP' %}£{% elif job.driver_currency == 'USD' %}${% elif job.driver_currency == 'HUF' %}Ft {% else %}{{ job.driver_currency }}{% endif %}{{ job.driver_fee }})
+            {% endif %}
+        {% endif %}
+    </p>
+
+    <p><strong>Driver Name:</strong> {{ job.driver_name|default_if_none:"" }}</p>
+    <p><strong>Number Plate:</strong> {{ job.number_plate|default_if_none:"" }}</p>
+    <p><strong>Agent Name:</strong> {{ job.agent_name.name|default_if_none:"" }}</p>
+    <p><strong>Agent Fee:</strong> {% if job.agent_percentage %}{{ job.agent_percentage }}%{% endif %}</p>
+
     <p><strong>Job Completed:</strong> 
         <input class="sbig" type="checkbox" id="is_completed" data-job-id="{{ job.id }}" {% if job.is_completed %}checked{% endif %}>
     </p>

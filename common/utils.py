@@ -1,47 +1,59 @@
-from decimal import Decimal
 from django.core.cache import cache
+from decimal import Decimal
 import requests
+from django.utils import timezone
+import pytz
 import logging
 
 logger = logging.getLogger(__name__)
 
+BUDAPEST_TZ = pytz.timezone('Europe/Budapest')
+
 def fetch_and_cache_exchange_rate(currency):
-    # Define the API key and the request URL for fetching exchange rates
+    """Fetch the exchange rate from the API and cache it until midnight in Budapest."""
     api_key = 'fafbeb3efd633397a2c59ecf'
     url = f'https://v6.exchangerate-api.com/v6/{api_key}/latest/{currency}'
 
     try:
-        # Send a request to the exchange rate API
         response = requests.get(url)
-        response.raise_for_status()  # Raise an error for bad responses
+        response.raise_for_status()
         data = response.json()
 
-        # Extract the exchange rate for EUR and cache it for future use
-        rate = Decimal(data['conversion_rates']['EUR'])
-        cache.set(f'exchange_rate_{currency}', rate, timeout=86400)  # Cache for 24 hours
-        return rate
+        if 'conversion_rates' in data and 'EUR' in data['conversion_rates']:
+            rate = Decimal(data['conversion_rates']['EUR'])
+
+            # Calculate time remaining until midnight in Budapest
+            now_budapest = timezone.now().astimezone(BUDAPEST_TZ)
+            midnight_budapest = now_budapest.replace(hour=0, minute=0, second=0, microsecond=0) + timezone.timedelta(days=1)
+            seconds_until_midnight = (midnight_budapest - now_budapest).total_seconds()
+
+            # Cache the rate until midnight in Budapest
+            cache_key = f'exchange_rate_{currency}'
+            logger.debug(f"Caching exchange rate for {currency}: {rate} until midnight ({seconds_until_midnight} seconds)")
+            cache.set(cache_key, rate, timeout=int(seconds_until_midnight))
+
+            return rate
+        else:
+            raise ValueError(f'Invalid response structure or missing EUR rate for {currency}')
 
     except requests.RequestException as e:
-        # Log and raise an error if the request fails
         logger.error(f'Error fetching exchange rate for {currency}: {e}')
         raise ValueError(f'Error fetching exchange rate for {currency}') from e
 
-    except (KeyError, ValueError, TypeError) as e:
-        # Log and raise an error for invalid response structure
-        logger.error(f'Invalid response structure when fetching exchange rate for {currency}: {e}')
-        raise ValueError(f'Invalid response structure when fetching exchange rate for {currency}') from e
-
 def get_exchange_rate(currency):
-    # Return the exchange rate for EUR as 1.00
+    """Retrieve the exchange rate for the given currency from the cache or API."""
     if currency == 'EUR':
         return Decimal('1.00')
-    
-    # Check the cache for the exchange rate
+
+    # Try retrieving the cached rate
     cache_key = f'exchange_rate_{currency}'
     rate = cache.get(cache_key)
 
-    # Fetch and cache the exchange rate if not found in cache
-    if rate is None:
+    if rate is not None:
+        logger.debug(f"Using cached exchange rate for {currency}: {rate}")
+    else:
+        logger.debug(f"No cached exchange rate found for {currency}. Fetching from API.")
+        # Fetch and cache if not found
         rate = fetch_and_cache_exchange_rate(currency)
 
     return rate

@@ -376,6 +376,10 @@ table tbody tr:hover {
     min-width: 70px;
 }
 
+.error-container .button:hover {
+    background-color: #555;
+}
+
 .wrapper {
     flex: 1;
     display: flex;

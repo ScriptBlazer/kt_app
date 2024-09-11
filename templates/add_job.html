@@ -11,113 +11,113 @@
         {% csrf_token %}
         <!-- Job Form Fields -->
         <div class="form-group">
-            {{ job_form.customer_name.label_tag }}
+            {{ job_form.customer_name.label_tag }}<br>
             {{ job_form.customer_name }}
         </div>
         <div class="form-group">
-            {{ job_form.customer_number.label_tag }}
+            {{ job_form.customer_number.label_tag }}<br>
             {{ job_form.customer_number }}
         </div>
         <div class="form-group-inline">
             <div class="field-wrapper">
-                {{ job_form.job_date.label_tag }}
+                {{ job_form.job_date.label_tag }}<br>
                 {{ job_form.job_date }}
             </div>
             <div class="field-wrapper">
-                {{ job_form.job_time.label_tag }}
+                {{ job_form.job_time.label_tag }}<br>
                 {{ job_form.job_time }}
             </div>
         </div>
         <div class="form-group">
-            {{ job_form.job_description.label_tag }}
+            {{ job_form.job_description.label_tag }}<br>
             {{ job_form.job_description }}
         </div>
         <div class="form-group-inline">
             <div class="field-wrapper">
-                {{ job_form.no_of_passengers.label_tag }}
+                {{ job_form.no_of_passengers.label_tag }}<br>
                 {{ job_form.no_of_passengers }}
             </div>
             <div class="field-wrapper">
-                {{ job_form.vehicle_type.label_tag }}
+                {{ job_form.vehicle_type.label_tag }}<br>
                 {{ job_form.vehicle_type }}
             </div>
         </div>
-        <div class="form-group">
-            {{ calculation_form.kilometers.label_tag }}
-            {{ calculation_form.kilometers }}
+        <div class="field-wrapper">
+            {{ job_form.kilometers.label_tag }}<br>
+            {{ job_form.kilometers }}
         </div>
+
+        <!-- Pricing and Payment Fields -->
         <div class="form-group">
-            {{ job_form.payment_type.label_tag }}
+            {{ job_form.payment_type.label_tag }}<br>
             {{ job_form.payment_type }}
         </div>
         <div class="form-group-inline">
             <div class="field-wrapper">
-                {{ job_form.job_price.label_tag }}
+                {{ job_form.job_price.label_tag }}<br>
                 {{ job_form.job_price }}
             </div>
             <div class="field-wrapper">
-                {{ job_form.currency.label_tag }}
-                {{ job_form.currency }}
-            </div>
-        </div>
-        
-        <!-- Calculation Form Fields -->
-        <div class="form-group-inline">
-            <div class="field-wrapper">
-                {{ calculation_form.fuel_cost.label_tag }}
-                {{ calculation_form.fuel_cost }}
-            </div>
-            <div class="field-wrapper">
-                {{ calculation_form.fuel_currency.label_tag }}
-                {{ calculation_form.fuel_currency }}
+                {{ job_form.job_currency.label_tag }}<br>
+                {{ job_form.job_currency }}  <!-- Corrected from {{ job_form.currency }} -->
             </div>
         </div>
         <div class="form-group-inline">
             <div class="field-wrapper">
-                {{ calculation_form.driver_fee.label_tag }}
-                {{ calculation_form.driver_fee }}
+                {{ job_form.fuel_cost.label_tag }}<br>
+                {{ job_form.fuel_cost }}
             </div>
             <div class="field-wrapper">
-                {{ calculation_form.driver_currency.label_tag }}
-                {{ calculation_form.driver_currency }}
+                {{ job_form.fuel_currency.label_tag }}<br>
+                {{ job_form.fuel_currency }}
             </div>
         </div>
         <div class="form-group-inline">
             <div class="field-wrapper">
-                {{ job_form.driver_name.label_tag }}
+                {{ job_form.driver_fee.label_tag }}<br>
+                {{ job_form.driver_fee }}
+            </div>
+            <div class="field-wrapper">
+                {{ job_form.driver_currency.label_tag }}<br>
+                {{ job_form.driver_currency }}
+            </div>
+        </div>
+
+        <!-- Driver Info -->
+        <div class="form-group-inline">
+            <div class="field-wrapper">
+                {{ job_form.driver_name.label_tag }}<br>
                 {{ job_form.driver_name }}
             </div>
             <div class="field-wrapper">
-                {{ job_form.number_plate.label_tag }}
+                {{ job_form.number_plate.label_tag }}<br>
                 {{ job_form.number_plate }}
             </div>
         </div>
+
+        <!-- Agent Info -->
         <div class="form-group-inline">
             <div class="field-wrapper">
-                {{ calculation_form.agent.label_tag }}
-                {{ calculation_form.agent }}
+                {{ job_form.agent_name.label_tag }}<br>
+                {{ job_form.agent_name }}
             </div>
             <div class="field-wrapper">
-                {{ calculation_form.agent_fee.label_tag }}
-                {{ calculation_form.agent_fee }}
+                {{ job_form.agent_percentage.label_tag }}<br>
+                {{ job_form.agent_percentage }}
             </div>
         </div>
+
         <div class="button-group">
             <button type="submit" id="save-button">Save Job</button>
-            <a href="{% url 'home' %}" class="button cancel-button sze">Cancel</a>
+            <a href="{% url 'home' %}" class="button cancel-button">Cancel</a>
         </div>
     </form>
 
-    {% if job_form.errors or calculation_form.errors %}
+    {% if job_form.errors %}
         <div class="errors">
             <h2>Form Errors:</h2>
             <ul>
                 {% for field in job_form %}
-                    {% if field.errors %}
-                        <li>{{ field.label }}: {{ field.errors|striptags }}</li>
-                    {% endif %}
-                {% endfor %}
-                {% for field in calculation_form %}
                     {% if field.errors %}
                         <li>{{ field.label }}: {{ field.errors|striptags }}</li>
                     {% endif %}

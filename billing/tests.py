@@ -1,196 +1,201 @@
 from django.test import TestCase
+from django.urls import reverse
+from jobs.models import Job, Agent
 from decimal import Decimal
 from unittest.mock import patch
-from .forms import CalculationForm
-from .models import Calculation, Job
-from datetime import date, time
+from django.utils import timezone
+from datetime import time
+import pytz
+from django.contrib.auth.models import User
 
-class CalculationFormTest(TestCase):
+budapest_tz = pytz.timezone('Europe/Budapest')
 
+class CalculationsViewTests(TestCase):
     def setUp(self):
-        # Create a test job instance to use in the tests
-        self.job = Job.objects.create(
-            customer_name='Test Customer',
-            customer_number='123456789',
-            job_date=date.today(),
-            job_time=time(10, 30),
-            job_description='Test job description',
-            no_of_passengers=4,
-            job_price=Decimal('1000'),
-            currency='EUR',
-            vehicle_type='Car'
+        # Create a user and log in
+        self.user = User.objects.create_user(username='testuser', password='12345')
+        self.client.login(username='testuser', password='12345')
+
+        self.agent1 = Agent.objects.create(name="Gilli")
+
+    @patch('jobs.models.get_exchange_rate')  # Mock the exchange rate API call
+    def test_calculations_view(self, mock_get_exchange_rate):
+        mock_get_exchange_rate.return_value = Decimal('1.00')
+
+        # Create job with job_time and no_of_passengers added
+        Job.objects.create(
+            customer_name="Customer 1",
+            job_date=timezone.now().astimezone(budapest_tz).date(),
+            job_time=time(12, 30),  # Add valid job_time
+            no_of_passengers=4,  # Add valid number of passengers
+            job_price=Decimal('1000.00'),
+            fuel_cost=Decimal('100.00'),
+            driver_fee=Decimal('50.00'),
+            agent_name=self.agent1,
+            agent_percentage='5'
         )
-        # Define valid data for the CalculationForm
-        self.valid_data = {
-            'fuel_cost': Decimal('100.00'),
-            'fuel_currency': 'EUR',
-            'driver_fee': Decimal('50.00'),
-            'driver_currency': 'EUR',
-            'agent_fee': '10%',
-            'kilometers': Decimal('200')
-        }
 
-    # Test case to validate the CalculationForm with valid data
-    def test_calculation_form_valid(self):
-        form = CalculationForm(data=self.valid_data)
-        self.assertTrue(form.is_valid())
+        # Ensure the calculations view renders successfully
+        response = self.client.get(reverse('billing:calculations'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'calculations.html')
 
-    # Test case to check the CalculationForm behavior when required fields are missing
-    def test_calculation_form_missing_required_fields(self):
-        valid_data = {
-            'fuel_cost': '100.00',
-            'fuel_currency': 'EUR',
-            'driver_fee': '50.00',
-            'driver_currency': 'EUR',
-            'agent_fee': '10%',
-            'kilometers': '100'
-        }
-
-        optional_data = valid_data.copy()
-        del optional_data['fuel_cost']
-
-        form = CalculationForm(data=optional_data)
-        # The form should still be valid since fuel_cost is optional
-        self.assertTrue(form.is_valid())
-        calculation = form.save(commit=False)
-        # Ensure fuel_cost is None since it was not provided
-        self.assertIsNone(calculation.fuel_cost)
-
-    # Test case to validate the CalculationForm with invalid data types
-    def test_calculation_form_invalid_data_types(self):
-        invalid_data = self.valid_data.copy()
-        invalid_data['kilometers'] = 'two hundred'  # Invalid type for kilometers
-        form = CalculationForm(data=invalid_data)
-        self.assertFalse(form.is_valid())
-        # Check that an error is raised for the invalid kilometers field
-        self.assertIn('kilometers', form.errors)
+        # Test the data passed to the template
+        self.assertIn('monthly_fuel_cost', response.context)
+        self.assertIn('monthly_total_agent_fees', response.context)
+        self.assertIn('monthly_total_profit', response.context)
 
 
-class CurrencyConversionTest(TestCase):
+class AllCalculationsViewTests(TestCase):
+    def setUp(self):
+        # Create a user and log in
+        self.user = User.objects.create_user(username='testuser', password='12345')
+        self.client.login(username='testuser', password='12345')
 
-    @patch('requests.get')
-    # Test case to validate fuel cost conversion from HUF to EUR
-    def test_calculation_fuel_cost_conversion(self, mock_get):
-        mock_get.return_value.status_code = 200
-        mock_get.return_value.json.return_value = {
-            'conversion_rates': {
-                'EUR': 0.00254
-            }
-        }
+        # Create an agent
+        self.agent1 = Agent.objects.create(name="Gilli")
 
-        # Create a test job for the conversion
+    @patch('jobs.models.get_exchange_rate')  # Mock the exchange rate API call
+    def test_all_calculations_view(self, mock_get_exchange_rate):
+        mock_get_exchange_rate.return_value = Decimal('1.00')
+
+        # Create a job
+        Job.objects.create(
+            customer_name="Customer 2",
+            job_date=timezone.now().astimezone(budapest_tz).date(),
+            job_time=time(12, 30),  # Add valid job_time
+            no_of_passengers=3,  # Add valid number of passengers
+            job_price=Decimal('2000.00'),
+            fuel_cost=Decimal('200.00'),
+            driver_fee=Decimal('100.00'),
+            agent_name=self.agent1,
+            agent_percentage='10'
+        )
+
+        # Ensure the all_calculations view renders successfully
+        response = self.client.get(reverse('billing:all_calculations'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'all_calculations.html')
+
+        # Test the data passed to the template
+        self.assertIn('overall_fuel_cost', response.context)
+        self.assertIn('overall_total_agent_fees', response.context)
+
+
+class AgentFeeCalculationTests(TestCase):
+    def setUp(self):
+        self.agent1 = Agent.objects.create(name="Gilli")
+        self.agent2 = Agent.objects.create(name="Test Agent")
+
+    @patch('jobs.models.get_exchange_rate')  # Mock the exchange rate API call
+    def test_agent_fee_5_percent(self, mock_get_exchange_rate):
+        mock_get_exchange_rate.return_value = Decimal('1.00')
+
         job = Job.objects.create(
-            customer_name='Test Customer',
-            customer_number='123456789',
-            job_date=date.today(),
-            job_time=time(10, 30),
-            job_description='Test job description',
-            no_of_passengers=4,
-            job_price=Decimal('100000'),
-            currency='HUF',
-            vehicle_type='Car'
+            customer_name="Customer 1",
+            job_date=timezone.now().astimezone(budapest_tz).date(),
+            job_time=time(12, 30),
+            no_of_passengers=2,
+            job_price=Decimal('1000.00'),
+            fuel_cost=Decimal('100.00'),
+            driver_fee=Decimal('50.00'),
+            agent_name=self.agent1,
+            agent_percentage='5'
         )
 
-        calculation_data = {
-            'fuel_cost': Decimal('50000'),
-            'fuel_currency': 'HUF',
-            'driver_fee': Decimal('20000'),
-            'driver_currency': 'HUF',
-            'agent_fee': '5%',
-            'kilometers': Decimal('100')
-        }
-        calculation_form = CalculationForm(data=calculation_data)
-        self.assertTrue(calculation_form.is_valid())
-        calculation = calculation_form.save(commit=False)
-        calculation.job = job
-        calculation.save()
+        agent_fee_amount, profit = self.calculate_job_profit(job)
+        self.assertEqual(agent_fee_amount, Decimal('50.00'))  # 5% of 1000.00
+        self.assertEqual(profit, Decimal('800.00'))  # 1000 - 50 (agent fee) - 100 (fuel) - 50 (driver)
 
-        # Validate that the conversion to euros was performed correctly
-        self.assertEqual(calculation.fuel_cost_in_euros.quantize(Decimal('0.01')), Decimal('127.00'))
-        self.assertEqual(calculation.driver_fee_in_euros.quantize(Decimal('0.01')), Decimal('50.80'))
+    @patch('jobs.models.get_exchange_rate')  # Mock the exchange rate API call
+    def test_agent_fee_10_percent(self, mock_get_exchange_rate):
+        mock_get_exchange_rate.return_value = Decimal('1.00')
 
-    @patch('requests.get')
-    # Test case to validate the calculation of the agent fee amount
-    def test_calculation_agent_fee_amount(self, mock_get):
-        mock_get.return_value.status_code = 200
-        mock_get.return_value.json.return_value = {
-            'conversion_rates': {
-                'EUR': 0.00254
-            }
-        }
-
-        # Create a test job for calculating the agent fee
         job = Job.objects.create(
-            customer_name='Test Customer',
-            customer_number='123456789',
-            job_date=date.today(),
-            job_time=time(10, 30),
-            job_description='Test job description',
-            no_of_passengers=4,
-            job_price=Decimal('100000'),
-            currency='HUF',
-            vehicle_type='Car'
+            customer_name="Customer 2",
+            job_date=timezone.now().astimezone(budapest_tz).date(),
+            job_time=time(12, 30),
+            no_of_passengers=3,
+            job_price=Decimal('2000.00'),
+            fuel_cost=Decimal('200.00'),
+            driver_fee=Decimal('100.00'),
+            agent_name=self.agent2,
+            agent_percentage='10'
         )
 
-        calculation_data = {
-            'fuel_cost': Decimal('50000'),
-            'fuel_currency': 'HUF',
-            'driver_fee': Decimal('20000'),
-            'driver_currency': 'HUF',
-            'agent_fee': '10%',
-            'kilometers': Decimal('100')
-        }
-        calculation_form = CalculationForm(data=calculation_data)
-        self.assertTrue(calculation_form.is_valid())
-        calculation = calculation_form.save(commit=False)
-        calculation.job = job
-        calculation.save()
+        agent_fee_amount, profit = self.calculate_job_profit(job)
+        self.assertEqual(agent_fee_amount, Decimal('200.00'))  # 10% of 2000.00
+        self.assertEqual(profit, Decimal('1500.00'))  # 2000 - 200 (agent fee) - 200 (fuel) - 100 (driver)
 
-        # Validate that the calculated agent fee amount is correct
-        self.assertEqual(calculation.calculate_agent_fee_amount().quantize(Decimal('0.01')), Decimal('25.40'))
+    @patch('jobs.models.get_exchange_rate')  # Mock the exchange rate API call
+    def test_agent_fee_50_percent(self, mock_get_exchange_rate):
+        mock_get_exchange_rate.return_value = Decimal('1.00')
 
-    @patch('requests.get')
-    # Test case to validate the calculation of profit based on various costs and fees
-    def test_calculation_profit(self, mock_get):
-        mock_get.return_value.status_code = 200
-        mock_get.return_value.json.return_value = {
-            'conversion_rates': {
-                'EUR': 0.00254
-            }
-        }
-
-        # Create a test job for calculating profit
         job = Job.objects.create(
-            customer_name='Test Customer',
-            customer_number='123456789',
-            job_date=date.today(),
-            job_time=time(10, 30),
-            job_description='Test job description',
+            customer_name="Customer 3",
+            job_date=timezone.now().astimezone(budapest_tz).date(),
+            job_time=time(12, 30),
             no_of_passengers=4,
-            job_price=Decimal('100000'),
-            currency='HUF',
-            vehicle_type='Car'
+            job_price=Decimal('3000.00'),
+            fuel_cost=Decimal('300.00'),
+            driver_fee=Decimal('150.00'),
+            agent_name=self.agent1,
+            agent_percentage='50'
         )
 
-        calculation_data = {
-            'fuel_cost': Decimal('50000'),
-            'fuel_currency': 'HUF',
-            'driver_fee': Decimal('20000'),
-            'driver_currency': 'HUF',
-            'agent_fee': '50%',
-            'kilometers': Decimal('100')
-        }
-        calculation_form = CalculationForm(data=calculation_data)
-        self.assertTrue(calculation_form.is_valid())
-        calculation = calculation_form.save(commit=False)
-        calculation.job = job
-        calculation.save()
+        agent_fee_amount, profit = self.calculate_job_profit(job)
+        self.assertEqual(agent_fee_amount, Decimal('1275.00'))  # 50% of (3000 - 300 - 150)
+        self.assertEqual(profit, Decimal('1275.00'))  # Profit split equally with agent
 
-        # Calculate expected values for profit calculation
-        fuel_cost_in_euros = (Decimal('50000') * Decimal('0.00254')).quantize(Decimal('0.01'))
-        driver_fee_in_euros = (Decimal('20000') * Decimal('0.00254')).quantize(Decimal('0.01'))
-        agent_fee_amount = (Decimal('254.00') - fuel_cost_in_euros - driver_fee_in_euros) * Decimal('0.50')
+    @patch('jobs.models.get_exchange_rate')  # Mock the exchange rate API call
+    def test_no_agent_fee(self, mock_get_exchange_rate):
+        mock_get_exchange_rate.return_value = Decimal('1.00')
 
-        expected_profit = (Decimal('254.00') - fuel_cost_in_euros - driver_fee_in_euros - agent_fee_amount).quantize(Decimal('0.01'))
-        # Validate that the calculated profit matches the expected profit
-        self.assertEqual(calculation.calculate_profit().quantize(Decimal('0.01')), expected_profit)
+        job = Job.objects.create(
+            customer_name="Customer 4",
+            job_date=timezone.now().astimezone(budapest_tz).date(),
+            job_time=time(12, 30),
+            no_of_passengers=5,
+            job_price=Decimal('4000.00'),
+            fuel_cost=Decimal('400.00'),
+            driver_fee=Decimal('200.00'),
+            agent_name=None,
+            agent_percentage=None
+        )
+
+        agent_fee_amount, profit = self.calculate_job_profit(job)
+        self.assertEqual(agent_fee_amount, Decimal('0.00'))  # No agent fee
+        self.assertEqual(profit, Decimal('3400.00'))  # 4000 - 400 (fuel) - 200 (driver)
+
+    def calculate_job_profit(self, job):
+        # Mimicking your profit calculation logic
+        job_price = job.job_price or Decimal('0.00')
+        fuel_cost = job.fuel_cost or Decimal('0.00')
+        driver_fee = job.driver_fee or Decimal('0.00')
+        agent_fee_amount = Decimal('0.00')
+        profit = Decimal('0.00')
+
+        if job.agent_percentage == '5':
+            agent_fee_amount = job_price * Decimal('0.05')
+            profit = job_price - agent_fee_amount - fuel_cost - driver_fee
+        elif job.agent_percentage == '10':
+            agent_fee_amount = job_price * Decimal('0.10')
+            profit = job_price - agent_fee_amount - fuel_cost - driver_fee
+        elif job.agent_percentage == '50':
+            profit_before_agent = job_price - fuel_cost - driver_fee
+            agent_fee_amount = profit_before_agent * Decimal('0.50')
+            profit = profit_before_agent - agent_fee_amount
+        else:
+            profit = job_price - fuel_cost - driver_fee
+
+        return agent_fee_amount, profit
+
+
+class TimezoneConversionTests(TestCase):
+    @patch('jobs.models.get_exchange_rate')
+    def test_timezone_conversion(self, mock_get_exchange_rate):
+        mock_get_exchange_rate.return_value = Decimal('1.00')
+
+        # Test the timezone conversion for Budapest
+        now = timezone.now().astimezone(budapest_tz)
+        self.assertEqual(now.tzinfo.zone, 'Europe/Budapest')

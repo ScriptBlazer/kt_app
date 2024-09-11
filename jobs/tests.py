@@ -1,316 +1,239 @@
 from django.test import TestCase
+from jobs.forms import JobForm
+from jobs.models import Job, PaymentSettings
 from decimal import Decimal
-from datetime import date, time
+from pytz import timezone as tz
+from django.utils import timezone
 from unittest.mock import patch
 from django.urls import reverse
-from django.test import Client
-from django.contrib.auth.models import User
-from .forms import JobForm
-from .models import Job
-import json
+from unittest.mock import patch
+from django.core.cache import cache
+import pytz
+
+BUDAPEST_TZ = pytz.timezone('Europe/Budapest')
+
 
 class JobFormTest(TestCase):
-
-    def setUp(self):
-        # Set up valid data for the JobForm tests
-        self.valid_data = {
+    # Test to ensure non-required fields do not prevent form submission
+    def test_non_required_fields(self):
+        form_data = {
             'customer_name': 'John Doe',
-            'customer_number': '+123456789',
-            'job_date': '2024-07-19',
-            'job_time': '14:00',
-            'job_description': 'A simple job description.',
-            'no_of_passengers': 4,
-            'job_price': '100.00',
-            'currency': 'EUR',
-            'driver_name': 'John Smith',
-            'number_plate': 'ABC123',
+            'customer_number': '1234567890',
+            'job_date': '2024-09-10',
+            'job_time': '15:00',
+            'job_currency': 'USD',
+            'job_price': Decimal('150'),
+            'job_description': 'Optional description', 
+            'no_of_passengers': 1, 
+            'vehicle_type': 'Car', 
+            'kilometers': Decimal('0')  
+        }
+        form = JobForm(data=form_data)
+        self.assertTrue(form.is_valid(), msg=form.errors)
+
+
+class FieldValidationTests(TestCase):
+    # Test to ensure job_description is required and cannot be left blank
+    def test_empty_job_description(self):
+        form_data = {
+            'customer_name': 'John Doe',
+            'customer_number': '123456789',  # Valid customer number
+            'job_date': timezone.now().date(),
+            'job_time': timezone.now().time(),
+            'job_description': '',  # Testing empty job description
+            'job_price': Decimal('100.00'),
+            'job_currency': 'GBP',
+            'no_of_passengers': 1,
             'vehicle_type': 'Car',
-            'payment_type': 'Cash'
+            'kilometers': Decimal('10'),
         }
+        form = JobForm(data=form_data)
+        
+        # Assert the form is invalid because job_description is empty
+        self.assertFalse(form.is_valid())  
+        self.assertIn('job_description', form.errors)  # Check that the error is due to job_description
 
-    # Test case for valid JobForm submission
-    def test_job_form_valid(self):
-        form = JobForm(data=self.valid_data)
-        self.assertTrue(form.is_valid())
 
-    # Test case for missing required fields in JobForm
-    def test_job_form_missing_required_fields(self):
-        invalid_data = self.valid_data.copy()
-        del invalid_data['customer_name']
-        form = JobForm(data=invalid_data)
-        self.assertFalse(form.is_valid())
-        self.assertIn('customer_name', form.errors)
+class ConcurrencyHandlingTest(TestCase):
+    # Test to simulate two concurrent updates and ensure the latest update is applied
+    def test_concurrent_job_updates(self):
+        job = Job.objects.create(
+            customer_name="Test User",
+            customer_number="123456789",
+            job_date=timezone.now().date(),
+            job_time=timezone.now().time(),
+            job_description="Test job description",
+            job_price=Decimal('100.00'),
+            job_currency='GBP',  
+            no_of_passengers=1,  
+            vehicle_type='Car',  
+            kilometers=Decimal('10'),
+        )
 
-    # Test case for invalid data types in JobForm
-    def test_job_form_invalid_data_types(self):
-        invalid_data = self.valid_data.copy()
-        invalid_data['no_of_passengers'] = 'four'
-        form = JobForm(data=invalid_data)
-        self.assertFalse(form.is_valid())
-        self.assertIn('no_of_passengers', form.errors)
+        # Simulate two concurrent updates to the job price
+        Job.objects.filter(pk=job.pk).update(job_price=Decimal('200'))
+        Job.objects.filter(pk=job.pk).update(job_price=Decimal('250'))
 
-    # Test case for invalid currency choices in JobForm
-    def test_job_form_currency_choices(self):
-        invalid_data = self.valid_data.copy()
-        invalid_data['currency'] = 'YEN'
-        form = JobForm(data=invalid_data)
-        self.assertFalse(form.is_valid())
-        self.assertIn('currency', form.errors)
+        updated_job = Job.objects.get(pk=job.pk)
+        self.assertEqual(updated_job.job_price, Decimal('250'))  # Expect the latest update
 
-    # Test case for job price conversion to euros
-    @patch('requests.get')
-    def test_job_form_price_conversion(self, mock_get):
-        mock_get.return_value.status_code = 200
-        mock_get.return_value.json.return_value = {
-            'conversion_rates': {
-                'EUR': 1.0,  # 1 EUR = 1 EUR
-            }
-        }
-
-        form = JobForm(data=self.valid_data)
-        self.assertTrue(form.is_valid())
-        job = form.save(commit=False)
-        job.convert_to_euros()  # Ensure conversion logic is called
-        self.assertEqual(job.price_in_euros, Decimal('100.00'))
-
-    # Test case for editing a job
-    def test_edit_job(self):
-        form = JobForm(data=self.valid_data)
-        if form.is_valid():
-            job = form.save(commit=False)
-            job.save()
-            updated_data = self.valid_data.copy()
-            updated_data['customer_name'] = 'Jane Doe'
-            form = JobForm(data=updated_data, instance=job)
-            self.assertTrue(form.is_valid())
-            job = form.save()
-            self.assertEqual(job.customer_name, 'Jane Doe')
-
-class EdgeCaseHandlingTest(TestCase):
-
-    # Test case for handling extremely high job price
-    def test_extremely_high_job_price(self):
-        job_data = {
-            'customer_name': 'Test Customer',
-            'customer_number': '123456789',
-            'job_date': date.today(),
-            'job_time': time(10, 30),
-            'job_description': 'Test job description',
-            'no_of_passengers': 4,
-            'job_price': Decimal('1000000000'),
-            'currency': 'EUR',
-            'vehicle_type': 'Car'
-        }
-        job_form = JobForm(data=job_data)
-        if not job_form.is_valid():
-            print(job_form.errors)  # Print errors to debug
-        self.assertTrue(job_form.is_valid())
-
-    # Test case for handling zero passengers
-    def test_zero_passengers(self):
-        job_data = {
-            'customer_name': 'Test Customer',
-            'customer_number': '123456789',
-            'job_date': date.today(),
-            'job_time': time(10, 30),
-            'job_description': 'Test job description',
-            'no_of_passengers': 0,
-            'job_price': Decimal('100'),
-            'currency': 'EUR',
-            'vehicle_type': 'Car'
-        }
-        job_form = JobForm(data=job_data)
-        if job_form.is_valid():
-            print(job_form.errors)  # Print errors to debug
-        self.assertFalse(job_form.is_valid())
-        self.assertIn('no_of_passengers', job_form.errors)
 
 class CurrencyConversionTest(TestCase):
-
-    @patch('requests.get')
-    # Test job price conversion from HUF to EUR
-    def test_job_price_conversion(self, mock_get):
-        mock_get.return_value.status_code = 200
-        mock_get.return_value.json.return_value = {
-            'conversion_rates': {
-                'EUR': 0.00254
-            }
-        }
-
-        job_data = {
-            'customer_name': 'Test Customer',
-            'customer_number': '123456789',
-            'job_date': date.today(),
-            'job_time': time(10, 30),
-            'job_description': 'Test job description',
-            'no_of_passengers': 4,
-            'job_price': Decimal('100000'),
-            'currency': 'HUF',
-            'vehicle_type': 'Car'
-        }
-        job_form = JobForm(data=job_data)
-        self.assertTrue(job_form.is_valid())
-        job = job_form.save()
-        self.assertEqual(job.price_in_euros.quantize(Decimal('0.01')), Decimal('254.00'))
-
-    @patch('requests.get')
-    # Test job uses cached exchange rate for GBP
-    def test_job_uses_cached_exchange_rate_gbp(self, mock_get):
-        mock_get.return_value.status_code = 200
-        mock_get.return_value.json.return_value = {
-            'conversion_rates': {
-                'EUR': 0.85
-            }
-        }
-
-        job_data = {
-            'customer_name': 'Test Customer',
-            'customer_number': '123456789',
-            'job_date': date.today(),
-            'job_time': time(10, 30),
-            'job_description': 'Test job description',
-            'no_of_passengers': 4,
-            'job_price': Decimal('100'),
-            'currency': 'GBP',
-            'vehicle_type': 'Car'
-        }
-
-        job_form = JobForm(data=job_data)
-        self.assertTrue(job_form.is_valid())
-        job = job_form.save()
-
-        self.assertEqual(job.price_in_euros.quantize(Decimal('0.01')), (Decimal('100') * Decimal('0.85')).quantize(Decimal('0.01')))
-        mock_get.assert_called_once()  # Ensure API was called
-
-    @patch('requests.get')
-    # Test job uses cached exchange rate for USD
-    def test_job_uses_cached_exchange_rate_usd(self, mock_get):
-        mock_get.return_value.status_code = 200
-        mock_get.return_value.json.return_value = {
-            'conversion_rates': {
-                'EUR': 0.85
-            }
-        }
-
-        job_data = {
-            'customer_name': 'Test Customer',
-            'customer_number': '123456789',
-            'job_date': date.today(),
-            'job_time': time(10, 30),
-            'job_description': 'Test job description',
-            'no_of_passengers': 4,
-            'job_price': Decimal('100'),
-            'currency': 'USD',
-            'vehicle_type': 'Car'
-        }
-
-        job_form = JobForm(data=job_data)
-        self.assertTrue(job_form.is_valid())
-        job = job_form.save()
-
-        self.assertEqual(job.price_in_euros.quantize(Decimal('0.01')), (Decimal('100') * Decimal('0.85')).quantize(Decimal('0.01')))
-        mock_get.assert_called_once()
-
-    @patch('requests.get')
-    # Test job uses cached exchange rate when API fails for HUF
-    def test_job_uses_cached_exchange_rate_huf(self, mock_get):
-        mock_get.return_value.status_code = 404  # Simulate API being unavailable
-
-        job_data = {
-            'customer_name': 'Test Customer',
-            'customer_number': '123456789',
-            'job_date': date.today(),
-            'job_time': time(10, 30),
-            'job_description': 'Test job description',
-            'no_of_passengers': 4,
-            'job_price': Decimal('100000'),
-            'currency': 'HUF',
-            'vehicle_type': 'Car'
-        }
-
-        job_form = JobForm(data=job_data)
-        self.assertTrue(job_form.is_valid())
-        job = job_form.save()
-
-        self.assertEqual(job.price_in_euros.quantize(Decimal('0.01')), (Decimal('100000') * Decimal('0.00254')).quantize(Decimal('0.01')))
-        mock_get.assert_not_called()  # Ensure API was not called again
-
-class ViewTest(TestCase):
-
-    def setUp(self):
-        # Set up client and user for testing views
-        self.client = Client()
-        self.user = User.objects.create_user(username='testuser', password='12345')
-        self.client.login(username='testuser', password='12345')
-
-    # Test the home view for successful response and correct template
-    def test_home_view(self):
-        response = self.client.get(reverse('home'))
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'index.html')
-
-    # Test the add job view for successful response and correct template
-    def test_add_job_view(self):
-        response = self.client.get(reverse('jobs:add_job'))
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'add_job.html')
-
-    # Test the edit job view for successful response and correct template
-    def test_edit_job_view(self):
-        job = Job.objects.create(
-            customer_name='Test Customer',
-            customer_number='123456789',
-            job_date=date.today(),
-            job_time=time(10, 30),
-            job_description='Test job description',
-            no_of_passengers=4,
+    # Test to ensure currency conversion to Euros works as expected
+    @patch('jobs.models.get_exchange_rate')
+    def test_currency_conversion(self, mock_get_exchange_rate):
+        mock_get_exchange_rate.return_value = Decimal('1.2')  # Mocking exchange rate
+        job = Job(
             job_price=Decimal('100'),
-            currency='EUR',
-            vehicle_type='Car'
+            job_currency='USD',
+            job_date=timezone.now().date(),
+            job_time=timezone.now().time(),
+            customer_name='John Doe',
+            customer_number='123456789',
+            no_of_passengers=1,
+            vehicle_type='Car',
+            kilometers=Decimal('100')
         )
+        job.save()
+        self.assertEqual(job.job_price_in_euros, Decimal('120.00'))
 
-        response = self.client.get(reverse('jobs:edit_job', args=[job.id]))
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'edit_job.html')
+    # Test to check if saving a job with an unsupported currency raises an error
+    def test_missing_exchange_rate(self):
+        job = Job(
+            job_price=Decimal('100'),
+            job_currency='XYZ',  
+            job_date=timezone.now().date(),
+            job_time=timezone.now().time(),
+            customer_name='John Doe',
+            customer_number='123456789',
+            no_of_passengers=1,
+            vehicle_type='Car',
+            kilometers=Decimal('100')
+        )
+        with self.assertRaises(ValueError):
+            job.save()
+
 
 class ToggleCompletedTestCase(TestCase):
-    
-    def setUp(self):
-        # Create a user and a job for testing
-        self.user = User.objects.create_user(username='testuser', password='testpassword')
-        self.job = Job.objects.create(
-            customer_name="John Doe",
-            customer_number="123456789",
-            job_date="2024-08-22",
-            job_time="10:00",
-            job_description="Test Job",
-            no_of_passengers=2,
-            vehicle_type="Car",
-            price_in_euros=100,
-            currency="EUR",
-            job_price=100,
-            is_completed=False,
-            driver_name="Driver One",
-            number_plate="XYZ 1234"
-        )
-        self.client.login(username='testuser', password='testpassword')
-
-    # Test toggling the completed status of a job
+    # Test to ensure job completion status can be toggled via a POST request
     def test_toggle_completed(self):
-        url = reverse('jobs:toggle_completed', args=[self.job.id])
-        
-        # Set is_completed to True
-        response = self.client.post(url, json.dumps({'is_completed': True}), content_type='application/json')
-        self.job.refresh_from_db()
+        job = Job.objects.create(
+            customer_name="Test User",
+            job_date=timezone.now().date(),
+            job_time=timezone.now().time(),
+            job_price=Decimal('100'),
+            job_currency='EUR',
+            customer_number='123456789',
+            no_of_passengers=1,
+            vehicle_type='Car',
+            kilometers=Decimal('100')
+        )
+        url = reverse('jobs:toggle_completed', args=[job.id])
+        response = self.client.post(url, {'is_completed': True}, content_type='application/json')
+        job.refresh_from_db()
+        self.assertTrue(job.is_completed)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(self.job.is_completed, True)
 
-        # Set is_completed to False
-        response = self.client.post(url, json.dumps({'is_completed': False}), content_type='application/json')
-        self.job.refresh_from_db()
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(self.job.is_completed, False)
 
-    def tearDown(self):
-        self.job.delete()
-        self.user.delete()
+class TimeZoneTests(TestCase):
+    # Test to ensure Budapest timezone conversion is working
+    def test_budapest_time_zone(self):
+        budapest_tz = tz('Europe/Budapest')
+        now_utc = timezone.now().replace(tzinfo=tz('UTC'))
+        now_budapest = now_utc.astimezone(budapest_tz)
+        self.assertEqual(now_budapest.tzinfo.zone, budapest_tz.zone)
+
+
+class JobDateAndTimeTests(TestCase):
+    # Test to ensure leap year dates (e.g., February 29) are accepted
+    def test_leap_year_date(self):
+        form_data = {
+            'customer_name': 'John Doe',
+            'customer_number': '1234567890',
+            'job_date': '2024-02-29',  # Leap year date
+            'job_time': '10:00',
+            'job_currency': 'EUR',
+            'job_price': Decimal('50.00'),
+            'job_description': 'Optional description',
+            'no_of_passengers': 1,
+            'vehicle_type': 'Car',
+            'kilometers': Decimal('0')
+        }
+        form = JobForm(data=form_data)
+        self.assertTrue(form.is_valid())
+
+    # Test to ensure end of month dates (e.g., April 30) are accepted
+    def test_end_of_month_date(self):
+        form_data = {
+            'customer_name': 'John Doe',
+            'customer_number': '1234567890',
+            'job_date': '2024-04-30',  # End of April
+            'job_time': '23:59',
+            'job_currency': 'EUR',
+            'job_price': Decimal('50.00'),
+            'job_description': 'Optional description',
+            'no_of_passengers': 1,
+            'vehicle_type': 'Car',
+            'kilometers': Decimal('0')
+        }
+        form = JobForm(data=form_data)
+        self.assertTrue(form.is_valid())
+
+    # Test to handle midnight edge cases (e.g., midnight jobs)
+    def test_midnight_edge_case(self):
+        form_data = {
+            'customer_name': 'Jane Smith',
+            'customer_number': '0987654321',
+            'job_date': '2024-12-31',  # New Year's Eve
+            'job_time': '00:00',  # Midnight, technically the next day
+            'job_currency': 'USD',
+            'job_price': Decimal('75.00'),
+            'job_description': 'New Year celebration ride',
+            'no_of_passengers': 3,
+            'vehicle_type': 'Minivan',
+            'kilometers': Decimal('15')
+        }
+        form = JobForm(data=form_data)
+        self.assertTrue(form.is_valid())
+
+    # Test to ensure jobs created during daylight saving time transition are valid
+    def test_daylight_saving_time_transition(self):
+        form_data = {
+            'customer_name': 'Eve Adams',
+            'customer_number': '9876543210',
+            'job_date': '2024-03-10',  # Daylight saving time start in many regions
+            'job_time': '02:30',  # Time that does not exist in DST transition
+            'job_currency': 'GBP',
+            'job_price': Decimal('120.00'),
+            'job_description': 'Early morning airport transfer',
+            'no_of_passengers': 2,
+            'vehicle_type': 'Car',
+            'kilometers': Decimal('20')
+        }
+        form = JobForm(data=form_data)
+        self.assertTrue(form.is_valid(), msg=form.errors)
+
+
+class CreditCardFeeCalculationTest(TestCase):
+    # Setup method to ensure PaymentSettings instance is created before running tests
+    def setUp(self):
+        PaymentSettings.objects.create(cc_fee_percentage=Decimal('7.00'))
+
+    # Test to ensure credit card fee is correctly applied when payment type is 'Card'
+    def test_credit_card_fee_application(self):
+        job = Job.objects.create(
+            customer_name='John Doe',
+            customer_number='1234567890',
+            job_date='2024-09-10',
+            job_time='15:00',
+            job_description='Sample job description',
+            no_of_passengers=1,
+            vehicle_type='Car',
+            kilometers=Decimal('100'),
+            job_currency='EUR',
+            job_price=Decimal('100'),
+            payment_type='Card'
+        )
+        job.save()
+        expected_fee = (Decimal('100') * Decimal('7.00') / Decimal('100')).quantize(Decimal('0.01'))
+        self.assertEqual(job.cc_fee, expected_fee, msg=f"Expected CC fee was {expected_fee}, but got {job.cc_fee}")

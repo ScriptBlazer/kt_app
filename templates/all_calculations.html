@@ -8,6 +8,7 @@
         <div class="container">
             <br>
             <a href="{% url 'home' %}" class="button">Back to Home</a>
+            <a href="{% url 'billing:calculations' %}" class="button">Back to Calculations</a>
             <br><br>
             <h1>All Calculations</h1>
 
@@ -49,11 +50,36 @@
                             <td>{{ job.customer_name|truncate_words_chars }}</td>
                             <td>{{ job.job_date }}</td>
                             <td>€{{ job.job_price|floatformat:2 }}</td>
-                            <td class="tablet">€{{ job.fuel_cost|floatformat:2 }}</td>
-                            <td class="tablet">€{{ job.driver_fee|floatformat:2 }}</td>
-                            <td>{{ job.agent_name }}</td>
-                            <td>{{ job.agent_fee }}</td>
-                            <td>€{{ job.agent_fee_amount|floatformat:2 }}</td>
+                            <td class="tablet">
+                                {% if job.fuel_cost %}
+                                    €{{ job.fuel_cost|floatformat:2 }}
+                                {% else %}
+                                {% endif %}
+                            </td>
+                            <td class="tablet">
+                                {% if job.driver_fee %}
+                                    €{{ job.driver_fee|floatformat:2 }}
+                                {% else %}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if job.agent_name %}
+                                    {{ job.agent_name }}
+                                {% else %}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if job.agent_fee %}
+                                    {{ job.agent_fee }}%
+                                {% else %}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if job.agent_fee_amount %}
+                                    €{{ job.agent_fee_amount|floatformat:2 }}
+                                {% else %}
+                                {% endif %}
+                            </td>
                             <td>€{{ job.profit|floatformat:2 }}</td>
                         </tr>
                     {% endfor %}
@@ -70,10 +96,12 @@
                 </thead>
                 <tbody>
                     {% for agent, totals in agent_totals.items %}
-                        <tr>
-                            <td>{{ agent }}</td>
-                            <td>€{{ totals.overall.agent_fees|floatformat:2 }}</td>
-                        </tr>
+                        {% if agent and agent != "None" %}
+                            <tr>
+                                <td>{{ agent }}</td>
+                                <td>€{{ totals.overall.agent_fees|floatformat:2 }}</td>
+                            </tr>
+                        {% endif %}
                     {% endfor %}
                 </tbody>
             </table>
