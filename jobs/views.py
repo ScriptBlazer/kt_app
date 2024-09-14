@@ -13,7 +13,7 @@ from decimal import Decimal
 import logging
 import pytz
 
-logger = logging.getLogger('kt_app')
+logger = logging.getLogger('kt')
 
 # Set the timezone to Hungary
 hungary_tz = pytz.timezone('Europe/Budapest')

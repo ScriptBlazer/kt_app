@@ -2,9 +2,13 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+
+from config import views as config_views
 from jobs import views as jobs_views
 
 urlpatterns = [
+    path('liveness', config_views.Liveness.as_view()),
+
     path('admin/', admin.site.urls),
     path('accounts/', include('django.contrib.auth.urls')),
     path('jobs/', include('jobs.urls', namespace='jobs')),

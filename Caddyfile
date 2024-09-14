@@ -1,0 +1,10 @@
+{$PUBLIC_HOST} {
+    encode gzip
+
+    handle_path /static/* {
+        root * /app/staticfiles
+        file_server
+    }
+
+    reverse_proxy web:8000
+}

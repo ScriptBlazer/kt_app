@@ -1,17 +1,18 @@
 from django.core.cache import cache
+from django.conf import settings
 from decimal import Decimal
 import requests
 from django.utils import timezone
 import pytz
 import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('kt')
 
 BUDAPEST_TZ = pytz.timezone('Europe/Budapest')
 
 def fetch_and_cache_exchange_rate(currency):
     """Fetch the exchange rate from the API and cache it until midnight in Budapest."""
-    api_key = 'fafbeb3efd633397a2c59ecf'
+    api_key = settings.EXCHANGE_RATE_API_KEY
     url = f'https://v6.exchangerate-api.com/v6/{api_key}/latest/{currency}'
 
     try:
