@@ -16,6 +16,19 @@ html, body {
     color: #fff;
 }
 
+.password-container {
+    position: relative;
+    width: 100%;
+}
+
+.toggle-password {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    cursor: pointer;
+}
+
 .logot {
     background-color: #007bff;
     box-shadow: none;
@@ -353,7 +366,7 @@ table tbody tr:hover {
     100% { transform: rotate(360deg); }
 }
 
-.completed-job {
+/* .completed-job {
     box-shadow: inset 0px 0px 10px rgba(42, 179, 8, 0.944);
     background-color: #8fed8f !important;
 }
@@ -365,6 +378,26 @@ table tbody tr:hover {
 
 .future-job {
     background-color: white;
+} */
+
+.white-job {
+    background-color: white;
+    box-shadow: inset 0px 0px 10px rgba(225, 209, 252, 0.944);
+}
+
+.orange-job {
+    background-color: rgb(255, 183, 50);
+    box-shadow: inset 0px 0px 10px rgba(153, 118, 3, 0.94);
+}
+
+.red-job {
+    background-color: rgb(244, 87, 87);
+    box-shadow: inset 0px 0px 10px rgba(245, 12, 12, 0.944);
+}
+
+.green-job {
+    background-color: #8fed8f;
+    box-shadow: inset 0px 0px 10px rgba(42, 179, 8, 0.944);
 }
 
 .cancel-button {

@@ -18,19 +18,19 @@
     <h2>Upcoming Jobs</h2>
     <ul>
         {% for job in upcoming_jobs %}
-        <li class="job-container">
-                <span class="customer-name">{{ job.customer_name|truncate_words_chars }}</span>
-                <div class="job-info">
-                    <span class="slim">{{ job.job_date }}</span>
-                    <span class="phone">{{ job.job_time|time_format }}</span>
-                    <span class="tablet">{{ job.job_price }} {{ job.currency }}</span>
-                    <span class="phone">{{ job.job_description|truncate_words_chars }}</span>
-                </div>
-                <div class="button-group">
-                    <a href="{% url 'jobs:edit_job' job.id %}" class="button phone">Edit</a>
-                    <a href="{% url 'jobs:view_job' job.id %}" class="button">View</a>
-                </div>
-            </li>
+        <li class="job-container {% if job.color == 'red' %}red-job{% elif job.color == 'orange' %}orange-job{% elif job.color == 'green' %}green-job{% else %}white-job{% endif %}">
+            <span class="customer-name">{{ job.customer_name|truncate_words_chars }}</span>
+            <div class="job-info">
+                <span class="slim">{{ job.job_date }}</span>
+                <span class="phone">{{ job.job_time|time_format }}</span>
+                <span class="tablet">{{ job.job_price }} {{ job.currency }}</span>
+                <span class="phone">{{ job.job_description|truncate_words_chars }}</span>
+            </div>
+            <div class="button-group">
+                <a href="{% url 'jobs:edit_job' job.id %}" class="button phone">Edit</a>
+                <a href="{% url 'jobs:view_job' job.id %}" class="button">View</a>
+            </div>
+        </li>
         {% empty %}
             <li>No upcoming jobs.</li>
         {% endfor %}
@@ -40,20 +40,19 @@
     <h2>Recent Jobs (Past 2 Days)</h2>
     <ul>
         {% for job in recent_jobs %}
-        <li class="job-container {% if job.is_completed %}completed-job{% else %}incomplete-job{% endif %}" data-job-date="{{ job.job_date }}" data-is-completed="{{ job.is_completed }}">
-        
-                <span class="customer-name">{{ job.customer_name|truncate_words_chars }}</span>
-                <div class="job-info">
-                    <span class="slim">{{ job.job_date }}</span>
-                    <span class="phone">{{ job.job_time|time_format }}</span>
-                    <span class="tablet">{{ job.job_price }} {{ job.currency }}</span>
-                    <span class="phone">{{ job.job_description|truncate_words_chars }}</span>
-                </div>
-                <div class="button-group">
-                    <a href="{% url 'jobs:edit_job' job.id %}" class="button phone">Edit</a>
-                    <a href="{% url 'jobs:view_job' job.id %}" class="button">View</a>
-                </div>
-            </li>
+        <li class="job-container {% if job.color == 'red' %}red-job{% elif job.color == 'orange' %}orange-job{% elif job.color == 'green' %}green-job{% else %}white-job{% endif %}">
+            <span class="customer-name">{{ job.customer_name|truncate_words_chars }}</span>
+            <div class="job-info">
+                <span class="slim">{{ job.job_date }}</span>
+                <span class="phone">{{ job.job_time|time_format }}</span>
+                <span class="tablet">{{ job.job_price }} {{ job.currency }}</span>
+                <span class="phone">{{ job.job_description|truncate_words_chars }}</span>
+            </div>
+            <div class="button-group">
+                <a href="{% url 'jobs:edit_job' job.id %}" class="button phone">Edit</a>
+                <a href="{% url 'jobs:view_job' job.id %}" class="button">View</a>
+            </div>
+        </li>
         {% empty %}
             <li>No recent jobs.</li>
         {% endfor %}

@@ -6,15 +6,41 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
     <link rel="stylesheet" href="{% static 'styles.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
     <div class="container smaller errors">
         <h2>Login</h2>
         <form method="post">
             {% csrf_token %}
-            {{ form.as_p }}
+            <div>
+                <label for="id_username">Username:</label>
+                {{ form.username }} 
+            </div>
+            <div class="password-container">
+                <label for="id_password">Password:</label>
+                {{ form.password }} 
+                <i class="fas fa-eye toggle-password" id="togglePassword"></i>
+            </div>
             <button type="submit" class="button">Login</button>
         </form>
+        <p><a href="{% url 'password_reset' %}">Forgot Password?</a></p>
     </div>
 </body>
+<script>
+    // Toggle password visability
+    const togglePassword = document.getElementById("togglePassword");
+    const passwordField = document.getElementById("id_password");
+
+    togglePassword.addEventListener("click", function () {
+        // Toggle the type attribute
+        const type =
+        passwordField.getAttribute("type") === "password" ? "text" : "password";
+        passwordField.setAttribute("type", type);
+
+        // Toggle the eye icon
+        this.classList.toggle("fa-eye");
+        this.classList.toggle("fa-eye-slash");
+    });
+</script>
 </html>

@@ -112,48 +112,48 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Checkbox toggle status
-  const csrfTokenElement = document.querySelector("[name=csrfmiddlewaretoken]");
-  const csrfToken = csrfTokenElement ? csrfTokenElement.value : null;
+  // // Checkbox toggle status
+  // const csrfTokenElement = document.querySelector("[name=csrfmiddlewaretoken]");
+  // const csrfToken = csrfTokenElement ? csrfTokenElement.value : null;
 
-  if (csrfToken) {
-    document.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
-      checkbox.addEventListener("change", function () {
-        const jobId = this.getAttribute("data-job-id");
-        const isCompleted = this.checked;
+  // if (csrfToken) {
+  //   document.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
+  //     checkbox.addEventListener("change", function () {
+  //       const jobId = this.getAttribute("data-job-id");
+  //       const isCompleted = this.checked;
 
-        console.log(
-          `Making request to /jobs/toggle_completed/${jobId}/ with CSRF token ${csrfToken}`
-        );
-        console.log(`/jobs/toggle_completed/${jobId}/`);
+  //       console.log(
+  //         `Making request to /jobs/toggle_completed/${jobId}/ with CSRF token ${csrfToken}`
+  //       );
+  //       console.log(`/jobs/toggle_completed/${jobId}/`);
 
-        fetch(`/jobs/toggle_completed/${jobId}/`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-CSRFToken": csrfToken,
-          },
-          body: JSON.stringify({ is_completed: isCompleted }),
-        })
-          .then((response) => {
-            console.log(response);
-            if (!response.ok) {
-              throw new Error(
-                `Network response was not ok: ${response.statusText}`
-              );
-            }
-            return response.json();
-          })
-          .then((data) => {
-            console.log("Success:", data);
-            updateJobClasses();
-          })
-          .catch((error) => {
-            console.error("Error:", error);
-          });
-      });
-    });
-  }
+  //       fetch(`/jobs/toggle_completed/${jobId}/`, {
+  //         method: "POST",
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //           "X-CSRFToken": csrfToken,
+  //         },
+  //         body: JSON.stringify({ is_completed: isCompleted }),
+  //       })
+  //         .then((response) => {
+  //           console.log(response);
+  //           if (!response.ok) {
+  //             throw new Error(
+  //               `Network response was not ok: ${response.statusText}`
+  //             );
+  //           }
+  //           return response.json();
+  //         })
+  //         .then((data) => {
+  //           console.log("Success:", data);
+  //           updateJobClasses();
+  //         })
+  //         .catch((error) => {
+  //           console.error("Error:", error);
+  //         });
+  //     });
+  //   });
+  // }
 
   updateJobClasses();
 
@@ -198,34 +198,34 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-// Change BG color for jobs
-function updateJobClasses() {
-  if (
-    window.location.pathname === "/past_jobs" ||
-    window.location.pathname === "/past_jobs.html"
-  ) {
-    const jobs = document.querySelectorAll(".job-container");
+// // Change BG color for jobs
+// function updateJobClasses() {
+//   if (
+//     window.location.pathname === "/past_jobs" ||
+//     window.location.pathname === "/past_jobs.html"
+//   ) {
+//     const jobs = document.querySelectorAll(".job-container");
 
-    jobs.forEach((job) => {
-      const isCompletedAttr = job.getAttribute("data-is-completed");
-      const isCompleted =
-        isCompletedAttr && isCompletedAttr.toLowerCase() === "true";
-      const jobDate = new Date(job.getAttribute("data-job-date"));
-      const now = new Date();
+//     jobs.forEach((job) => {
+//       const isCompletedAttr = job.getAttribute("data-is-completed");
+//       const isCompleted =
+//         isCompletedAttr && isCompletedAttr.toLowerCase() === "true";
+//       const jobDate = new Date(job.getAttribute("data-job-date"));
+//       const now = new Date();
 
-      if (jobDate > now) {
-        job.classList.add("future-job");
-        job.classList.remove("completed-job", "incomplete-job");
-      } else if (isCompleted) {
-        job.classList.add("completed-job");
-        job.classList.remove("incomplete-job", "future-job");
-      } else {
-        job.classList.add("incomplete-job");
-        job.classList.remove("completed-job", "future-job");
-      }
-    });
-  }
-}
+//       if (jobDate > now) {
+//         job.classList.add("future-job");
+//         job.classList.remove("completed-job", "incomplete-job");
+//       } else if (isCompleted) {
+//         job.classList.add("completed-job");
+//         job.classList.remove("incomplete-job", "future-job");
+//       } else {
+//         job.classList.add("incomplete-job");
+//         job.classList.remove("completed-job", "future-job");
+//       }
+//     });
+//   }
+// }
 
 function renderPieChart(
   chartId,

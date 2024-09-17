@@ -32,6 +32,9 @@ class Job(models.Model):
     job_description = models.TextField()
     no_of_passengers = models.IntegerField()
     kilometers = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    pick_up_location = models.CharField(max_length=255, null=True, blank=True)
+    drop_off_location = models.CharField(max_length=255, null=True, blank=True)
+    flight_number = models.CharField(max_length=50, null=True, blank=True)
 
     # Pricing Information
     job_price = models.DecimalField(max_digits=12, decimal_places=2)
@@ -78,6 +81,8 @@ class Job(models.Model):
 
     # Exchange Rate for Currency Conversion
     exchange_rate = models.DecimalField(max_digits=10, decimal_places=6, null=True, blank=True)
+    is_paid = models.BooleanField(default=False)  # Tracks if the job is paid
+    is_completed = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
         # Currency conversion first
@@ -131,3 +136,23 @@ class Job(models.Model):
                 rate = get_conversion_rate(self.driver_currency)
                 self.driver_fee_in_euros = (self.driver_fee * rate).quantize(Decimal('0.01'))
                 logger.debug(f"Converted driver fee {self.driver_fee} {self.driver_currency} to {self.driver_fee_in_euros} EUR using rate {rate}")
+
+        # Clear fuel cost in euros if fuel cost is None
+        if self.fuel_cost is None:
+            self.fuel_cost_in_euros = None
+        elif self.fuel_currency == 'EUR':
+            self.fuel_cost_in_euros = self.fuel_cost
+        else:
+            rate = get_conversion_rate(self.fuel_currency)
+            self.fuel_cost_in_euros = (self.fuel_cost * rate).quantize(Decimal('0.01'))
+            logger.debug(f"Converted fuel cost {self.fuel_cost} {self.fuel_currency} to {self.fuel_cost_in_euros} EUR using rate {rate}")
+        
+        # Clear driver fee in euros if driver fee is None
+        if self.driver_fee is None:
+            self.driver_fee_in_euros = None
+        elif self.driver_currency == 'EUR':
+            self.driver_fee_in_euros = self.driver_fee
+        else:
+            rate = get_conversion_rate(self.driver_currency)
+            self.driver_fee_in_euros = (self.driver_fee * rate).quantize(Decimal('0.01'))
+            logger.debug(f"Converted driver fee {self.driver_fee} {self.driver_currency} to {self.driver_fee_in_euros} EUR using rate {rate}")

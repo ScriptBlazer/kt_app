@@ -31,7 +31,8 @@ class JobForm(forms.ModelForm):
         fields = [
             'customer_name', 'customer_number', 'job_date', 'job_time',
             'job_description', 'no_of_passengers', 'vehicle_type', 'kilometers',
-            'payment_type', 'job_price', 'fuel_cost', 'driver_fee', 'driver_name',
+            'pick_up_location', 'drop_off_location', 'flight_number', 'payment_type',
+            'job_price', 'fuel_cost', 'driver_fee', 'driver_name',
             'number_plate', 'agent_name', 'agent_percentage', 'job_currency', 
             'fuel_currency', 'driver_currency'
         ]

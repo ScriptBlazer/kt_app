@@ -11,4 +11,5 @@ urlpatterns = [
     path('view/<int:job_id>/', views.view_job, name='view_job'),  
     path('delete/<int:job_id>/', views.delete_job, name='delete_job'), 
     path('toggle_completed/<int:job_id>/', views.toggle_completed, name='toggle_completed'),
+    path('jobs/update_status/<int:job_id>/', views.update_job_status, name='update_job_status'),
 ]

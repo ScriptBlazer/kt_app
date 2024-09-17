@@ -5,6 +5,7 @@ from decimal import Decimal
 from datetime import datetime
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
+from django.http import HttpResponseForbidden
 import pytz
 import json
 
@@ -36,8 +37,12 @@ def calculate_job_profit(job):
 
     return agent_fee_amount, profit
 
+
 @login_required
 def calculations(request):
+    if not request.user.is_superuser:
+        return HttpResponseForbidden(render(request, 'access_denied.html'))
+    
     now = timezone.now().astimezone(budapest_tz)
     current_year = now.year
     current_month = now.month
@@ -109,8 +114,12 @@ def calculations(request):
         'agent_totals': get_agent_totals(yearly_jobs),
     })
 
+
 @login_required
 def all_calculations(request):
+    if not request.user.is_superuser:
+        return HttpResponseForbidden(render(request, 'access_denied.html'))
+    
     # Fetch all jobs for the "all calculations" page
     all_jobs = Job.objects.all().order_by('job_date')
 

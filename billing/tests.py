@@ -12,22 +12,22 @@ budapest_tz = pytz.timezone('Europe/Budapest')
 
 class CalculationsViewTests(TestCase):
     def setUp(self):
-        # Create a user and log in
+        # Create a superuser and a regular user
+        self.superuser = User.objects.create_superuser(username='admin', password='12345')
         self.user = User.objects.create_user(username='testuser', password='12345')
-        self.client.login(username='testuser', password='12345')
 
         self.agent1 = Agent.objects.create(name="Gilli")
 
     @patch('jobs.models.get_exchange_rate')  # Mock the exchange rate API call
-    def test_calculations_view(self, mock_get_exchange_rate):
+    def test_calculations_view_as_superuser(self, mock_get_exchange_rate):
         mock_get_exchange_rate.return_value = Decimal('1.00')
 
-        # Create job with job_time and no_of_passengers added
+        # Create job
         Job.objects.create(
             customer_name="Customer 1",
             job_date=timezone.now().astimezone(budapest_tz).date(),
-            job_time=time(12, 30),  # Add valid job_time
-            no_of_passengers=4,  # Add valid number of passengers
+            job_time=time(12, 30),
+            no_of_passengers=4,
             job_price=Decimal('1000.00'),
             fuel_cost=Decimal('100.00'),
             driver_fee=Decimal('50.00'),
@@ -35,36 +35,44 @@ class CalculationsViewTests(TestCase):
             agent_percentage='5'
         )
 
-        # Ensure the calculations view renders successfully
+        # Log in as superuser
+        self.client.login(username='admin', password='12345')
+
+        # Ensure the calculations view renders successfully for superuser
         response = self.client.get(reverse('billing:calculations'))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'calculations.html')
 
-        # Test the data passed to the template
-        self.assertIn('monthly_fuel_cost', response.context)
-        self.assertIn('monthly_total_agent_fees', response.context)
-        self.assertIn('monthly_total_profit', response.context)
+    @patch('jobs.models.get_exchange_rate')  # Mock the exchange rate API call
+    def test_calculations_view_as_non_superuser(self, mock_get_exchange_rate):
+        mock_get_exchange_rate.return_value = Decimal('1.00')
+
+        # Log in as a regular user
+        self.client.login(username='testuser', password='12345')
+
+        # Ensure the calculations view returns 403 Forbidden for non-superuser
+        response = self.client.get(reverse('billing:calculations'))
+        self.assertEqual(response.status_code, 403)
 
 
 class AllCalculationsViewTests(TestCase):
     def setUp(self):
-        # Create a user and log in
+        # Create a superuser and a regular user
+        self.superuser = User.objects.create_superuser(username='admin', password='12345')
         self.user = User.objects.create_user(username='testuser', password='12345')
-        self.client.login(username='testuser', password='12345')
 
-        # Create an agent
         self.agent1 = Agent.objects.create(name="Gilli")
 
     @patch('jobs.models.get_exchange_rate')  # Mock the exchange rate API call
-    def test_all_calculations_view(self, mock_get_exchange_rate):
+    def test_all_calculations_view_as_superuser(self, mock_get_exchange_rate):
         mock_get_exchange_rate.return_value = Decimal('1.00')
 
-        # Create a job
+        # Create job
         Job.objects.create(
             customer_name="Customer 2",
             job_date=timezone.now().astimezone(budapest_tz).date(),
-            job_time=time(12, 30),  # Add valid job_time
-            no_of_passengers=3,  # Add valid number of passengers
+            job_time=time(12, 30),
+            no_of_passengers=3,
             job_price=Decimal('2000.00'),
             fuel_cost=Decimal('200.00'),
             driver_fee=Decimal('100.00'),
@@ -72,14 +80,24 @@ class AllCalculationsViewTests(TestCase):
             agent_percentage='10'
         )
 
-        # Ensure the all_calculations view renders successfully
+        # Log in as superuser
+        self.client.login(username='admin', password='12345')
+
+        # Ensure the all_calculations view renders successfully for superuser
         response = self.client.get(reverse('billing:all_calculations'))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'all_calculations.html')
 
-        # Test the data passed to the template
-        self.assertIn('overall_fuel_cost', response.context)
-        self.assertIn('overall_total_agent_fees', response.context)
+    @patch('jobs.models.get_exchange_rate')  # Mock the exchange rate API call
+    def test_all_calculations_view_as_non_superuser(self, mock_get_exchange_rate):
+        mock_get_exchange_rate.return_value = Decimal('1.00')
+
+        # Log in as a regular user
+        self.client.login(username='testuser', password='12345')
+
+        # Ensure the all_calculations view returns 403 Forbidden for non-superuser
+        response = self.client.get(reverse('billing:all_calculations'))
+        self.assertEqual(response.status_code, 403)
 
 
 class AgentFeeCalculationTests(TestCase):

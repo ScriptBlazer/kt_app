@@ -3,7 +3,7 @@ from django.utils import timezone
 from django.db.models import Q
 from jobs.models import Job, PaymentSettings
 from jobs.forms import JobForm
-from datetime import timedelta
+from datetime import timedelta, datetime
 import json
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
@@ -12,6 +12,7 @@ from django.contrib.auth.decorators import login_required
 from decimal import Decimal
 import logging
 import pytz
+from common.utils import assign_job_color
 
 logger = logging.getLogger('kt')
 
@@ -23,15 +24,25 @@ def home(request):
     now_hungary = timezone.now().astimezone(hungary_tz)
     two_days_ago = now_hungary - timedelta(days=2)
 
+    # Query for upcoming jobs
     upcoming_jobs = Job.objects.filter(
         Q(job_date__gt=now_hungary.date()) |
         (Q(job_date=now_hungary.date()) & Q(job_time__gt=now_hungary.time()))
     ).order_by('job_date', 'job_time')
 
+    # Query for recent jobs
     recent_jobs = Job.objects.filter(
         Q(job_date__lt=now_hungary.date()) |
         (Q(job_date=now_hungary.date()) & Q(job_time__lt=now_hungary.time()))
     ).filter(job_date__gte=two_days_ago.date()).order_by('-job_date', '-job_time')
+
+    # Assign colors to upcoming jobs
+    for job in upcoming_jobs:
+        job.color = assign_job_color(job, now_hungary)
+    
+    # Assign colors to recent jobs
+    for job in recent_jobs:
+        job.color = assign_job_color(job, now_hungary)
 
     return render(request, 'index.html', {
         'recent_jobs': recent_jobs,
@@ -112,19 +123,27 @@ def edit_job(request, job_id):
 
     return render(request, 'edit_job.html', {'job_form': job_form})
 
+
 @login_required
 def past_jobs(request):
-    now = timezone.now()
-    query = request.GET.get('q', '')
+    now = timezone.now()  # Get the current time
+    query = request.GET.get('q', '')  # Get the search query
 
     if query:
         past_jobs = Job.objects.filter(
-            Q(customer_name__icontains=query) |
-            Q(job_description__icontains=query),
-            job_date__lt=now
+            Q(customer_name__icontains=query) |  # Search by customer name
+            Q(customer_number__icontains=query) |  # Search by customer number
+            Q(job_description__icontains=query) |  # Search by job description
+            Q(pick_up_location__icontains=query),  # Search by pick up location (correct field)
+            job_date__lt=now  # Ensure the job is in the past
         ).order_by('-job_date')
     else:
+        # If no query, return all past jobs
         past_jobs = Job.objects.filter(job_date__lt=now).order_by('-job_date')
+
+    # Assign colors to past jobs
+    for job in past_jobs:
+        job.color = assign_job_color(job, now)  # Pass the current time (now)
 
     return render(request, 'past_jobs.html', {'past_jobs': past_jobs, 'query': query})
 
@@ -172,8 +191,37 @@ def delete_job(request, job_id):
 @require_POST
 def toggle_completed(request, job_id):
     logger.info(f"Toggle completed called for job_id: {job_id}")
+    
     job = get_object_or_404(Job, pk=job_id)
     data = json.loads(request.body)
     job.is_completed = data.get('is_completed', False)
     job.save()
-    return JsonResponse({'status': 'success'})
+    
+    # Pass the current time (or the correct time) to assign_job_color
+    now_hungary = timezone.now().astimezone(hungary_tz)
+    job_color = assign_job_color(job, now_hungary)
+    
+    return JsonResponse({
+        'status': 'success',
+        'color': job_color
+    })
+
+@login_required
+@require_POST
+def update_job_status(request, job_id):
+    job = get_object_or_404(Job, pk=job_id)
+
+    # Check if 'is_paid' checkbox was checked
+    job.is_paid = 'is_paid' in request.POST
+
+    # Check if 'is_completed' checkbox was checked (only if superuser)
+    if request.user.is_superuser:
+        job.is_completed = 'is_completed' in request.POST
+
+    # Save the updated job
+    job.save()
+
+    # Redirect back to the job view or any other page after updating
+    return redirect('jobs:view_job', job_id=job.id)
+
+

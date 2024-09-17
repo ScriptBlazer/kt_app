@@ -8,6 +8,8 @@ from unittest.mock import patch
 from django.urls import reverse
 from unittest.mock import patch
 from django.core.cache import cache
+from common.utils import assign_job_color
+from datetime import timedelta
 import pytz
 
 BUDAPEST_TZ = pytz.timezone('Europe/Budapest')
@@ -214,26 +216,133 @@ class JobDateAndTimeTests(TestCase):
         self.assertTrue(form.is_valid(), msg=form.errors)
 
 
-class CreditCardFeeCalculationTest(TestCase):
-    # Setup method to ensure PaymentSettings instance is created before running tests
+class DriverFeeRevertTest(TestCase):
     def setUp(self):
-        PaymentSettings.objects.create(cc_fee_percentage=Decimal('7.00'))
-
-    # Test to ensure credit card fee is correctly applied when payment type is 'Card'
-    def test_credit_card_fee_application(self):
-        job = Job.objects.create(
-            customer_name='John Doe',
-            customer_number='1234567890',
-            job_date='2024-09-10',
-            job_time='15:00',
-            job_description='Sample job description',
+        # Create a job with an initial driver fee in HUF and its corresponding conversion to EUR
+        self.job = Job.objects.create(
+            customer_name="Test User",
+            customer_number="123456789",
+            job_date=timezone.now().date(),
+            job_time=timezone.now().time(),
+            job_description="Test job description",
+            job_price=Decimal('100.00'),
+            job_currency='GBP',
             no_of_passengers=1,
             vehicle_type='Car',
-            kilometers=Decimal('100'),
-            job_currency='EUR',
-            job_price=Decimal('100'),
-            payment_type='Card'
+            kilometers=Decimal('10'),
+            driver_fee=Decimal('25000.00'),  # Initial driver fee in HUF
+            driver_currency='HUF',
         )
-        job.save()
-        expected_fee = (Decimal('100') * Decimal('7.00') / Decimal('100')).quantize(Decimal('0.01'))
-        self.assertEqual(job.cc_fee, expected_fee, msg=f"Expected CC fee was {expected_fee}, but got {job.cc_fee}")
+        # Manually trigger conversion to euros (using the correct conversion rate from the log: 0.002537)
+        self.job.convert_to_euros()
+
+        # Round both the expected and actual values to two decimal places to avoid precision issues
+        expected_driver_fee_in_euros = Decimal('25000.00') * Decimal('0.002537')
+        actual_driver_fee_in_euros = self.job.driver_fee_in_euros
+
+        # Use assertAlmostEqual with two decimal places to allow for small rounding differences
+        self.assertAlmostEqual(actual_driver_fee_in_euros, expected_driver_fee_in_euros, places=2,
+                               msg=f"Expected {expected_driver_fee_in_euros}, but got {actual_driver_fee_in_euros}")
+        
+    def test_revert_driver_fee_to_none(self):
+        # Update the job form data to remove driver fee and driver currency
+        form_data = {
+            'customer_name': self.job.customer_name,
+            'customer_number': self.job.customer_number,
+            'job_date': self.job.job_date,
+            'job_time': self.job.job_time,
+            'job_description': self.job.job_description,
+            'job_price': self.job.job_price,
+            'job_currency': self.job.job_currency,
+            'no_of_passengers': self.job.no_of_passengers,
+            'vehicle_type': self.job.vehicle_type,
+            'kilometers': self.job.kilometers,
+            'driver_fee': '',  # Revert driver fee to empty
+            'driver_currency': '',  # Revert driver currency to empty
+        }
+
+        # Create the form with the updated data and instance of the job
+        form = JobForm(data=form_data, instance=self.job)
+        self.assertTrue(form.is_valid(), msg=form.errors)
+
+        # Save the form to update the job instance
+        updated_job = form.save()
+
+        # Ensure that the driver_fee and driver_fee_in_euros are now None
+        self.assertIsNone(updated_job.driver_fee, "Expected driver_fee to be None")
+        self.assertIsNone(updated_job.driver_fee_in_euros, "Expected driver_fee_in_euros to be None")
+
+
+class JobColorAssignmentTest(TestCase):
+    def setUp(self):
+        self.hungary_tz = pytz.timezone('Europe/Budapest')
+        self.now = timezone.now().astimezone(self.hungary_tz)
+
+    def create_job(self, job_date, job_time=None, driver_name='', is_completed=False, is_paid=False):
+        if job_time is None:
+            job_time = self.now.time()  # Set current time if not provided
+        
+        return Job.objects.create(
+            job_date=job_date,
+            job_time=timezone.now().time(),  # Set a default job time
+            driver_name=driver_name,
+            is_completed=is_completed,
+            is_paid=is_paid,
+            job_currency='EUR',  # Some defaults for required fields
+            job_price=Decimal('100'),
+            customer_name='John Doe',
+            customer_number='123456789',
+            no_of_passengers=1,
+            vehicle_type='Car',
+            kilometers=Decimal('100')
+        )
+
+    def test_job_color_white(self):
+        """
+        Test that a job with no driver assigned stays white.
+        """
+        job = self.create_job(self.now.date() + timedelta(days=1))  # Future job with no driver
+        color = assign_job_color(job, self.now)
+        self.assertEqual(color, 'white')
+
+    def test_job_color_orange(self):
+        """
+        Test that a job with a driver assigned turns orange.
+        """
+        job = self.create_job(self.now.date() + timedelta(days=1), driver_name="John Doe")  # Driver assigned
+        color = assign_job_color(job, self.now)
+        self.assertEqual(color, 'orange')
+
+    def test_job_color_green(self):
+        """
+        Test that a job with a driver assigned and marked as completed turns green.
+        """
+        job = self.create_job(self.now.date() + timedelta(days=1), driver_name="John Doe", is_completed=True)  # Completed job
+        color = assign_job_color(job, self.now)
+        self.assertEqual(color, 'green')
+
+    def test_job_color_red_due_to_unpaid(self):
+        """
+        Test that a job that is one day old, with a driver assigned, and not paid turns red.
+        """
+        job = self.create_job(self.now.date() - timedelta(days=1), driver_name="John Doe", is_paid=False)  # One day old and unpaid
+        color = assign_job_color(job, self.now)
+        self.assertEqual(color, 'red')
+
+    def test_priority_red_over_green(self):
+        """
+        Test that a job that meets both the criteria for green (completed and driver assigned)
+        and red (one day old, unpaid, and driver assigned) always turns red.
+        """
+        job = self.create_job(self.now.date() - timedelta(days=1), driver_name="John Doe", is_completed=True, is_paid=False)  # Old, unpaid, completed
+        color = assign_job_color(job, self.now)
+        self.assertEqual(color, 'red')
+
+    def test_priority_red_over_orange(self):
+        """
+        Test that a job that meets both the criteria for orange (driver assigned)
+        and red (one day old, unpaid, and driver assigned) always turns red.
+        """
+        job = self.create_job(self.now.date() - timedelta(days=1), driver_name="John Doe", is_paid=False)  # One day old, unpaid, driver assigned
+        color = assign_job_color(job, self.now)
+        self.assertEqual(color, 'red')

@@ -3,6 +3,7 @@ from django.conf import settings
 from decimal import Decimal
 import requests
 from django.utils import timezone
+from datetime import timedelta
 import pytz
 import logging
 
@@ -58,3 +59,28 @@ def get_exchange_rate(currency):
         rate = fetch_and_cache_exchange_rate(currency)
 
     return rate
+
+
+def assign_job_color(job, now):
+    """
+    Assigns color to a job based on its status and conditions.
+    - White: Until the driver name is not empty.
+    - Orange: If the driver is assigned.
+    - Green: If the job is marked as completed and the driver is assigned.
+    - Red: If the job is one day old, the driver is assigned, and the customer has not paid.
+    """
+    # Check if the driver is assigned
+    if not job.driver_name:
+        return 'white'  # No driver assigned yet
+    
+    # Check if the job is one day old and the customer has not paid
+    one_day_ago = now - timedelta(days=1)
+    if job.job_date <= one_day_ago.date() and job.is_paid == False:
+        return 'red'  # Job is old, driver assigned, and customer hasn't paid
+    
+    # Check if the job is completed and the driver is assigned
+    if job.is_completed:
+        return 'green'  # Job is completed, driver is assigned
+    
+    # Default case when driver is assigned but job is not completed
+    return 'orange'

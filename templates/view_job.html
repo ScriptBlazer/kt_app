@@ -16,9 +16,12 @@
     <p><strong>Customer Number:</strong> {{ job.customer_number|default_if_none:"" }}</p>
     <p><strong>Job Date:</strong> {{ job.job_date|default_if_none:"" }}</p>
     <p><strong>Job Time:</strong> {{ job.job_time|time_format|default_if_none:"" }}</p>
+    <p><strong>Pick-up Location:</strong> {{ job.pick_up_location|default_if_none:"" }}</p>
+    <p><strong>Drop-off Location:</strong> {{ job.drop_off_location|default_if_none:"" }}</p>
     <p><strong>Job Description:</strong> {{ job.job_description|default_if_none:"" }}</p>
     <p><strong>No of Passengers:</strong> {{ job.no_of_passengers|default_if_none:"" }}</p>
     <p><strong>Vehicle Type:</strong> {{ job.vehicle_type|default_if_none:"" }}</p>
+    <p><strong>Drop-off Location:</strong> {{ job.drop_off_location|default_if_none:"" }}</p>
     <p><strong>Kilometers:</strong> {{ calculation.kilometers|default_if_none:"" }}</p>
     <p><strong>Payment Type:</strong> {{ job.payment_type|default_if_none:"" }}</p>
     <p>
@@ -46,7 +49,7 @@
         {% endif %}
     </p>
 
-    <p>
+    <!-- <p>
         <strong>Fuel Cost:</strong> 
         {% if job.fuel_cost_in_euros %}
             €{{ job.fuel_cost_in_euros }}  
@@ -54,7 +57,7 @@
                 ({% if job.fuel_currency == 'GBP' %}£{% elif job.fuel_currency == 'USD' %}${% elif job.fuel_currency == 'HUF' %}Ft {% else %}{{ job.fuel_currency }}{% endif %}{{ job.fuel_cost }})
             {% endif %}
         {% endif %}
-    </p>
+    </p> -->
     
     <p>
         <strong>Driver Fee:</strong> 
@@ -71,14 +74,26 @@
     <p><strong>Agent Name:</strong> {{ job.agent_name.name|default_if_none:"" }}</p>
     <p><strong>Agent Fee:</strong> {% if job.agent_percentage %}{{ job.agent_percentage }}%{% endif %}</p>
 
-    <p><strong>Job Completed:</strong> 
-        <input class="sbig" type="checkbox" id="is_completed" data-job-id="{{ job.id }}" {% if job.is_completed %}checked{% endif %}>
-    </p>
+    <form method="POST" action="{% url 'jobs:update_job_status' job.id %}">
+        {% csrf_token %}
+        <p><strong>Customer Paid:</strong> 
+            <input class="sbig" type="checkbox" id="is_paid" name="is_paid" {% if job.is_paid %}checked{% endif %}>
+        </p>
+    
+        {% if user.is_superuser %}
+        <p><strong>All Paid (Job Completed):</strong> 
+            <input class="sbig" type="checkbox" id="is_completed" name="is_completed" {% if job.is_completed %}checked{% endif %}>
+        </p>
+        {% endif %}
+    
+        <button type="submit" class="button">Update Status</button>
+    </form>
 
     <div class="button-group">
         <a href="{% url 'jobs:edit_job' job.id %}" class="button">Edit</a>
         <a href="{% url 'jobs:delete_job' job.id %}" class="button cancel-button">Delete</a>
     </div>
+    
 </div>
 {% endblock %}
 
