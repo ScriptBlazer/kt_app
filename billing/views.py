@@ -15,7 +15,6 @@ budapest_tz = pytz.timezone('Europe/Budapest')
 def calculate_job_profit(job):
     # Initialize values
     job_price = job.job_price_in_euros or Decimal('0.00')
-    fuel_cost = job.fuel_cost_in_euros or Decimal('0.00')
     driver_fee = job.driver_fee_in_euros or Decimal('0.00')
     
     # Calculate agent fee and profit based on agent percentage
@@ -24,16 +23,16 @@ def calculate_job_profit(job):
 
     if job.agent_percentage == '5':
         agent_fee_amount = job_price * Decimal('0.05')
-        profit = job_price - agent_fee_amount - fuel_cost - driver_fee
+        profit = job_price - agent_fee_amount - driver_fee
     elif job.agent_percentage == '10':
         agent_fee_amount = job_price * Decimal('0.10')
-        profit = job_price - agent_fee_amount - fuel_cost - driver_fee
+        profit = job_price - agent_fee_amount - driver_fee
     elif job.agent_percentage == '50':
-        profit_before_agent = job_price - fuel_cost - driver_fee
+        profit_before_agent = job_price - driver_fee
         agent_fee_amount = profit_before_agent * Decimal('0.50')
         profit = profit_before_agent - agent_fee_amount
     else:
-        profit = job_price - fuel_cost - driver_fee
+        profit = job_price - driver_fee
 
     return agent_fee_amount, profit
 
@@ -52,7 +51,6 @@ def calculations(request):
     yearly_jobs = Job.objects.filter(job_date__year=current_year).order_by('-job_date')
 
     # Monthly calculations
-    monthly_fuel_cost = monthly_jobs.aggregate(Sum('fuel_cost_in_euros'))['fuel_cost_in_euros__sum'] or Decimal('0.00')
     monthly_total_driver_fees = monthly_jobs.aggregate(Sum('driver_fee_in_euros'))['driver_fee_in_euros__sum'] or Decimal('0.00')
     
     monthly_total_agent_fees = Decimal('0.00')
@@ -67,7 +65,6 @@ def calculations(request):
             'customer_name': job.customer_name,
             'job_date': job.job_date,
             'job_price': job.job_price_in_euros,
-            'fuel_cost': job.fuel_cost_in_euros,
             'driver_fee': job.driver_fee_in_euros,
             'agent_name': job.agent_name,
             'agent_fee': job.agent_percentage,
@@ -76,7 +73,6 @@ def calculations(request):
         })
 
     # Yearly calculations
-    yearly_fuel_cost = yearly_jobs.aggregate(Sum('fuel_cost_in_euros'))['fuel_cost_in_euros__sum'] or Decimal('0.00')
     yearly_total_driver_fees = yearly_jobs.aggregate(Sum('driver_fee_in_euros'))['driver_fee_in_euros__sum'] or Decimal('0.00')
 
     yearly_total_agent_fees = Decimal('0.00')
@@ -91,7 +87,6 @@ def calculations(request):
             'customer_name': job.customer_name,
             'job_date': job.job_date,
             'job_price': job.job_price_in_euros,
-            'fuel_cost': job.fuel_cost_in_euros,
             'driver_fee': job.driver_fee_in_euros,
             'agent_name': job.agent_name,
             'agent_fee': job.agent_percentage,
@@ -102,11 +97,9 @@ def calculations(request):
     # Render the template with context
     return render(request, 'calculations.html', {
         'now': now,
-        'monthly_fuel_cost': monthly_fuel_cost,
         'monthly_total_agent_fees': monthly_total_agent_fees,
         'monthly_total_driver_fees': monthly_total_driver_fees,
         'monthly_total_profit': monthly_total_profit,
-        'yearly_fuel_cost': yearly_fuel_cost,
         'yearly_total_agent_fees': yearly_total_agent_fees,
         'yearly_total_driver_fees': yearly_total_driver_fees,
         'yearly_total_profit': yearly_total_profit,
@@ -123,7 +116,6 @@ def all_calculations(request):
     # Fetch all jobs for the "all calculations" page
     all_jobs = Job.objects.all().order_by('job_date')
 
-    overall_fuel_cost = all_jobs.aggregate(Sum('fuel_cost_in_euros'))['fuel_cost_in_euros__sum'] or Decimal('0.00')
     overall_total_driver_fees = all_jobs.aggregate(Sum('driver_fee_in_euros'))['driver_fee_in_euros__sum'] or Decimal('0.00')
 
     overall_total_agent_fees = Decimal('0.00')
@@ -138,7 +130,6 @@ def all_calculations(request):
             'customer_name': job.customer_name,
             'job_date': job.job_date,
             'job_price': job.job_price_in_euros,
-            'fuel_cost': job.fuel_cost_in_euros,
             'driver_fee': job.driver_fee_in_euros,
             'agent_name': job.agent_name,
             'agent_fee': job.agent_percentage,
@@ -148,25 +139,23 @@ def all_calculations(request):
 
     # Prepare the chart data
     job_dates = [job.job_date.strftime("%Y-%m-%d") for job in all_jobs]  # Convert dates to strings
-    fuel_costs = [float(job.fuel_cost_in_euros) if job.fuel_cost_in_euros is not None else 0.0 for job in all_jobs]  # Convert Decimal to float, or use 0.0
     agent_fees = [float(calculate_job_profit(job)[0]) if calculate_job_profit(job)[0] is not None else 0.0 for job in all_jobs]  # Convert Decimal to float, or use 0.0
     driver_fees = [float(job.driver_fee_in_euros) if job.driver_fee_in_euros is not None else 0.0 for job in all_jobs]  # Convert Decimal to float, or use 0.0
     profits = [float(calculate_job_profit(job)[1]) if calculate_job_profit(job)[1] is not None else 0.0 for job in all_jobs]  # Convert Decimal to float, or use 0.0
 
     # Render the template with context
     return render(request, 'all_calculations.html', {
-        'overall_fuel_cost': overall_fuel_cost,
         'overall_total_agent_fees': overall_total_agent_fees,
         'overall_total_driver_fees': overall_total_driver_fees,
         'overall_total_profit': overall_total_profit,
         'job_breakdowns': all_job_breakdowns,  # Breakdown by job for the table
         'agent_totals': get_agent_totals(all_jobs),
         'job_dates': json.dumps(job_dates),  # Make sure it's serialized properly
-        'fuel_costs': json.dumps(fuel_costs),
         'agent_fees': json.dumps(agent_fees),
         'driver_fees': json.dumps(driver_fees),
         'profits': json.dumps(profits),
     })
+
 
 def get_agent_totals(jobs):
     # Calculate agent totals for each agent

@@ -18,7 +18,7 @@
                         <canvas id="monthlyChart"></canvas>
                     </div>
                     <div class="totals-text">
-                        <p>Total Fuel Cost for {{ now|date:"F Y" }}: <strong>€{{ monthly_fuel_cost|floatformat:2 }}</strong></p>
+                        <!-- <p>Total Fuel Cost for {{ now|date:"F Y" }}: <strong>€{{ monthly_fuel_cost|floatformat:2 }}</strong></p> -->
                         <p>Total Agent Fees for {{ now|date:"F Y" }}: <strong>€{{ monthly_total_agent_fees|floatformat:2 }}</strong></p>
                         <p>Total Driver Fees for {{ now|date:"F Y" }}: <strong>€{{ monthly_total_driver_fees|floatformat:2 }}</strong></p>
                         <p>Total Profit for {{ now|date:"F Y" }}: <strong>€{{ monthly_total_profit|floatformat:2 }}</strong></p>
@@ -31,7 +31,7 @@
                         <canvas id="yearlyChart"></canvas>
                     </div>
                     <div class="totals-text">
-                        <p>Total Fuel Cost for {{ now.year }}: <strong>€{{ yearly_fuel_cost|floatformat:2 }}</strong></p>
+                        <!-- <p>Total Fuel Cost for {{ now.year }}: <strong>€{{ yearly_fuel_cost|floatformat:2 }}</strong></p> -->
                         <p>Total Agent Fees for {{ now.year }}: <strong>€{{ yearly_total_agent_fees|floatformat:2 }}</strong></p>
                         <p>Total Driver Fees for {{ now.year }}: <strong>€{{ yearly_total_driver_fees|floatformat:2 }}</strong></p>
                         <p>Total Profit for {{ now.year }}: <strong>€{{ yearly_total_profit|floatformat:2 }}</strong></p>
@@ -46,7 +46,7 @@
                         <th>Customer Name</th>
                         <th>Job Date</th>
                         <th>Job Price</th>
-                        <th class="tablet">Fuel Cost</th>
+                        <!-- <th class="tablet">Fuel Cost</th> -->
                         <th class="tablet">Driver Fee</th>
                         <th>Agent Name</th>
                         <th>Agent Fee</th>
@@ -60,12 +60,12 @@
                             <td>{{ job.customer_name|truncate_words_chars }}</td>
                             <td>{{ job.job_date }}</td>
                             <td>€{{ job.job_price|floatformat:2 }}</td>
-                            <td class="tablet">
+                            <!-- <td class="tablet">
                                 {% if job.fuel_cost %}
                                     €{{ job.fuel_cost|floatformat:2 }}
                                 {% else %}
                                 {% endif %}
-                            </td>
+                            </td> -->
                             <td class="tablet">
                                 {% if job.driver_fee %}
                                     €{{ job.driver_fee|floatformat:2 }}
