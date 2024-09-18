@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Add Expense{% endblock %}
+
+{% block content %}
+<div class="container">
+
+    <h1>Add New Expense</h1>
+    <br>
+    <form method="POST">
+        {% csrf_token %}
+
+        <div class="form-group-inline">
+            <div class="field-wrapper">
+                {{ form.driver.label_tag }}<br>
+                {{ form.driver }}
+            </div>
+            <div class="field-wrapper">
+                {{ form.expense_type.label_tag }}<br>
+                {{ form.expense_type }}
+            </div>
+        </div>
+
+        <div class="form-group-inline">
+            <div class="field-wrapper">
+                {{ form.expense_amount.label_tag }}<br>
+                {{ form.expense_amount }}
+            </div>
+            <div class="field-wrapper">
+                {{ form.expense_currency.label_tag }}<br>
+                {{ form.expense_currency }}
+            </div>
+        </div>
+        <div class="form-group-inline">
+            <div class="field-wrapper">
+                {{ form.expense_date.label_tag }}<br>
+                {{ form.expense_date }}
+            </div>
+            <div class="field-wrapper">
+                {{ form.expense_time.label_tag }}<br>
+                {{ form.expense_time }}
+            </div>
+        </div>
+
+        <div class="field-wrapper">
+            {{ form.expense_notes.label_tag }}<br>
+            {{ form.expense_notes }}
+        </div>
+
+        <div class="button-group">
+            <button type="submit" class="button">Add Expense</button>
+            <a href="{% url 'expenses:expenses' %}" class="button cancel-button">Cancel</a>
+        </div>
+    </form>
+
+    {% if form.errors %}
+        <div class="errors">
+            <h2>Form Errors:</h2>
+            <ul>
+                {% for field in form %}
+                    {% if field.errors %}
+                        <li>{{ field.label }}: {{ field.errors|striptags }}</li>
+                    {% endif %}
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'script.js' %}"></script>
+{% endblock %}

@@ -21,9 +21,12 @@
                         </div>
                         <div class="overall_totals-text">
                             <p>Overall Total Fuel Cost: <strong>€{{ overall_fuel_cost|floatformat:2 }}</strong></p>
+                            <p>Overall Total Repair Cost: <strong>€{{ overall_repair_cost|floatformat:2 }}</strong></p>
+                            <p>Overall Total Wages: <strong>€{{ overall_wages_cost|floatformat:2 }}</strong></p>
                             <p>Overall Total Agent Fees: <strong>€{{ overall_total_agent_fees|floatformat:2 }}</strong></p>
                             <p>Overall Total Driver Fees: <strong>€{{ overall_total_driver_fees|floatformat:2 }}</strong></p>
-                            <p>Overall Total Profit: <strong>€{{ overall_total_profit|floatformat:2 }}</strong></p>
+                            <p>Total Profit from Jobs: <strong>€{{ total_job_profit|floatformat:2 }}</strong></p>
+                            <p>Overall Profit (After Expenses): <strong>€{{ overall_total_profit|floatformat:2 }}</strong></p>
                         </div>
                     </div>
                 </div>
@@ -112,48 +115,64 @@
 {% block extra_scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+
 <script>
+    // Setting up the chart data as global variables
+    window.jobDates = {{ job_dates|safe }};
+    window.fuelCosts = {{ fuel_costs|safe }};
+    window.agentFees = {{ agent_fees|safe }};
+    window.driverFees = {{ driver_fees|safe }};
+    window.profits = {{ profits|safe }};
+    window.repairCosts = {{ repair_costs|safe }};  // New repair costs data
+    window.wages = {{ wages_cost|safe }};  // New wages data
+
     document.addEventListener("DOMContentLoaded", () => {
         const ctx = document.getElementById('lineChart').getContext('2d');
-        const lineChart = new Chart(ctx, {
+        new Chart(ctx, {
             type: 'line',
             data: {
-                labels: {{ job_dates|safe }},
+                labels: window.jobDates,
                 datasets: [
                     {
                         label: 'Fuel Cost',
-                        data: {{ fuel_costs|safe }},
+                        data: window.fuelCosts,
                         borderColor: 'rgba(255, 99, 132, 1)',
                         backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                        pointRadius: 2,
-                        pointHoverRadius: 5,
                         fill: false
                     },
                     {
                         label: 'Agent Fees',
-                        data: {{ agent_fees|safe }},
+                        data: window.agentFees,
                         borderColor: 'rgba(54, 162, 235, 1)',
                         backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                        pointRadius: 2,
-                        pointHoverRadius: 5,
                         fill: false
                     },
                     {
                         label: 'Driver Fees',
-                        data: {{ driver_fees|safe }},
+                        data: window.driverFees,
                         borderColor: 'rgba(255, 206, 86, 1)',
                         backgroundColor: 'rgba(255, 206, 86, 0.2)',
-                        pointRadius: 2,
-                        pointHoverRadius: 5,
                         fill: false
                     },
                     {
                         label: 'Profit',
-                        data: {{ profits|safe }},
+                        data: window.profits,
                         borderColor: 'rgba(75, 192, 192, 1)',
                         backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                        pointRadius: 2,
-                        pointHoverRadius: 5,
+                        fill: false
+                    },
+                    {
+                        label: 'Repair Costs',
+                        data: window.repairCosts,
+                        borderColor: 'rgba(153, 102, 255, 1)',
+                        backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                        fill: false
+                    },
+                    {
+                        label: 'Wages',
+                        data: window.wages,
+                        borderColor: 'rgba(255, 159, 64, 1)',
+                        backgroundColor: 'rgba(255, 159, 64, 0.2)',
                         fill: false
                     }
                 ]

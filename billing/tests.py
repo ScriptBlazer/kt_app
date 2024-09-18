@@ -100,6 +100,116 @@ class AllCalculationsViewTests(TestCase):
         self.assertEqual(response.status_code, 403)
 
 
+class BillingCalculationsTests(TestCase):
+    def setUp(self):
+        # Create a superuser and a regular user
+        self.superuser = User.objects.create_superuser(username='admin', password='12345')
+        self.user = User.objects.create_user(username='testuser', password='12345')
+
+        self.agent1 = Agent.objects.create(name="Gilli")
+
+    def create_job(self, **kwargs):
+        """Helper function to create a job."""
+        return Job.objects.create(
+            customer_name=kwargs.get("customer_name", "Customer"),
+            job_date=kwargs.get("job_date", timezone.now().astimezone(budapest_tz).date()),
+            job_time=kwargs.get("job_time", time(12, 30)),
+            job_price=kwargs.get("job_price", Decimal('1000.00')),
+            driver_fee=kwargs.get("driver_fee", Decimal('100.00')),
+            agent_name=self.agent1,
+            agent_percentage=kwargs.get("agent_percentage", "5"),
+            no_of_passengers=kwargs.get("no_of_passengers", 4),
+            job_currency="EUR",  # Ensure EUR is used in the tests to avoid conversion issues
+        )
+
+    @patch('jobs.models.get_exchange_rate')  # Mock the exchange rate API call
+    @patch('billing.views.calculate_agent_fee_and_profit')  # Mock the fee and profit calculation
+    def test_monthly_overall_profit(self, mock_calculate_agent_fee_and_profit, mock_get_exchange_rate):
+        # Mock the exchange rate and profit calculation
+        mock_get_exchange_rate.return_value = Decimal('1.00')
+        mock_calculate_agent_fee_and_profit.return_value = (Decimal('100.00'), Decimal('800.00'))
+
+        # Create jobs for the current month
+        self.create_job(job_price=Decimal('1200.00'), driver_fee=Decimal('200.00'), agent_percentage='10')
+        self.create_job(job_price=Decimal('1500.00'), driver_fee=Decimal('250.00'), agent_percentage='10')
+
+        # Log in as superuser
+        self.client.login(username='admin', password='12345')
+
+        # Access the calculations view
+        response = self.client.get(reverse('billing:calculations'))
+        self.assertEqual(response.status_code, 200)
+
+        # Check for correct overall profit after expenses
+        self.assertContains(response, '€1600.00')   # Mocked monthly overall profit from jobs
+        self.assertContains(response, '€200.00')    # Mocked total agent fees
+
+    @patch('jobs.models.get_exchange_rate')  # Mock the exchange rate API call
+    @patch('billing.views.calculate_agent_fee_and_profit')  # Mock the fee and profit calculation
+    def test_yearly_overall_profit(self, mock_calculate_agent_fee_and_profit, mock_get_exchange_rate):
+        # Mock the exchange rate and profit calculation
+        mock_get_exchange_rate.return_value = Decimal('1.00')
+        mock_calculate_agent_fee_and_profit.return_value = (Decimal('100.00'), Decimal('800.00'))
+
+        # Create jobs for the current year
+        self.create_job(job_price=Decimal('2000.00'), driver_fee=Decimal('300.00'), agent_percentage='10')
+        self.create_job(job_price=Decimal('2500.00'), driver_fee=Decimal('400.00'), agent_percentage='10')
+
+        # Log in as superuser
+        self.client.login(username='admin', password='12345')
+
+        # Access the all calculations view
+        response = self.client.get(reverse('billing:all_calculations'))
+        self.assertEqual(response.status_code, 200)
+
+        # Check for correct overall yearly profit after expenses
+        self.assertContains(response, '€1600.00')   # Mocked yearly overall profit from jobs
+        self.assertContains(response, '€200.00')    # Mocked total agent fees
+
+    @patch('jobs.models.get_exchange_rate')  # Mock the exchange rate API call
+    @patch('billing.views.calculate_agent_fee_and_profit')  # Mock the fee and profit calculation
+    def test_monthly_totals_display(self, mock_calculate_agent_fee_and_profit, mock_get_exchange_rate):
+        # Mock the exchange rate and profit calculation
+        mock_get_exchange_rate.return_value = Decimal('1.00')
+        mock_calculate_agent_fee_and_profit.return_value = (Decimal('75.00'), Decimal('675.00'))
+
+        # Create a job for the current month
+        self.create_job(job_price=Decimal('1000.00'), driver_fee=Decimal('100.00'), agent_percentage='5')
+
+        # Log in as superuser
+        self.client.login(username='admin', password='12345')
+
+        # Access the calculations view
+        response = self.client.get(reverse('billing:calculations'))
+        self.assertEqual(response.status_code, 200)
+
+        # Check for correct totals display
+        self.assertContains(response, '€675.00')  # Mocked total job profit
+        self.assertContains(response, '€75.00')   # Mocked agent fees
+
+    @patch('jobs.models.get_exchange_rate')  # Mock the exchange rate API call
+    @patch('billing.views.calculate_agent_fee_and_profit')  # Mock the fee and profit calculation
+    def test_yearly_totals_display(self, mock_calculate_agent_fee_and_profit, mock_get_exchange_rate):
+        # Mock the exchange rate and profit calculation
+        mock_get_exchange_rate.return_value = Decimal('1.00')
+        mock_calculate_agent_fee_and_profit.return_value = (Decimal('100.00'), Decimal('900.00'))
+
+        # Create jobs for the year
+        self.create_job(job_price=Decimal('2000.00'), driver_fee=Decimal('300.00'), agent_percentage='10')
+        self.create_job(job_price=Decimal('2500.00'), driver_fee=Decimal('400.00'), agent_percentage='10')
+
+        # Log in as superuser
+        self.client.login(username='admin', password='12345')
+
+        # Access the all calculations view
+        response = self.client.get(reverse('billing:all_calculations'))
+        self.assertEqual(response.status_code, 200)
+
+        # Check for correct yearly totals display
+        self.assertContains(response, '€1800.00')  # Mocked total job profit
+        self.assertContains(response, '€200.00')   # Mocked agent fees
+
+
 class AgentFeeCalculationTests(TestCase):
     def setUp(self):
         self.agent1 = Agent.objects.create(name="Gilli")

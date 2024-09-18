@@ -13,3 +13,10 @@ def truncate_words_chars(value):
     if len(truncated) > 22:
         truncated = truncated[:12] + '...'  # Limit to 12 characters
     return truncated
+
+@register.filter
+def get(dictionary, key):
+    """Get value from dictionary for the given key."""
+    if isinstance(dictionary, dict):
+        return dictionary.get(key)
+    return None  

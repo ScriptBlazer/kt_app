@@ -8,37 +8,43 @@
         <div class="container">
             <br>
             <a href="{% url 'home' %}" class="button">Back to Home</a>
+            <a href="{% url 'billing:all_calculations' %}" class="button">View All Jobs</a>
             <br><br>
             <h1>Calculations for {{ now.year }}</h1>
             
             <div class="row">
                 <div class="column">
                     <h2>Monthly Totals</h2>
-                    <div class="chart-container">
+                    <!-- <div class="chart-container">
                         <canvas id="monthlyChart"></canvas>
-                    </div>
+                    </div> -->
                     <div class="totals-text">
-                        <!-- <p>Total Fuel Cost for {{ now|date:"F Y" }}: <strong>€{{ monthly_fuel_cost|floatformat:2 }}</strong></p> -->
+                        <p>Total Profit from Jobs for {{ now|date:"F Y" }}: <strong>€{{ total_job_profit|floatformat:2 }}</strong></p>
+                        <p>Total Fuel Cost for {{ now|date:"F Y" }}: <strong>€{{ monthly_fuel_cost|floatformat:2 }}</strong></p>
+                        <p>Total Repair Cost for {{ now|date:"F Y" }}: <strong>€{{ monthly_repair_cost|floatformat:2 }}</strong></p>
+                        <p>Total Wages for {{ now|date:"F Y" }}: <strong>€{{ monthly_wages_cost|floatformat:2 }}</strong></p>
                         <p>Total Agent Fees for {{ now|date:"F Y" }}: <strong>€{{ monthly_total_agent_fees|floatformat:2 }}</strong></p>
                         <p>Total Driver Fees for {{ now|date:"F Y" }}: <strong>€{{ monthly_total_driver_fees|floatformat:2 }}</strong></p>
-                        <p>Total Profit for {{ now|date:"F Y" }}: <strong>€{{ monthly_total_profit|floatformat:2 }}</strong></p>
+                        <p>Overall Profit (After Expenses) for {{ now|date:"F Y" }}: <strong>€{{ monthly_overall_profit|floatformat:2 }}</strong></p>
                     </div>
                 </div>
 
                 <div class="column">
                     <h2>Yearly Totals</h2>
-                    <div class="chart-container">
+                    <!-- <div class="chart-container">
                         <canvas id="yearlyChart"></canvas>
-                    </div>
+                    </div> -->
                     <div class="totals-text">
-                        <!-- <p>Total Fuel Cost for {{ now.year }}: <strong>€{{ yearly_fuel_cost|floatformat:2 }}</strong></p> -->
+                        <p>Total Profit from Jobs for {{ now.year }}: <strong>€{{ total_yearly_profit|floatformat:2 }}</strong></p>
+                        <p>Total Fuel Cost for {{ now.year }}: <strong>€{{ yearly_fuel_cost|floatformat:2 }}</strong></p>
+                        <p>Total Repair Cost for {{ now.year }}: <strong>€{{ yearly_repair_cost|floatformat:2 }}</strong></p>
+                        <p>Total Wages for {{ now.year }}: <strong>€{{ yearly_wages_cost|floatformat:2 }}</strong></p>
                         <p>Total Agent Fees for {{ now.year }}: <strong>€{{ yearly_total_agent_fees|floatformat:2 }}</strong></p>
                         <p>Total Driver Fees for {{ now.year }}: <strong>€{{ yearly_total_driver_fees|floatformat:2 }}</strong></p>
-                        <p>Total Profit for {{ now.year }}: <strong>€{{ yearly_total_profit|floatformat:2 }}</strong></p>
+                        <p>Overall Profit for (After Expenses) {{ now.year }}: <strong>€{{ overall_profit|floatformat:2 }}</strong></p>
                     </div>
                 </div>
             </div>
-
             <h2>Breakdown by Job</h2>
             <table>
                 <thead>
@@ -119,8 +125,6 @@
                     {% endfor %}
                 </tbody>
             </table>
-            <br>
-            <a href="{% url 'billing:all_calculations' %}" class="button">View All Jobs</a>
         </div>
     </div>
 {% endblock %}
@@ -130,15 +134,28 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     window.chartData = {
-        monthly_fuel_cost: "{{ monthly_fuel_cost|floatformat:2 }}",
-        monthly_total_agent_fees: "{{ monthly_total_agent_fees|floatformat:2 }}",
-        monthly_total_driver_fees: "{{ monthly_total_driver_fees|floatformat:2 }}",
-        monthly_total_profit: "{{ monthly_total_profit|floatformat:2 }}",
-        yearly_fuel_cost: "{{ yearly_fuel_cost|floatformat:2 }}",
-        yearly_total_agent_fees: "{{ yearly_total_agent_fees|floatformat:2 }}",
-        yearly_total_driver_fees: "{{ yearly_total_driver_fees|floatformat:2 }}",
-        yearly_total_profit: "{{ yearly_total_profit|floatformat:2 }}"
-    };
-    console.log("Chart data loaded:", window.chartData);
+    monthly_fuel_cost: {{ monthly_fuel_cost|default:0 }},
+    monthly_wages_cost: {{ monthly_wages_cost|default:0 }},  // Include monthly wages cost
+    monthly_total_agent_fees: {{ monthly_total_agent_fees|default:0 }},
+    monthly_total_driver_fees: {{ monthly_total_driver_fees|default:0 }},
+    monthly_total_profit: {{ monthly_total_profit|default:0 }},
+    monthly_repair_cost: {{ monthly_repair_cost|default:0 }},  // Include monthly repair cost
+    monthly_total_job_profit: {{ total_job_profit|default:0 }},  // Include monthly job profit
+    yearly_fuel_cost: {{ yearly_fuel_cost|default:0 }},
+    yearly_wages_cost: {{ yearly_wages_cost|default:0 }},  // Include yearly wages cost
+    yearly_total_agent_fees: {{ yearly_total_agent_fees|default:0 }},
+    yearly_total_driver_fees: {{ yearly_total_driver_fees|default:0 }},
+    yearly_total_profit: {{ yearly_total_profit|default:0 }},
+    yearly_repair_cost: {{ yearly_repair_cost|default:0 }},  // Include yearly repair cost
+    yearly_total_job_profit: {{ total_yearly_profit|default:0 }},  // Include yearly job profit
+    overall_fuel_cost: {{ overall_fuel_cost|default:0 }},  // For overall chart
+    overall_wages_cost: {{ overall_wages_cost|default:0 }},  // For overall chart
+    overall_total_agent_fees: {{ overall_total_agent_fees|default:0 }},  // For overall chart
+    overall_total_driver_fees: {{ overall_total_driver_fees|default:0 }},  // For overall chart
+    overall_total_profit: {{ overall_total_profit|default:0 }},  // For overall chart
+    overall_repair_cost: {{ overall_repair_cost|default:0 }},  // For overall chart
+    overall_total_job_profit: {{ total_job_profit|default:0 }}  // For overall chart
+};
+console.log("Chart data loaded:", window.chartData);
 </script>
 {% endblock %}

@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Expenses{% endblock %}
+
+{% block content %}
+<div class="container">
+    <br>
+    <a href="{% url 'home' %}" class="button">Back to Home</a>
+    <a href="{% url 'expenses:add_expense' %}" class="button phone">Add Expenses</a>
+
+    <br><br><br>
+
+    <!-- Iterate through defined expense types -->
+    {% for expense_type in expense_types %}
+        <h3 class="expense-header toggle-header" data-section-id="{{ expense_type|slugify }}-section">
+            {{ expense_type|title }} Expenses <span id="{{ expense_type|slugify }}-section-arrow">▼</span>
+        </h3>
+        <table id="{{ expense_type|slugify }}-section" class="table" style="display: none;">
+            <thead>
+                <tr>
+                    <th>Driver</th>
+                    <th>Amount</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Notes</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% with expenses=grouped_expenses|get:expense_type %}
+                    {% if expenses %}
+                        {% for expense in expenses %}
+                            <tr>
+                                <td>{{ expense.driver }}</td>
+                                <td>€{{ expense.expense_amount_in_euros }}</td>
+                                <td>{{ expense.expense_date }}</td>
+                                <td>{{ expense.expense_time |time_format}}</td>
+                                <td>{{ expense.expense_notes|default:"-" |truncate_words_chars}}</td>
+                                <td>
+                                    <span class="button-group">
+                                        <a href="{% url 'expenses:edit_expense' expense.id %}" class="button">Edit</a>
+                                        <a href="{% url 'expenses:view_expense' expense.id %}" class="button">View</a>
+                                    </span>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="6">No expenses recorded for this type.</td>
+                        </tr>
+                    {% endif %}
+                {% endwith %}
+            </tbody>
+        </table>
+        <br>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'script.js' %}"></script>
+{% endblock %}

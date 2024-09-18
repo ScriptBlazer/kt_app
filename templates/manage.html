@@ -8,27 +8,82 @@
     <br>
     <a href="{% url 'home' %}" class="button">Back to Home</a>
     <br><br>
-    <h1>Manage Agents</h1>
+    
+    <h2>Manage Agents</h2>
     <form method="post">
         {% csrf_token %}
         {{ form.as_p }}
         <button type="submit" class="button">Add Agent</button>
     </form>
 
-    <h2>Existing Agents</h2>
-    <ul>
-        {% for agent in agents %}
-            <li>
-                {{ agent.name }}
-                <span class="button-group">
-                    <a href="{% url 'people:edit_agent' agent.id %}" class="button">Edit</a>
-                </span>
-            </li>
-        {% endfor %}
-    </ul>
+    <br><hr><br>
+
+    <!-- Toggle for Existing Agents -->
+    <h3 class="toggle-header" data-section-id="agents-section" style="cursor: pointer;">
+        Existing Agents <span id="agents-section-arrow">▼</span>
+    </h3>
+    <div id="agents-section" style="display: none;">
+        <ul>
+            {% for agent in agents %}
+                <li>
+                    {{ agent.name }}
+                    <span class="button-group">
+                        <a href="{% url 'people:edit_agent' agent.id %}" class="button">Edit</a>
+                    </span>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <br><hr><br>
+
+    <h2>Manage Drivers</h2>
+    <form method="post" action="">
+        {% csrf_token %}
+        {{ driver_form.as_p }}
+        <button type="submit" name="driver_form" class="button">Add Driver</button>
+    </form>
+
+    <!-- Toggle for Existing Drivers -->
+    <h3 class="toggle-header" data-section-id="drivers-section" style="cursor: pointer;">
+        Existing Drivers <span id="drivers-section-arrow">▼</span>
+    </h3>
+    <div id="drivers-section" style="display: none;">
+        <ul>
+            {% for driver in drivers %}
+                <li>
+                    {{ driver.name }}
+                    <span class="button-group">
+                        <a href="{% url 'people:edit_driver' driver.id %}" class="button">Edit</a>
+                    </span>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
 </div>
 {% endblock %}
 
 {% block extra_scripts %}
 <script src="{% static 'script.js' %}"></script>
+<!-- <script>
+    function toggleSection(sectionId) {
+    const section = document.getElementById(sectionId);
+    const arrow = document.getElementById(sectionId + '-arrow');
+    
+    if (!arrow) {
+        console.error('Arrow element not found for section: ', sectionId);
+        return;
+    }
+
+    const currentDisplay = window.getComputedStyle(section).display;
+
+    if (currentDisplay === 'none') {
+        section.style.display = 'block';
+        arrow.textContent = '▲';
+    } else {
+        section.style.display = 'none';
+        arrow.textContent = '▼';
+    }
+}
+</script> -->
 {% endblock %}

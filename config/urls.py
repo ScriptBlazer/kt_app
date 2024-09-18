@@ -14,6 +14,7 @@ urlpatterns = [
     path('jobs/', include('jobs.urls', namespace='jobs')),
     path('people/', include('people.urls', namespace='people')),
     path('billing/', include('billing.urls', namespace='billing')),
+    path('expenses/', include('expenses.urls', namespace='expenses')),
     path('', jobs_views.home, name='home'),
 ]
 

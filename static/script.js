@@ -3,14 +3,17 @@ document.addEventListener("DOMContentLoaded", () => {
   console.log("Donut");
 
   // Time input formatting
-  const timeInput = document.querySelector('[name="job_time"]');
-  if (timeInput) {
-    timeInput.addEventListener("input", (e) => {
+  const timeInputs = document.querySelectorAll(
+    '[name="job_time"], [name="expense_time"]'
+  );
+
+  timeInputs.forEach((input) => {
+    input.addEventListener("input", (e) => {
       const value = e.target.value.replace(/\D/g, "").slice(0, 4);
       e.target.value =
         value.length > 2 ? `${value.slice(0, 2)}:${value.slice(2)}` : value;
     });
-  }
+  });
 
   // Disable scroll on number inputs
   document.querySelectorAll('input[type="number"]').forEach((input) => {
@@ -112,42 +115,59 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Chart Data for all pie charts
-  console.log("Checking for chartData...");
-  console.log(window.chartData);
+  // Toggle Section Function
+  window.toggleSection = function (sectionId) {
+    const section = document.getElementById(sectionId);
+    const arrow = document.getElementById(sectionId + "-arrow");
 
+    if (!arrow) {
+      console.error("Arrow element not found for section: ", sectionId);
+      return;
+    }
+
+    const currentDisplay = window.getComputedStyle(section).display;
+
+    if (currentDisplay === "none") {
+      section.style.display = "block";
+      arrow.textContent = "▲";
+    } else {
+      section.style.display = "none";
+      arrow.textContent = "▼";
+    }
+  };
+
+  // Initialize chart data for pie charts (monthly and yearly)
   if (window.chartData) {
+    console.log("Checking for chartData...");
+    console.log(window.chartData);
+
+    // Monthly Chart
     if (window.chartData.monthly_fuel_cost !== undefined) {
-      console.log("Rendering monthly chart...");
       renderPieChart(
         "monthlyChart",
         "Monthly Totals",
         parseFloat(window.chartData.monthly_fuel_cost),
+        parseFloat(window.chartData.monthly_wages_cost),
+        parseFloat(window.chartData.monthly_total_job_profit),
+        parseFloat(window.chartData.monthly_total_profit), // Ensure total profit is passed
+        parseFloat(window.chartData.monthly_repair_cost),
         parseFloat(window.chartData.monthly_total_agent_fees),
-        parseFloat(window.chartData.monthly_total_driver_fees),
-        parseFloat(window.chartData.monthly_total_profit)
+        parseFloat(window.chartData.monthly_total_driver_fees)
       );
     }
+
+    // Yearly Chart
     if (window.chartData.yearly_fuel_cost !== undefined) {
-      console.log("Rendering yearly chart...");
       renderPieChart(
         "yearlyChart",
         "Yearly Totals",
         parseFloat(window.chartData.yearly_fuel_cost),
+        parseFloat(window.chartData.yearly_wages_cost),
+        parseFloat(window.chartData.yearly_total_job_profit),
+        parseFloat(window.chartData.yearly_total_profit), // Ensure total profit is passed
+        parseFloat(window.chartData.yearly_repair_cost),
         parseFloat(window.chartData.yearly_total_agent_fees),
-        parseFloat(window.chartData.yearly_total_driver_fees),
-        parseFloat(window.chartData.yearly_total_profit)
-      );
-    }
-    if (window.chartData.overall_fuel_cost !== undefined) {
-      console.log("Rendering overall chart...");
-      renderPieChart(
-        "overallChart",
-        "Overall Totals",
-        parseFloat(window.chartData.overall_fuel_cost),
-        parseFloat(window.chartData.overall_total_agent_fees),
-        parseFloat(window.chartData.overall_total_driver_fees),
-        parseFloat(window.chartData.overall_total_profit)
+        parseFloat(window.chartData.yearly_total_driver_fees)
       );
     }
   }
@@ -157,9 +177,12 @@ function renderPieChart(
   chartId,
   title,
   fuelCost,
+  wages,
+  jobProfit,
+  totalProfit, // Ensure total profit is a parameter
+  repairs,
   agentFees,
-  driverFees,
-  profit
+  driverFees
 ) {
   const ctx = document.getElementById(chartId);
   if (!ctx) {
@@ -169,38 +192,65 @@ function renderPieChart(
   console.log(`Rendering chart ${chartId} with data:`, {
     title,
     fuelCost,
+    wages,
+    jobProfit,
+    totalProfit, // Log total profit value to ensure it's passed
+    repairs,
     agentFees,
     driverFees,
-    profit,
   });
   new Chart(ctx.getContext("2d"), {
     type: "pie",
     data: {
-      labels: ["Fuel Cost", "Agent Fees", "Driver Fees", "Profit"],
+      labels: [
+        "Fuel Cost",
+        "Wages",
+        "Job Profit",
+        "Total Profit", // Ensure total profit is displayed in the pie
+        "Repairs",
+        "Agent Fees",
+        "Driver Fees",
+      ],
       datasets: [
         {
           label: title,
-          data: [fuelCost, agentFees, driverFees, profit],
+          data: [
+            fuelCost,
+            wages,
+            jobProfit,
+            totalProfit, // Ensure total profit is included in the dataset
+            repairs,
+            agentFees,
+            driverFees,
+          ],
           backgroundColor: [
-            "rgba(255, 99, 132, 0.8)",
-            "rgba(54, 162, 235, 0.8)",
-            "rgba(255, 206, 86, 0.8)",
-            "rgba(75, 192, 192, 0.8)",
+            "rgba(255, 99, 132, 0.8)", // Fuel Cost
+            "rgba(54, 162, 235, 0.8)", // Wages
+            "rgba(255, 206, 86, 0.8)", // Job Profit
+            "rgba(75, 192, 192, 0.8)", // Total Profit
+            "rgba(153, 102, 255, 0.8)", // Repairs
+            "rgba(255, 159, 64, 0.8)", // Agent Fees
+            "rgba(255, 20, 147, 0.8)", // Driver Fees
           ],
           borderColor: [
             "rgba(255, 99, 132, 1)",
             "rgba(54, 162, 235, 1)",
             "rgba(255, 206, 86, 1)",
             "rgba(75, 192, 192, 1)",
+            "rgba(153, 102, 255, 1)",
+            "rgba(255, 159, 64, 1)",
+            "rgba(255, 20, 147, 1)",
           ],
           borderWidth: 1,
         },
       ],
     },
     options: {
-      scales: {
-        y: {
-          beginAtZero: true,
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: "top",
         },
       },
     },

@@ -366,20 +366,6 @@ table tbody tr:hover {
     100% { transform: rotate(360deg); }
 }
 
-/* .completed-job {
-    box-shadow: inset 0px 0px 10px rgba(42, 179, 8, 0.944);
-    background-color: #8fed8f !important;
-}
-  
-.incomplete-job {
-    background-color: rgb(255, 189, 68) !important;
-    box-shadow: inset 0px 0px 10px rgba(153, 118, 3, 0.94);
-}
-
-.future-job {
-    background-color: white;
-} */
-
 .white-job {
     background-color: white;
     box-shadow: inset 0px 0px 10px rgba(225, 209, 252, 0.944);

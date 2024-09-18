@@ -243,6 +243,13 @@ class DriverFeeRevertTest(TestCase):
         # Use assertAlmostEqual with two decimal places to allow for small rounding differences
         self.assertAlmostEqual(actual_driver_fee_in_euros, expected_driver_fee_in_euros, places=2,
                                msg=f"Expected {expected_driver_fee_in_euros}, but got {actual_driver_fee_in_euros}")
+        # self.assertEqual(actual_driver_fee_in_euros, expected_driver_fee_in_euros,
+        #                 msg=f"Expected {expected_driver_fee_in_euros}, but got {actual_driver_fee_in_euros}")
+        # expected_driver_fee_in_euros = (Decimal('25000.00') * Decimal('0.002537')).quantize(Decimal('0.01'))
+        # actual_driver_fee_in_euros = self.job.driver_fee_in_euros.quantize(Decimal('0.01'))
+
+        # self.assertEqual(actual_driver_fee_in_euros, expected_driver_fee_in_euros,
+        #                 msg=f"Expected {expected_driver_fee_in_euros}, but got {actual_driver_fee_in_euros}")
         
     def test_revert_driver_fee_to_none(self):
         # Update the job form data to remove driver fee and driver currency
