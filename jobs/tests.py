@@ -58,7 +58,8 @@ class FieldValidationTests(TestCase):
 
 class ConcurrencyHandlingTest(TestCase):
     # Test to simulate two concurrent updates and ensure the latest update is applied
-    def test_concurrent_job_updates(self):
+    @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.2'))
+    def test_concurrent_job_updates(self, mock_get_exchange_rate):
         job = Job.objects.create(
             customer_name="Test User",
             customer_number="123456789",
