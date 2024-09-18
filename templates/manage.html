@@ -16,8 +16,6 @@
         <button type="submit" class="button">Add Agent</button>
     </form>
 
-    <br><hr><br>
-
     <!-- Toggle for Existing Agents -->
     <h3 class="toggle-header" data-section-id="agents-section" style="cursor: pointer;">
         Existing Agents <span id="agents-section-arrow">▼</span>
@@ -65,25 +63,4 @@
 
 {% block extra_scripts %}
 <script src="{% static 'script.js' %}"></script>
-<!-- <script>
-    function toggleSection(sectionId) {
-    const section = document.getElementById(sectionId);
-    const arrow = document.getElementById(sectionId + '-arrow');
-    
-    if (!arrow) {
-        console.error('Arrow element not found for section: ', sectionId);
-        return;
-    }
-
-    const currentDisplay = window.getComputedStyle(section).display;
-
-    if (currentDisplay === 'none') {
-        section.style.display = 'block';
-        arrow.textContent = '▲';
-    } else {
-        section.style.display = 'none';
-        arrow.textContent = '▼';
-    }
-}
-</script> -->
 {% endblock %}

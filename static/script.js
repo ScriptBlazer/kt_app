@@ -115,6 +115,21 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
+  // Select all toggle headers
+  const toggleHeaders = document.querySelectorAll(".toggle-header");
+
+  // Add event listeners to each header
+  toggleHeaders.forEach((header) => {
+    const sectionId = header.getAttribute("data-section-id");
+
+    // Check if sectionId exists to avoid errors
+    if (sectionId) {
+      header.addEventListener("click", () => {
+        toggleSection(sectionId);
+      });
+    }
+  });
+
   // Toggle Section Function
   window.toggleSection = function (sectionId) {
     const section = document.getElementById(sectionId);

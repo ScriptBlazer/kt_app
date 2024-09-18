@@ -12,7 +12,6 @@
 
     <br><br><br>
 
-    <!-- Iterate through defined expense types -->
     {% for expense_type in expense_types %}
         <h3 class="expense-header toggle-header" data-section-id="{{ expense_type|slugify }}-section">
             {{ expense_type|title }} Expenses <span id="{{ expense_type|slugify }}-section-arrow">▼</span>
