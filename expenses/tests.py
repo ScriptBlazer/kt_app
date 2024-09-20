@@ -53,7 +53,6 @@ class ExpenseTestCase(TestCase):
     @patch('expenses.models.get_exchange_rate', return_value=Decimal('1.2'))
     def test_add_expense(self, mock_get_exchange_rate):
         """Test adding a new expense with currency conversion."""
-        mock_get_exchange_rate.return_value = Decimal('1.2')
         data = {
             'driver': self.driver.id,
             'expense_type': 'repair',
@@ -70,7 +69,6 @@ class ExpenseTestCase(TestCase):
     @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.2'))
     def test_edit_expense(self, mock_get_exchange_rate):
         """Test editing an existing expense."""
-        mock_get_exchange_rate.return_value = Decimal('1.2')  # Mock conversion rate
         updated_data = {
             'driver': self.driver.id,
             'expense_type': 'repair',
@@ -89,22 +87,18 @@ class ExpenseTestCase(TestCase):
     @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.2'))
     def test_delete_expense(self, mock_get_exchange_rate):
         """Test deleting an expense."""
-        mock_get_exchange_rate.return_value = Decimal('1.2')
         response = self.client.post(reverse('expenses:delete_expense', args=[self.expense.id]))
         self.assertEqual(response.status_code, 302)
         self.assertFalse(Expense.objects.filter(id=self.expense.id).exists())
 
     @patch('expenses.models.get_exchange_rate', return_value=Decimal('1.2'))
     def test_view_expense(self, mock_get_exchange_rate):
-        print(f'{mock_get_exchange_rate=}')
-        mock_get_exchange_rate.return_value = Decimal('1.2')
         response = self.client.get(reverse('expenses:view_expense', args=[self.expense.id]))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Fuel for the week')
 
     @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.2'))
     def test_grouped_expenses_by_type(self, mock_get_exchange_rate):
-        mock_get_exchange_rate.return_value = Decimal('1.2')
         new_expense = Expense.objects.create(
             driver=self.driver,
             expense_type='repair',
@@ -121,7 +115,6 @@ class ExpenseTestCase(TestCase):
 
     @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.2'))
     def test_prevent_driver_deletion_with_expense(self, mock_get_exchange_rate):
-        mock_get_exchange_rate.return_value = Decimal('1.2')
         response = self.client.post(reverse('people:delete_driver', args=[self.driver.id]))
         self.assertTrue(Driver.objects.filter(id=self.driver.id).exists())
         messages = list(get_messages(response.wsgi_request))
@@ -130,7 +123,6 @@ class ExpenseTestCase(TestCase):
     @patch('expenses.models.get_exchange_rate', return_value=Decimal('1.2'))
     def test_currency_conversion(self, mock_get_exchange_rate):
         """Test if currency conversion is handled correctly."""
-        mock_get_exchange_rate.return_value = Decimal('1.2')
 
         # Create the expense object
         self.expense = Expense.objects.create(

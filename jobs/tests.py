@@ -99,7 +99,6 @@ class CurrencyConversionTest(TestCase):
     # Test to ensure currency conversion to Euros works as expected
     @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.2'))
     def test_currency_conversion(self, mock_get_exchange_rate):
-        mock_get_exchange_rate.return_value = Decimal('1.2')  
         job = Job(
             job_price=Decimal('100'),
             job_currency='USD',
@@ -240,7 +239,8 @@ class JobDateAndTimeTests(TestCase):
 
 
 class DriverFeeRevertTest(TestCase):
-    def setUp(self):
+    @patch('jobs.models.get_exchange_rate', return_value=Decimal('1'))
+    def setUp(self, *mocks):
         # Create a job with an initial driver fee in HUF and its corresponding conversion to EUR
         self.job = Job.objects.create(
             customer_name="Test User",
@@ -273,7 +273,6 @@ class DriverFeeRevertTest(TestCase):
     @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.2'))
     def test_revert_driver_fee_to_none(self, mock_get_exchange_rate):
         # Update the job form data to remove driver fee and driver currency
-        mock_get_exchange_rate.return_value = Decimal('1.2')
         form_data = {
             'customer_name': self.job.customer_name,
             'customer_number': self.job.customer_number,
