@@ -12,6 +12,7 @@ from django.contrib.messages import get_messages
 from unittest.mock import patch
 import pytz
 
+
 class ExpenseTestCase(TestCase):
 
     def setUp(self):
@@ -47,10 +48,10 @@ class ExpenseTestCase(TestCase):
             expense_notes='Fuel for the week'
         )
 
-    @patch('expenses.models.get_exchange_rate')
+    @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.2'))
     def test_add_expense(self, mock_get_exchange_rate):
         """Test adding a new expense with currency conversion."""
-        mock_get_exchange_rate.return_value = Decimal('0.85')  # Mock conversion rate
+        mock_get_exchange_rate.return_value = Decimal('1.2')
         data = {
             'driver': self.driver.id,
             'expense_type': 'repair',
@@ -64,10 +65,10 @@ class ExpenseTestCase(TestCase):
         self.assertEqual(response.status_code, 302)  # Redirect after a successful POST
         self.assertTrue(Expense.objects.filter(expense_notes='Car repair').exists())
 
-    @patch('expenses.models.get_exchange_rate')
+    @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.2'))
     def test_edit_expense(self, mock_get_exchange_rate):
         """Test editing an existing expense."""
-        mock_get_exchange_rate.return_value = Decimal('1.00')  # Mock conversion rate
+        mock_get_exchange_rate.return_value = Decimal('1.2')  # Mock conversion rate
         updated_data = {
             'driver': self.driver.id,
             'expense_type': 'repair',
@@ -83,20 +84,24 @@ class ExpenseTestCase(TestCase):
         self.assertEqual(self.expense.expense_amount, Decimal('200.00'))
         self.assertEqual(self.expense.expense_notes, 'Updated repair expense')
 
-    def test_delete_expense(self):
+    @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.2'))
+    def test_delete_expense(self, mock_get_exchange_rate):
         """Test deleting an expense."""
+        mock_get_exchange_rate.return_value = Decimal('1.2')
         response = self.client.post(reverse('expenses:delete_expense', args=[self.expense.id]))
         self.assertEqual(response.status_code, 302)
         self.assertFalse(Expense.objects.filter(id=self.expense.id).exists())
 
-    def test_view_expense(self):
-        """Test viewing the details of a single expense."""
+    @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.2'))
+    def test_view_expense(self, mock_get_exchange_rate):
+        mock_get_exchange_rate.return_value = Decimal('1.2')
         response = self.client.get(reverse('expenses:view_expense', args=[self.expense.id]))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Fuel for the week')
 
-    def test_grouped_expenses_by_type(self):
-        """Test grouping expenses by type."""
+    @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.2'))
+    def test_grouped_expenses_by_type(self, mock_get_exchange_rate):
+        mock_get_exchange_rate.return_value = Decimal('1.2')
         new_expense = Expense.objects.create(
             driver=self.driver,
             expense_type='repair',
@@ -111,24 +116,36 @@ class ExpenseTestCase(TestCase):
         self.assertContains(response, 'Fuel for')
         self.assertContains(response, 'Minor car')  # Updated to check the truncated content
 
-    def test_prevent_driver_deletion_with_expense(self):
-        """Test that a driver with attached expenses cannot be deleted."""
+    @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.2'))
+    def test_prevent_driver_deletion_with_expense(self, mock_get_exchange_rate):
+        mock_get_exchange_rate.return_value = Decimal('1.2')
         response = self.client.post(reverse('people:delete_driver', args=[self.driver.id]))
         self.assertTrue(Driver.objects.filter(id=self.driver.id).exists())
         messages = list(get_messages(response.wsgi_request))
         self.assertTrue(any('Driver cannot be deleted as there are associated expenses.' in message.message for message in messages))
 
-    @patch('expenses.models.get_exchange_rate')
+    @patch('expenses.models.get_exchange_rate', return_value=Decimal('1.2'))
     def test_currency_conversion(self, mock_get_exchange_rate):
         """Test if currency conversion is handled correctly."""
-        mock_get_exchange_rate.return_value = Decimal('1.10')  # Mock exchange rate for USD to EUR
+        mock_get_exchange_rate.return_value = Decimal('1.2')
 
-        self.expense.expense_currency = 'USD'
-        self.expense.expense_amount = Decimal('100.00')
+        # Create the expense object
+        self.expense = Expense.objects.create(
+            driver=self.driver,
+            expense_type='fuel',
+            expense_amount=Decimal('100.00'),
+            expense_currency='USD',
+            expense_date=timezone.now().date(),
+            expense_time=timezone.now().time(),
+            expense_notes='Test conversion'
+        )
+
+        # Perform the conversion to euros
         self.expense.convert_to_euros()
 
+        # Check if the amount was converted correctly
         self.assertIsNotNone(self.expense.expense_amount_in_euros)
-        self.assertEqual(self.expense.expense_amount_in_euros, Decimal('110.00'))  # 100 USD * 1.10
+        self.assertEqual(self.expense.expense_amount_in_euros, Decimal('120.00'))  # 100 USD * 1.20
 
         # Check if the conversion works for EUR (should not convert)
         self.expense.expense_currency = 'EUR'

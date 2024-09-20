@@ -1,18 +1,23 @@
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from jobs.forms import JobForm
-from jobs.models import Job
+from jobs.models import Job, PaymentSettings
 from decimal import Decimal
 from pytz import timezone as tz
 from django.utils import timezone
-from unittest.mock import patch
 from django.urls import reverse
-from unittest.mock import patch
+from unittest.mock import patch, ANY
 from django.core.cache import cache
 from common.utils import assign_job_color
 from datetime import timedelta
+from unittest import mock
 import pytz
+from common.utils import get_exchange_rate
 
 from decimal import Decimal, ROUND_HALF_UP
+
+import logging
+
+logger = logging.getLogger('kt')
 
 
 
@@ -94,7 +99,7 @@ class CurrencyConversionTest(TestCase):
     # Test to ensure currency conversion to Euros works as expected
     @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.2'))
     def test_currency_conversion(self, mock_get_exchange_rate):
-        mock_get_exchange_rate.return_value = Decimal('1.2')  # Mocking exchange rate
+        mock_get_exchange_rate.return_value = Decimal('1.2')  
         job = Job(
             job_price=Decimal('100'),
             job_currency='USD',
@@ -249,23 +254,26 @@ class DriverFeeRevertTest(TestCase):
             no_of_passengers=1,
             vehicle_type='Car',
             kilometers=Decimal('10'),
-            driver_fee=Decimal('25000.00'),  # Initial driver fee in HUF
+            driver_fee=Decimal('25000.00'), 
             driver_currency='HUF',
         )
 
-    @patch('jobs.models.get_exchange_rate', return_value=Decimal('0.002536'))
+    @patch('jobs.models.get_exchange_rate', return_value=Decimal('0.002536'))  # Mock exchange rate
     def test_driver_fee_conversion(self, mock_get_exchange_rate):
         # Trigger conversion to euros with mocked exchange rate
         self.job.convert_to_euros()
 
-        expected_driver_fee_in_euros = Decimal('63.40')  # Expecting conversion from 25000 HUF to EUR
+        # Expecting conversion from 25000 HUF to EUR using the mocked exchange rate
+        expected_driver_fee_in_euros = Decimal('63.40')  # 25000 HUF * 0.002536
         actual_driver_fee_in_euros = self.job.driver_fee_in_euros
 
-        # Assert with the expected driver fee in euros
+        # Assert the expected driver fee in euros
         self.assertAlmostEqual(actual_driver_fee_in_euros, expected_driver_fee_in_euros, delta=Decimal('0.1'))
 
-    def test_revert_driver_fee_to_none(self):
+    @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.2'))
+    def test_revert_driver_fee_to_none(self, mock_get_exchange_rate):
         # Update the job form data to remove driver fee and driver currency
+        mock_get_exchange_rate.return_value = Decimal('1.2')
         form_data = {
             'customer_name': self.job.customer_name,
             'customer_number': self.job.customer_number,
@@ -368,3 +376,48 @@ class JobColorAssignmentTest(TestCase):
         job = self.create_job(self.now.date() - timedelta(days=1), driver_name="John Doe", is_paid=False)  # One day old, unpaid, driver assigned
         color = assign_job_color(job, self.now)
         self.assertEqual(color, 'red')
+
+
+class ExchangeRateCacheTest(TestCase):
+    
+    def setUp(self):
+        # Clear the cache before each test
+        cache.clear()
+
+    @patch('common.utils.fetch_and_cache_exchange_rate')
+    def test_rates_read_from_cache(self, mock_fetch_and_cache_exchange_rate):
+        # Set a rate in the cache for 'GBP'
+        cache.set('exchange_rate_GBP', Decimal('1.20'), timeout=3600)
+
+        # Call get_exchange_rate, it should read from the cache and not call the API
+        rate = get_exchange_rate('GBP')
+
+        # Assert that the rate was retrieved from the cache
+        self.assertEqual(rate, Decimal('1.20'))
+
+        # Assert that fetch_and_cache_exchange_rate was NOT called
+        mock_fetch_and_cache_exchange_rate.assert_not_called()
+
+    @override_settings(CACHES={
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'unique-snowflake',
+        }
+    })
+    class ExchangeRateCacheTest(TestCase):
+
+        @patch('common.utils.fetch_and_cache_exchange_rate')
+        def test_rates_fetched_and_cached(self, mock_fetch_and_cache_exchange_rate):
+            # Mock the API fetch to return a fixed rate
+            mock_fetch_and_cache_exchange_rate.return_value = Decimal('1.19')
+
+            # Fetch the rate, which should also set the cache
+            rate = get_exchange_rate('GBP')
+
+            # Verify the mock API call
+            mock_fetch_and_cache_exchange_rate.assert_called_once_with('GBP')
+
+            # Check if the value was cached correctly
+            cached_rate = cache.get('exchange_rate_GBP')
+            self.assertIsNotNone(cached_rate, "The exchange rate should be cached")
+            self.assertEqual(cached_rate, Decimal('1.19'))
