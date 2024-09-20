@@ -15,8 +15,9 @@ import pytz
 
 class ExpenseTestCase(TestCase):
 
+    @patch('expenses.models.get_exchange_rate', return_value=Decimal('1.2'))
     @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.2'))
-    def setUp(self, mock_get_exchange_rate):
+    def setUp(self, *mocks):
         # Set up a test user
         self.client = Client()
         self.user = User.objects.create_user(username='testuser', password='12345')
@@ -49,7 +50,7 @@ class ExpenseTestCase(TestCase):
             expense_notes='Fuel for the week'
         )
 
-    @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.2'))
+    @patch('expenses.models.get_exchange_rate', return_value=Decimal('1.2'))
     def test_add_expense(self, mock_get_exchange_rate):
         """Test adding a new expense with currency conversion."""
         mock_get_exchange_rate.return_value = Decimal('1.2')
@@ -93,8 +94,9 @@ class ExpenseTestCase(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertFalse(Expense.objects.filter(id=self.expense.id).exists())
 
-    @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.2'))
+    @patch('expenses.models.get_exchange_rate', return_value=Decimal('1.2'))
     def test_view_expense(self, mock_get_exchange_rate):
+        print(f'{mock_get_exchange_rate=}')
         mock_get_exchange_rate.return_value = Decimal('1.2')
         response = self.client.get(reverse('expenses:view_expense', args=[self.expense.id]))
         self.assertEqual(response.status_code, 200)
