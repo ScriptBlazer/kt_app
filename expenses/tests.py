@@ -15,7 +15,8 @@ import pytz
 
 class ExpenseTestCase(TestCase):
 
-    def setUp(self):
+    @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.2'))
+    def setUp(self, mock_get_exchange_rate):
         # Set up a test user
         self.client = Client()
         self.user = User.objects.create_user(username='testuser', password='12345')
