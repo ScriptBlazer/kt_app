@@ -29,10 +29,10 @@ class Job(models.Model):
     # Job Details
     job_date = models.DateField()
     job_time = models.TimeField()
-    job_description = models.TextField()
+    job_description = models.TextField(null=True, blank=True)
     no_of_passengers = models.IntegerField()
     kilometers = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    pick_up_location = models.CharField(max_length=255, null=True, blank=True)
+    pick_up_location = models.CharField(max_length=255)
     drop_off_location = models.CharField(max_length=255, null=True, blank=True)
     flight_number = models.CharField(max_length=50, null=True, blank=True)
 
@@ -89,7 +89,8 @@ class Job(models.Model):
         
         # Then apply credit card fee if necessary
         if self.payment_type == 'Card':
-            fee_percentage = PaymentSettings.objects.first().cc_fee_percentage
+            payment_settings = PaymentSettings.objects.first()
+            fee_percentage = payment_settings.cc_fee_percentage if payment_settings else Decimal('7.00')  # Fallback to 7%
             self.cc_fee = (self.job_price * fee_percentage / Decimal('100')).quantize(Decimal('0.01'))
             logger.debug(f"Applying CC Fee: {self.cc_fee} on {self.job_price} with rate {fee_percentage}%")
 
@@ -108,32 +109,16 @@ class Job(models.Model):
                 raise ValueError(f"Exchange rate for {currency} is not available.")
             return rate
 
-        # Convert job price to Euros
-        if self.job_price is not None:
-            if self.job_currency == 'EUR':
-                self.job_price_in_euros = self.job_price
-                logger.debug(f"No conversion needed for {self.job_price} EUR")
-            else:
-                rate = get_conversion_rate(self.job_currency)
-                self.job_price_in_euros = (self.job_price * rate).quantize(Decimal('0.01'))
-                logger.debug(f"Converted {self.job_price} {self.job_currency} to {self.job_price_in_euros} EUR using rate {rate}")
+        def convert_field(value, currency):
+            """Helper function to convert any value to EUR."""
+            if value is None:
+                return None
+            if currency == 'EUR':
+                return value
+            rate = get_conversion_rate(currency)
+            return (value * rate).quantize(Decimal('0.01'))
 
-        # Convert fuel cost to Euros
-        if self.fuel_cost is not None:
-            if self.fuel_currency == 'EUR':
-                self.fuel_cost_in_euros = self.fuel_cost
-            else:
-                rate = get_conversion_rate(self.fuel_currency)
-                self.fuel_cost_in_euros = (self.fuel_cost * rate).quantize(Decimal('0.01'))
-                logger.debug(f"Converted fuel cost {self.fuel_cost} {self.fuel_currency} to {self.fuel_cost_in_euros} EUR using rate {rate}")
-
-        # Convert driver fee to Euros, or reset it to None if the driver fee is None
-        if self.driver_fee is None:
-            self.driver_fee_in_euros = None
-        else:
-            if self.driver_currency == 'EUR':
-                self.driver_fee_in_euros = self.driver_fee
-            else:
-                rate = get_conversion_rate(self.driver_currency)
-                self.driver_fee_in_euros = (self.driver_fee * rate).quantize(Decimal('0.01'))
-                logger.debug(f"Converted driver fee {self.driver_fee} {self.driver_currency} to {self.driver_fee_in_euros} EUR using rate {rate}")
+        # Convert job price, fuel cost, and driver fee to Euros
+        self.job_price_in_euros = convert_field(self.job_price, self.job_currency)
+        self.fuel_cost_in_euros = convert_field(self.fuel_cost, self.fuel_currency)
+        self.driver_fee_in_euros = convert_field(self.driver_fee, self.driver_currency)

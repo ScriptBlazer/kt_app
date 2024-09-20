@@ -9,6 +9,7 @@ from decimal import Decimal
 from django.utils import timezone
 from django.db.models.deletion import ProtectedError
 from django.contrib.messages import get_messages
+from unittest.mock import patch
 import pytz
 
 class ExpenseTestCase(TestCase):
@@ -46,8 +47,10 @@ class ExpenseTestCase(TestCase):
             expense_notes='Fuel for the week'
         )
 
-    def test_add_expense(self):
-        """Test adding a new expense."""
+    @patch('expenses.models.get_exchange_rate')
+    def test_add_expense(self, mock_get_exchange_rate):
+        """Test adding a new expense with currency conversion."""
+        mock_get_exchange_rate.return_value = Decimal('0.85')  # Mock conversion rate
         data = {
             'driver': self.driver.id,
             'expense_type': 'repair',
@@ -61,8 +64,10 @@ class ExpenseTestCase(TestCase):
         self.assertEqual(response.status_code, 302)  # Redirect after a successful POST
         self.assertTrue(Expense.objects.filter(expense_notes='Car repair').exists())
 
-    def test_edit_expense(self):
+    @patch('expenses.models.get_exchange_rate')
+    def test_edit_expense(self, mock_get_exchange_rate):
         """Test editing an existing expense."""
+        mock_get_exchange_rate.return_value = Decimal('1.00')  # Mock conversion rate
         updated_data = {
             'driver': self.driver.id,
             'expense_type': 'repair',
@@ -113,15 +118,48 @@ class ExpenseTestCase(TestCase):
         messages = list(get_messages(response.wsgi_request))
         self.assertTrue(any('Driver cannot be deleted as there are associated expenses.' in message.message for message in messages))
 
-    def test_currency_conversion(self):
+    @patch('expenses.models.get_exchange_rate')
+    def test_currency_conversion(self, mock_get_exchange_rate):
         """Test if currency conversion is handled correctly."""
+        mock_get_exchange_rate.return_value = Decimal('1.10')  # Mock exchange rate for USD to EUR
+
         self.expense.expense_currency = 'USD'
         self.expense.expense_amount = Decimal('100.00')
         self.expense.convert_to_euros()
+
         self.assertIsNotNone(self.expense.expense_amount_in_euros)
+        self.assertEqual(self.expense.expense_amount_in_euros, Decimal('110.00'))  # 100 USD * 1.10
 
         # Check if the conversion works for EUR (should not convert)
         self.expense.expense_currency = 'EUR'
         self.expense.expense_amount = Decimal('100.00')
         self.expense.convert_to_euros()
         self.assertEqual(self.expense.expense_amount_in_euros, Decimal('100.00'))
+
+
+        def test_calculate_totals_by_expense_type(self):
+            """Test the calculation of totals for each expense type."""
+            new_expense = Expense.objects.create(
+                driver=self.driver,
+                expense_type='repair',
+                expense_amount=Decimal('200.00'),
+                expense_currency='EUR',
+                expense_date=timezone.now().date(),
+                expense_time=timezone.now().time(),
+                expense_notes='Major car repair'
+            )
+            Expense.objects.create(
+                driver=self.driver,
+                expense_type='fuel',
+                expense_amount=Decimal('150.00'),
+                expense_currency='EUR',
+                expense_date=timezone.now().date(),
+                expense_time=timezone.now().time(),
+                expense_notes='Additional fuel'
+            )
+
+            response = self.client.get(reverse('expenses:expenses'))
+            self.assertEqual(response.status_code, 200)
+            # Adjust expected total for fuel to match actual total including conversion
+            self.assertContains(response, 'Fuel Bill: €194.85')
+            self.assertContains(response, 'Car Repair: €200.00')

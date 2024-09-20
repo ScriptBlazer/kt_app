@@ -4,6 +4,7 @@ from django.test import Client
 from django.contrib.auth.models import User
 from people.models import Agent, Driver
 from people.forms import AgentForm
+from unittest.mock import patch
 
 class AgentFormTest(TestCase):
 
@@ -21,6 +22,7 @@ class AgentFormTest(TestCase):
         form = AgentForm(data=invalid_data)
         self.assertFalse(form.is_valid())
         self.assertIn('name', form.errors)
+
 
 class AgentViewTest(TestCase):
 
@@ -54,6 +56,7 @@ class AgentViewTest(TestCase):
         response = self.client.post(reverse('people:delete_agent', args=[agent.id]))
         self.assertEqual(response.status_code, 302)
         self.assertFalse(Agent.objects.filter(name='Delete Agent').exists())
+
 
 class DriverViewTest(TestCase):
 

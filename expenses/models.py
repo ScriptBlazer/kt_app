@@ -9,14 +9,18 @@ from common.utils import get_exchange_rate
 class Expense(models.Model):
     EXPENSE_TYPES = [
         ('fuel', 'Fuel Bill'),
-        ('repair', 'Car Repair'),
         ('wages', 'Wages'),
+        ('repair', 'Car Repair'),
+        ('renovations', 'Office Works/repairs'),
+        ('car_wash', 'Car Wash'),
+        ('toll', 'Tolls'),
+        ('other', 'Other'),
     ]
 
-    driver = models.ForeignKey(Driver, on_delete=models.PROTECT)
+    driver = models.ForeignKey(Driver, on_delete=models.PROTECT, null=True, blank=True)
 
     # Expense Details
-    expense_type = models.CharField(max_length=10, choices=EXPENSE_TYPES)
+    expense_type = models.CharField(max_length=255, choices=EXPENSE_TYPES)
     expense_amount = models.DecimalField(max_digits=10, decimal_places=2)
     expense_amount_in_euros = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)  # Converted amount in euros
     expense_currency = models.CharField(max_length=10, choices=Job.CURRENCY_CHOICES)

@@ -10,8 +10,8 @@
         <a href="{% url 'jobs:add_job' %}" class="button">Add Job</a>
         <a href="{% url 'jobs:past_jobs' %}" class="button">Past Jobs</a>
         <a href="{% url 'expenses:expenses' %}" class="button phone">Expenses</a>
-        <a href="{% url 'billing:calculations' %}" class="button small-phone">Calculations</a>
-        <a href="{% url 'people:manage' %}" class="button phone">Manage</a>
+        <a href="{% url 'billing:calculations' %}" class="button phone">Calculations</a>
+        <a href="{% url 'people:manage' %}" class="button small-phone">Manage</a>
         <a href="/admin/" class="button phone">Admin</a>
     </div>
     <br>
@@ -25,7 +25,7 @@
                 <span class="slim">{{ job.job_date }}</span>
                 <span class="phone">{{ job.job_time|time_format }}</span>
                 <span class="tablet">{{ job.job_price }} {{ job.currency }}</span>
-                <span class="phone">{{ job.job_description|truncate_words_chars }}</span>
+                <span class="phone">{{ job.pick_up_location|truncate_words_chars }}</span>
             </div>
             <div class="button-group">
                 <a href="{% url 'jobs:edit_job' job.id %}" class="button phone">Edit</a>
@@ -47,7 +47,7 @@
                 <span class="slim">{{ job.job_date }}</span>
                 <span class="phone">{{ job.job_time|time_format }}</span>
                 <span class="tablet">{{ job.job_price }} {{ job.currency }}</span>
-                <span class="phone">{{ job.job_description|truncate_words_chars }}</span>
+                <span class="phone">{{ job.pick_up_location|truncate_words_chars }}</span>
             </div>
             <div class="button-group">
                 <a href="{% url 'jobs:edit_job' job.id %}" class="button phone">Edit</a>

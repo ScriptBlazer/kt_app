@@ -13,42 +13,41 @@
 
         <div class="form-group-inline">
             <div class="field-wrapper">
+                {{ form.expense_type.label_tag }}*<br>
+                {{ form.expense_type }}
+            </div>
+            <div class="field-wrapper">
                 {{ form.driver.label_tag }}<br>
                 {{ form.driver }}
             </div>
-            <div class="field-wrapper">
-                {{ form.expense_type.label_tag }}<br>
-                {{ form.expense_type }}
-            </div>
         </div>
 
         <div class="form-group-inline">
             <div class="field-wrapper">
-                {{ form.expense_amount.label_tag }}<br>
+                {{ form.expense_amount.label_tag }}*<br>
                 {{ form.expense_amount }}
             </div>
             <div class="field-wrapper">
-                {{ form.expense_currency.label_tag }}<br>
+                {{ form.expense_currency.label_tag }}*<br>
                 {{ form.expense_currency }}
             </div>
         </div>
-
         <div class="form-group-inline">
             <div class="field-wrapper">
-                {{ form.expense_date.label_tag }}<br>
+                {{ form.expense_date.label_tag }}*<br>
                 {{ form.expense_date }}
             </div>
             <div class="field-wrapper">
-                {{ form.expense_time.label_tag }}<br>
+                {{ form.expense_time.label_tag }}*<br>
                 {{ form.expense_time }}
             </div>
         </div>
 
-        <!-- Notes -->
         <div class="field-wrapper">
             {{ form.expense_notes.label_tag }}<br>
             {{ form.expense_notes }}
         </div>
+        <p class="nm">*Required fields</p>
 
         
         <div class="button-group">

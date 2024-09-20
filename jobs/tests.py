@@ -1,6 +1,6 @@
 from django.test import TestCase
 from jobs.forms import JobForm
-from jobs.models import Job, PaymentSettings
+from jobs.models import Job
 from decimal import Decimal
 from pytz import timezone as tz
 from django.utils import timezone
@@ -11,6 +11,14 @@ from django.core.cache import cache
 from common.utils import assign_job_color
 from datetime import timedelta
 import pytz
+
+from decimal import Decimal, ROUND_HALF_UP
+
+
+
+
+
+
 
 BUDAPEST_TZ = pytz.timezone('Europe/Budapest')
 
@@ -25,6 +33,7 @@ class JobFormTest(TestCase):
             'job_time': '15:00',
             'job_currency': 'USD',
             'job_price': Decimal('150'),
+            'pick_up_location': 'Budapest',
             'job_description': 'Optional description', 
             'no_of_passengers': 1, 
             'vehicle_type': 'Car', 
@@ -35,25 +44,24 @@ class JobFormTest(TestCase):
 
 
 class FieldValidationTests(TestCase):
-    # Test to ensure job_description is required and cannot be left blank
     def test_empty_job_description(self):
         form_data = {
             'customer_name': 'John Doe',
-            'customer_number': '123456789',  # Valid customer number
+            'customer_number': '123456789',
             'job_date': timezone.now().date(),
             'job_time': timezone.now().time(),
-            'job_description': '',  # Testing empty job description
+            'pick_up_location': 'Budapest',
+            'drop_off_location': 'Vienna',  
+            'job_description': '', 
             'job_price': Decimal('100.00'),
             'job_currency': 'GBP',
             'no_of_passengers': 1,
             'vehicle_type': 'Car',
-            'kilometers': Decimal('10'),
+            'kilometers': Decimal('10')
         }
         form = JobForm(data=form_data)
         
-        # Assert the form is invalid because job_description is empty
-        self.assertFalse(form.is_valid())  
-        self.assertIn('job_description', form.errors)  # Check that the error is due to job_description
+        self.assertTrue(form.is_valid())
 
 
 class ConcurrencyHandlingTest(TestCase):
@@ -66,6 +74,7 @@ class ConcurrencyHandlingTest(TestCase):
             job_date=timezone.now().date(),
             job_time=timezone.now().time(),
             job_description="Test job description",
+            pick_up_location='Budapest',
             job_price=Decimal('100.00'),
             job_currency='GBP',  
             no_of_passengers=1,  
@@ -83,7 +92,7 @@ class ConcurrencyHandlingTest(TestCase):
 
 class CurrencyConversionTest(TestCase):
     # Test to ensure currency conversion to Euros works as expected
-    @patch('jobs.models.get_exchange_rate')
+    @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.2'))
     def test_currency_conversion(self, mock_get_exchange_rate):
         mock_get_exchange_rate.return_value = Decimal('1.2')  # Mocking exchange rate
         job = Job(
@@ -92,6 +101,7 @@ class CurrencyConversionTest(TestCase):
             job_date=timezone.now().date(),
             job_time=timezone.now().time(),
             customer_name='John Doe',
+            pick_up_location='Budapest',
             customer_number='123456789',
             no_of_passengers=1,
             vehicle_type='Car',
@@ -109,6 +119,7 @@ class CurrencyConversionTest(TestCase):
             job_time=timezone.now().time(),
             customer_name='John Doe',
             customer_number='123456789',
+            pick_up_location='Budapest',
             no_of_passengers=1,
             vehicle_type='Car',
             kilometers=Decimal('100')
@@ -127,6 +138,7 @@ class ToggleCompletedTestCase(TestCase):
             job_price=Decimal('100'),
             job_currency='EUR',
             customer_number='123456789',
+            pick_up_location='Budapest',
             no_of_passengers=1,
             vehicle_type='Car',
             kilometers=Decimal('100')
@@ -157,6 +169,7 @@ class JobDateAndTimeTests(TestCase):
             'job_time': '10:00',
             'job_currency': 'EUR',
             'job_price': Decimal('50.00'),
+            'pick_up_location': 'Budapest',
             'job_description': 'Optional description',
             'no_of_passengers': 1,
             'vehicle_type': 'Car',
@@ -174,6 +187,7 @@ class JobDateAndTimeTests(TestCase):
             'job_time': '23:59',
             'job_currency': 'EUR',
             'job_price': Decimal('50.00'),
+            'pick_up_location': 'Budapest',
             'job_description': 'Optional description',
             'no_of_passengers': 1,
             'vehicle_type': 'Car',
@@ -191,6 +205,7 @@ class JobDateAndTimeTests(TestCase):
             'job_time': '00:00',  # Midnight, technically the next day
             'job_currency': 'USD',
             'job_price': Decimal('75.00'),
+            'pick_up_location': 'Budapest',
             'job_description': 'New Year celebration ride',
             'no_of_passengers': 3,
             'vehicle_type': 'Minivan',
@@ -208,6 +223,7 @@ class JobDateAndTimeTests(TestCase):
             'job_time': '02:30',  # Time that does not exist in DST transition
             'job_currency': 'GBP',
             'job_price': Decimal('120.00'),
+            'pick_up_location': 'Budapest',
             'job_description': 'Early morning airport transfer',
             'no_of_passengers': 2,
             'vehicle_type': 'Car',
@@ -217,13 +233,6 @@ class JobDateAndTimeTests(TestCase):
         self.assertTrue(form.is_valid(), msg=form.errors)
 
 
-from decimal import Decimal, ROUND_HALF_UP
-
-from decimal import Decimal
-from django.test import TestCase
-from jobs.models import Job
-from django.utils import timezone
-from unittest.mock import patch
 
 class DriverFeeRevertTest(TestCase):
     def setUp(self):
@@ -236,20 +245,23 @@ class DriverFeeRevertTest(TestCase):
             job_description="Test job description",
             job_price=Decimal('100.00'),
             job_currency='GBP',
+            pick_up_location='Budapest',
             no_of_passengers=1,
             vehicle_type='Car',
             kilometers=Decimal('10'),
             driver_fee=Decimal('25000.00'),  # Initial driver fee in HUF
             driver_currency='HUF',
         )
-        # Manually trigger conversion to euros (using the correct conversion rate from the log: 0.002537)
+
+    @patch('jobs.models.get_exchange_rate', return_value=Decimal('0.002536'))
+    def test_driver_fee_conversion(self, mock_get_exchange_rate):
+        # Trigger conversion to euros with mocked exchange rate
         self.job.convert_to_euros()
 
-        # Allow for minor rounding differences by setting a custom tolerance
-        expected_driver_fee_in_euros = Decimal('63.43')  # Adjust this to match your rounding expectations
+        expected_driver_fee_in_euros = Decimal('63.40')  # Expecting conversion from 25000 HUF to EUR
         actual_driver_fee_in_euros = self.job.driver_fee_in_euros
 
-        # Use assertAlmostEqual with a higher tolerance if necessary
+        # Assert with the expected driver fee in euros
         self.assertAlmostEqual(actual_driver_fee_in_euros, expected_driver_fee_in_euros, delta=Decimal('0.1'))
 
     def test_revert_driver_fee_to_none(self):
@@ -262,6 +274,7 @@ class DriverFeeRevertTest(TestCase):
             'job_description': self.job.job_description,
             'job_price': self.job.job_price,
             'job_currency': self.job.job_currency,
+            'pick_up_location': 'Budapest',
             'no_of_passengers': self.job.no_of_passengers,
             'vehicle_type': self.job.vehicle_type,
             'kilometers': self.job.kilometers,
@@ -298,6 +311,7 @@ class JobColorAssignmentTest(TestCase):
             is_paid=is_paid,
             job_currency='EUR',  # Some defaults for required fields
             job_price=Decimal('100'),
+            pick_up_location='Budapest',
             customer_name='John Doe',
             customer_number='123456789',
             no_of_passengers=1,

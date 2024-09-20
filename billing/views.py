@@ -80,23 +80,20 @@ def calculations(request):
             'profit': profit,
         })
 
-    # Monthly expenses calculations
-    monthly_fuel_cost = Expense.objects.filter(
+     # Fetch all expense types dynamically from the Expense model
+    expense_types = [expense_type[0] for expense_type in Expense.EXPENSE_TYPES]
+
+    # Calculate the total of all monthly expenses
+    monthly_expenses_total = Expense.objects.filter(
         expense_date__year=current_year,
         expense_date__month=current_month,
-        expense_type='fuel'
+        expense_type__in=expense_types
     ).aggregate(Sum('expense_amount_in_euros'))['expense_amount_in_euros__sum'] or Decimal('0.00')
 
-    monthly_repair_cost = Expense.objects.filter(
+    # Calculate the total of all yearly expenses
+    yearly_expenses_total = Expense.objects.filter(
         expense_date__year=current_year,
-        expense_date__month=current_month,
-        expense_type='repair'
-    ).aggregate(Sum('expense_amount_in_euros'))['expense_amount_in_euros__sum'] or Decimal('0.00')
-
-    monthly_wages_cost = Expense.objects.filter(
-        expense_date__year=current_year,
-        expense_date__month=current_month,
-        expense_type='wages'
+        expense_type__in=expense_types
     ).aggregate(Sum('expense_amount_in_euros'))['expense_amount_in_euros__sum'] or Decimal('0.00')
 
     # Yearly calculations
@@ -120,43 +117,23 @@ def calculations(request):
             'profit': profit,
         })
 
-    # Yearly expenses calculations
-    yearly_fuel_cost = Expense.objects.filter(
-        expense_date__year=current_year,
-        expense_type='fuel'
-    ).aggregate(Sum('expense_amount_in_euros'))['expense_amount_in_euros__sum'] or Decimal('0.00')
-
-    yearly_repair_cost = Expense.objects.filter(
-        expense_date__year=current_year,
-        expense_type='repair'
-    ).aggregate(Sum('expense_amount_in_euros'))['expense_amount_in_euros__sum'] or Decimal('0.00')
-
-    yearly_wages_cost = Expense.objects.filter(
-        expense_date__year=current_year,
-        expense_type='wages'
-    ).aggregate(Sum('expense_amount_in_euros'))['expense_amount_in_euros__sum'] or Decimal('0.00')
-
-    # Calculate overall profit for the year (deducting expenses)
-    monthly_overall_profit = total_monthly_profit - (monthly_fuel_cost + monthly_repair_cost + monthly_wages_cost)
-    overall_profit = total_yearly_profit - (yearly_fuel_cost + yearly_repair_cost + yearly_wages_cost)
+    # Calculate overall profit for the month and year (deducting all expenses)
+    monthly_overall_profit = total_monthly_profit - monthly_expenses_total
+    overall_profit = total_yearly_profit - yearly_expenses_total
 
     # Render the template with context
     return render(request, 'calculations.html', {
         'now': now,
         'monthly_total_agent_fees': monthly_total_agent_fees,
         'monthly_total_driver_fees': monthly_total_driver_fees,
-        'monthly_fuel_cost': monthly_fuel_cost,
-        'monthly_repair_cost': monthly_repair_cost,
-        'monthly_wages_cost': monthly_wages_cost,
+        'monthly_expenses_total': monthly_expenses_total,  # All monthly expenses combined
         'total_job_profit': total_monthly_profit,
         'yearly_total_agent_fees': yearly_total_agent_fees,
         'yearly_total_driver_fees': yearly_total_driver_fees,
-        'yearly_fuel_cost': yearly_fuel_cost,
-        'yearly_repair_cost': yearly_repair_cost,
-        'yearly_wages_cost': yearly_wages_cost,
+        'yearly_expenses_total': yearly_expenses_total,  # All yearly expenses combined
         'total_yearly_profit': total_yearly_profit,
-        'monthly_overall_profit': monthly_overall_profit,
-        'overall_profit': overall_profit,
+        'monthly_overall_profit': monthly_overall_profit,  # Profit after expenses for the month
+        'overall_profit': overall_profit,  # Profit after expenses for the year
         'job_breakdowns': yearly_job_breakdowns,
         'agent_totals': get_agent_totals(yearly_jobs),
     })

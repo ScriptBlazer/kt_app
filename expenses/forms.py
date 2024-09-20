@@ -1,6 +1,7 @@
 from django import forms
 from expenses.models import Expense
 from jobs.models import Job
+from people.models import Driver
 
 class ExpenseForm(forms.ModelForm):
     expense_date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}), error_messages={
@@ -15,4 +16,15 @@ class ExpenseForm(forms.ModelForm):
 
     class Meta:
         model = Expense
-        fields = ['driver', 'expense_type', 'expense_amount', 'expense_currency', 'expense_date', 'expense_time', 'expense_notes']
+        fields = ['expense_type', 'driver', 'expense_amount', 'expense_currency', 'expense_date', 'expense_time', 'expense_notes']
+
+    def clean(self):
+        cleaned_data = super().clean()
+        expense_type = cleaned_data.get('expense_type')
+        driver = cleaned_data.get('driver')
+
+        # Check if expense_type is 'wages' and driver is not provided
+        if expense_type == 'wages' and not driver:
+            self.add_error('driver', 'Driver is required when "wages" is selected.')
+
+        return cleaned_data

@@ -20,3 +20,8 @@ def get(dictionary, key):
     if isinstance(dictionary, dict):
         return dictionary.get(key)
     return None  
+
+@register.filter
+def format_expense_type(value):
+    """Replace underscores with spaces and capitalize each word."""
+    return value.replace('_', ' ').title()

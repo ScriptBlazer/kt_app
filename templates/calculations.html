@@ -20,9 +20,7 @@
                     </div> -->
                     <div class="totals-text">
                         <p>Total Profit from Jobs for {{ now|date:"F Y" }}: <strong>€{{ total_job_profit|floatformat:2 }}</strong></p>
-                        <p>Total Fuel Cost for {{ now|date:"F Y" }}: <strong>€{{ monthly_fuel_cost|floatformat:2 }}</strong></p>
-                        <p>Total Repair Cost for {{ now|date:"F Y" }}: <strong>€{{ monthly_repair_cost|floatformat:2 }}</strong></p>
-                        <p>Total Wages for {{ now|date:"F Y" }}: <strong>€{{ monthly_wages_cost|floatformat:2 }}</strong></p>
+                        <p>Total Expenses for {{ now|date:"F Y" }}: <strong>€{{ monthly_expenses_total|floatformat:2 }}</strong></p>
                         <p>Total Agent Fees for {{ now|date:"F Y" }}: <strong>€{{ monthly_total_agent_fees|floatformat:2 }}</strong></p>
                         <p>Total Driver Fees for {{ now|date:"F Y" }}: <strong>€{{ monthly_total_driver_fees|floatformat:2 }}</strong></p>
                         <p>Overall Profit (After Expenses) for {{ now|date:"F Y" }}: <strong>€{{ monthly_overall_profit|floatformat:2 }}</strong></p>
@@ -36,12 +34,10 @@
                     </div> -->
                     <div class="totals-text">
                         <p>Total Profit from Jobs for {{ now.year }}: <strong>€{{ total_yearly_profit|floatformat:2 }}</strong></p>
-                        <p>Total Fuel Cost for {{ now.year }}: <strong>€{{ yearly_fuel_cost|floatformat:2 }}</strong></p>
-                        <p>Total Repair Cost for {{ now.year }}: <strong>€{{ yearly_repair_cost|floatformat:2 }}</strong></p>
-                        <p>Total Wages for {{ now.year }}: <strong>€{{ yearly_wages_cost|floatformat:2 }}</strong></p>
+                        <p>Total Expenses for {{ now.year }}: <strong>€{{ yearly_expenses_total|floatformat:2 }}</strong></p>
                         <p>Total Agent Fees for {{ now.year }}: <strong>€{{ yearly_total_agent_fees|floatformat:2 }}</strong></p>
                         <p>Total Driver Fees for {{ now.year }}: <strong>€{{ yearly_total_driver_fees|floatformat:2 }}</strong></p>
-                        <p>Overall Profit for (After Expenses) {{ now.year }}: <strong>€{{ overall_profit|floatformat:2 }}</strong></p>
+                        <p>Overall Profit (After Expenses) for {{ now.year }}: <strong>€{{ overall_profit|floatformat:2 }}</strong></p>
                     </div>
                 </div>
             </div>

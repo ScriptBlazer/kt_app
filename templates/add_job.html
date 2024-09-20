@@ -11,26 +11,26 @@
         {% csrf_token %}
         <!-- Job Form Fields -->
         <div class="form-group">
-            {{ job_form.customer_name.label_tag }}<br>
+            {{ job_form.customer_name.label_tag }}*<br>
             {{ job_form.customer_name }}
         </div>
         <div class="form-group">
-            {{ job_form.customer_number.label_tag }}<br>
+            {{ job_form.customer_number.label_tag }}*<br>
             {{ job_form.customer_number }}
         </div>
         <div class="form-group-inline">
             <div class="field-wrapper">
-                {{ job_form.job_date.label_tag }}<br>
+                {{ job_form.job_date.label_tag }}*<br>
                 {{ job_form.job_date }}
             </div>
             <div class="field-wrapper">
-                {{ job_form.job_time.label_tag }}<br>
+                {{ job_form.job_time.label_tag }}*<br>
                 {{ job_form.job_time }}
             </div>
         </div>
         <div class="form-group-inline">
             <div class="field-wrapper">
-                {{ job_form.pick_up_location.label_tag }}<br>
+                {{ job_form.pick_up_location.label_tag }}*<br>
                 {{ job_form.pick_up_location }}
             </div>
             <div class="field-wrapper">
@@ -54,11 +54,11 @@
         </div>
         <div class="form-group-inline">
             <div class="field-wrapper">
-                {{ job_form.no_of_passengers.label_tag }}<br>
+                {{ job_form.no_of_passengers.label_tag }}*<br>
                 {{ job_form.no_of_passengers }}
             </div>
             <div class="field-wrapper">
-                {{ job_form.vehicle_type.label_tag }}<br>
+                {{ job_form.vehicle_type.label_tag }}*<br>
                 {{ job_form.vehicle_type }}
             </div>
         </div>
@@ -70,11 +70,11 @@
         </div>
         <div class="form-group-inline">
             <div class="field-wrapper">
-                {{ job_form.job_price.label_tag }}<br>
+                {{ job_form.job_price.label_tag }}*<br>
                 {{ job_form.job_price }}
             </div>
             <div class="field-wrapper">
-                {{ job_form.job_currency.label_tag }}<br>
+                {{ job_form.job_currency.label_tag }}*<br>
                 {{ job_form.job_currency }}  <!-- Corrected from {{ job_form.currency }} -->
             </div>
         </div>
@@ -122,6 +122,7 @@
                 {{ job_form.agent_percentage }}
             </div>
         </div>
+        <p class="nm">*Required fields</p>
 
         <div class="button-group">
             <button type="submit" id="save-button">Save Job</button>

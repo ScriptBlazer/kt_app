@@ -405,6 +405,10 @@ table tbody tr:hover {
     flex-direction: column;
 }
 
+.nm {
+    margin-top: 0px;
+}
+
 .content {
     flex: 1;
     padding: 20px;

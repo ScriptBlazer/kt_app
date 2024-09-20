@@ -25,7 +25,7 @@
                     <span class="slim">{{ job.job_date }}</span>
                     <span class="phone">{{ job.job_time|time_format }}</span>
                     <span class="phone">{{ job.job_price }} {{ job.currency }}</span>
-                    <span class="phone">{{ job.job_description|truncate_words_chars }}</span>
+                    <span class="phone">{{ job.pick_up_location |truncate_words_chars }}</span>
                 </div>
                 <span class="button-group">
                     <a href="{% url 'jobs:edit_job' job.id %}" class="button phone">Edit</a>
