@@ -10,6 +10,7 @@ from django.utils import timezone
 from django.db.models.deletion import ProtectedError
 from django.contrib.messages import get_messages
 from unittest.mock import patch
+from django.db.models import Sum
 import pytz
 
 
@@ -111,7 +112,7 @@ class ExpenseTestCase(TestCase):
         response = self.client.get(reverse('expenses:expenses'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Fuel for')
-        self.assertContains(response, 'Minor car')  # Updated to check the truncated content
+        self.assertContains(response, 'Minor car') 
 
     @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.2'))
     def test_prevent_driver_deletion_with_expense(self, mock_get_exchange_rate):
@@ -148,30 +149,37 @@ class ExpenseTestCase(TestCase):
         self.expense.convert_to_euros()
         self.assertEqual(self.expense.expense_amount_in_euros, Decimal('100.00'))
 
+    @patch('expenses.models.get_exchange_rate', return_value=Decimal('1.2'))
+    def test_calculate_totals_by_expense_type(self, mock_get_exchange_rate):
+        """Test the calculation of totals for each expense type."""
+        # Create expenses
+        Expense.objects.create(
+            driver=self.driver,
+            expense_type='repair',
+            expense_amount=Decimal('200.00'),
+            expense_currency='EUR',
+            expense_date=timezone.now().date(),
+            expense_time=timezone.now().time(),
+            expense_notes='Major car repair'
+        )
+        Expense.objects.create(
+            driver=self.driver,
+            expense_type='fuel',
+            expense_amount=Decimal('150.00'),
+            expense_currency='EUR',
+            expense_date=timezone.now().date(),
+            expense_time=timezone.now().time(),
+        )
+        Expense.objects.create(
+            driver=self.driver,
+            expense_type='fuel',
+            expense_amount=Decimal('60.00'),
+            expense_currency='EUR',
+            expense_date=timezone.now().date(),
+            expense_time=timezone.now().time(),
+        )
+        total_fuel = Expense.objects.filter(expense_type='fuel').aggregate(Sum('expense_amount'))['expense_amount__sum']
+        total_repair = Expense.objects.filter(expense_type='repair').aggregate(Sum('expense_amount'))['expense_amount__sum']
 
-    # def test_calculate_totals_by_expense_type(self):
-    #     """Test the calculation of totals for each expense type."""
-    #     new_expense = Expense.objects.create(
-    #         driver=self.driver,
-    #         expense_type='repair',
-    #         expense_amount=Decimal('200.00'),
-    #         expense_currency='EUR',
-    #         expense_date=timezone.now().date(),
-    #         expense_time=timezone.now().time(),
-    #         expense_notes='Major car repair'
-    #     )
-    #     Expense.objects.create(
-    #         driver=self.driver,
-    #         expense_type='fuel',
-    #         expense_amount=Decimal('150.00'),
-    #         expense_currency='EUR',
-    #         expense_date=timezone.now().date(),
-    #         expense_time=timezone.now().time(),
-    #         expense_notes='Additional fuel'
-    #     )
-
-    #     response = self.client.get(reverse('expenses:expenses'))
-    #     self.assertEqual(response.status_code, 200)
-    #     # Adjust expected total for fuel to match actual total including conversion
-    #     self.assertContains(response, 'Fuel Bill: €194.85')
-    #     self.assertContains(response, 'Car Repair: €200.00')
+        self.assertEqual(total_fuel, Decimal('260.00'))
+        self.assertEqual(total_repair, Decimal('200.00'))
