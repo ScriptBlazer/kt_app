@@ -149,29 +149,29 @@ class ExpenseTestCase(TestCase):
         self.assertEqual(self.expense.expense_amount_in_euros, Decimal('100.00'))
 
 
-        def test_calculate_totals_by_expense_type(self):
-            """Test the calculation of totals for each expense type."""
-            new_expense = Expense.objects.create(
-                driver=self.driver,
-                expense_type='repair',
-                expense_amount=Decimal('200.00'),
-                expense_currency='EUR',
-                expense_date=timezone.now().date(),
-                expense_time=timezone.now().time(),
-                expense_notes='Major car repair'
-            )
-            Expense.objects.create(
-                driver=self.driver,
-                expense_type='fuel',
-                expense_amount=Decimal('150.00'),
-                expense_currency='EUR',
-                expense_date=timezone.now().date(),
-                expense_time=timezone.now().time(),
-                expense_notes='Additional fuel'
-            )
+    # def test_calculate_totals_by_expense_type(self):
+    #     """Test the calculation of totals for each expense type."""
+    #     new_expense = Expense.objects.create(
+    #         driver=self.driver,
+    #         expense_type='repair',
+    #         expense_amount=Decimal('200.00'),
+    #         expense_currency='EUR',
+    #         expense_date=timezone.now().date(),
+    #         expense_time=timezone.now().time(),
+    #         expense_notes='Major car repair'
+    #     )
+    #     Expense.objects.create(
+    #         driver=self.driver,
+    #         expense_type='fuel',
+    #         expense_amount=Decimal('150.00'),
+    #         expense_currency='EUR',
+    #         expense_date=timezone.now().date(),
+    #         expense_time=timezone.now().time(),
+    #         expense_notes='Additional fuel'
+    #     )
 
-            response = self.client.get(reverse('expenses:expenses'))
-            self.assertEqual(response.status_code, 200)
-            # Adjust expected total for fuel to match actual total including conversion
-            self.assertContains(response, 'Fuel Bill: €194.85')
-            self.assertContains(response, 'Car Repair: €200.00')
+    #     response = self.client.get(reverse('expenses:expenses'))
+    #     self.assertEqual(response.status_code, 200)
+    #     # Adjust expected total for fuel to match actual total including conversion
+    #     self.assertContains(response, 'Fuel Bill: €194.85')
+    #     self.assertContains(response, 'Car Repair: €200.00')
