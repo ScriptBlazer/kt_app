@@ -13,7 +13,3 @@ class MyAdminSite(AdminSite):
         return super().has_permission(request)
 
 admin_site = MyAdminSite(name='myadmin')
-
-# Register your models for the custom admin site here
-# from .models import MyModel
-# admin_site.register(MyModel)

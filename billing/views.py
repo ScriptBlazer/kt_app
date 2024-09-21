@@ -15,7 +15,6 @@ budapest_tz = pytz.timezone('Europe/Budapest')
 def calculate_agent_fee_and_profit(job):
     job_price = job.job_price_in_euros or Decimal('0.00')
     driver_fee = job.driver_fee_in_euros or Decimal('0.00')
-    
     if job.agent_percentage == '5':
         agent_fee_amount = job_price * Decimal('0.05')
     elif job.agent_percentage == '10':
@@ -80,7 +79,7 @@ def calculations(request):
             'profit': profit,
         })
 
-     # Fetch all expense types dynamically from the Expense model
+    # Fetch all expense types dynamically from the Expense model
     expense_types = [expense_type[0] for expense_type in Expense.EXPENSE_TYPES]
 
     # Calculate the total of all monthly expenses
@@ -151,7 +150,6 @@ def all_calculations(request):
 
     overall_total_driver_fees = all_jobs.aggregate(Sum('driver_fee_in_euros'))['driver_fee_in_euros__sum'] or Decimal('0.00')
     overall_total_agent_fees = Decimal('0.00')
-    overall_total_profit = Decimal('0.00')
     total_job_profit = Decimal('0.00')
 
     all_job_breakdowns = []
@@ -170,33 +168,25 @@ def all_calculations(request):
             'profit': profit,
         })
 
+    # Calculate overall expenses in one go (sum all expenses in euros)
+    overall_expenses_total = Expense.objects.aggregate(Sum('expense_amount_in_euros'))['expense_amount_in_euros__sum'] or Decimal('0.00')
+
+    # Calculate overall profit after all expenses
+    overall_total_profit = total_job_profit - overall_expenses_total
+
     # Prepare the chart data
     job_dates = [job.job_date.strftime("%Y-%m-%d") for job in all_jobs]
     agent_fees = [float(calculate_agent_fee_and_profit(job)[0]) for job in all_jobs]
     driver_fees = [float(job.driver_fee_in_euros or Decimal('0.00')) for job in all_jobs]
     profits = [float(calculate_agent_fee_and_profit(job)[1] or Decimal('0.00')) for job in all_jobs]
 
-    # Calculate overall fuel cost
-    overall_fuel_cost = Expense.objects.filter(expense_type='fuel').aggregate(Sum('expense_amount_in_euros'))['expense_amount_in_euros__sum'] or Decimal('0.00')
-
-    # Calculate overall repair cost
-    overall_repair_cost = Expense.objects.filter(expense_type='repair').aggregate(Sum('expense_amount_in_euros'))['expense_amount_in_euros__sum'] or Decimal('0.00')
-
-    # Calculate overall wages
-    overall_wages_cost = Expense.objects.filter(expense_type='wages').aggregate(Sum('expense_amount_in_euros'))['expense_amount_in_euros__sum'] or Decimal('0.00')
-
-    # Calculate overall profit after expenses
-    overall_total_profit = total_job_profit - (overall_fuel_cost + overall_repair_cost + overall_wages_cost)
-
     # Render the template with context
     return render(request, 'all_calculations.html', {
-        'overall_fuel_cost': overall_fuel_cost,
-        'overall_repair_cost': overall_repair_cost,
-        'overall_wages_cost': overall_wages_cost,
         'overall_total_agent_fees': overall_total_agent_fees,
         'overall_total_driver_fees': overall_total_driver_fees,
-        'total_job_profit': total_job_profit,  # Total profit from jobs before expenses
-        'overall_total_profit': overall_total_profit,  # Profit after expenses
+        'total_job_profit': total_job_profit,
+        'overall_total_profit': overall_total_profit,
+        'overall_expenses_total': overall_expenses_total,
         'job_breakdowns': all_job_breakdowns,
         'agent_totals': get_agent_totals(all_jobs),
         'job_dates': json.dumps(job_dates),

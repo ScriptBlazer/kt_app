@@ -22,7 +22,7 @@ class Expense(models.Model):
     # Expense Details
     expense_type = models.CharField(max_length=255, choices=EXPENSE_TYPES)
     expense_amount = models.DecimalField(max_digits=10, decimal_places=2)
-    expense_amount_in_euros = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)  # Converted amount in euros
+    expense_amount_in_euros = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     expense_currency = models.CharField(max_length=10, choices=Job.CURRENCY_CHOICES)
     expense_date = models.DateField()
     expense_time = models.TimeField()

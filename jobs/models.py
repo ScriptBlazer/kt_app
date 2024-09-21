@@ -42,11 +42,6 @@ class Job(models.Model):
     job_currency = models.CharField(max_length=10, choices=CURRENCY_CHOICES)
     cc_fee = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
 
-    # Fuel Cost Information
-    fuel_cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    fuel_currency = models.CharField(max_length=10, choices=CURRENCY_CHOICES, null=True, blank=True)
-    fuel_cost_in_euros = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-
     # Driver Fee Information
     driver_fee = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     driver_currency = models.CharField(max_length=10, choices=CURRENCY_CHOICES, null=True, blank=True)
@@ -118,7 +113,6 @@ class Job(models.Model):
             rate = get_conversion_rate(currency)
             return (value * rate).quantize(Decimal('0.01'))
 
-        # Convert job price, fuel cost, and driver fee to Euros
+        # Convert job price, and driver fee to Euros
         self.job_price_in_euros = convert_field(self.job_price, self.job_currency)
-        self.fuel_cost_in_euros = convert_field(self.fuel_cost, self.fuel_currency)
         self.driver_fee_in_euros = convert_field(self.driver_fee, self.driver_currency)
