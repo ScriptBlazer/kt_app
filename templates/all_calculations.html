@@ -20,12 +20,10 @@
                             <canvas id="lineChart" width="800" height="400"></canvas>
                         </div> -->
                         <div class="overall_totals-text">
-                            <p>Overall Total Fuel Cost: <strong>€{{ overall_fuel_cost|floatformat:2 }}</strong></p>
-                            <p>Overall Total Repair Cost: <strong>€{{ overall_repair_cost|floatformat:2 }}</strong></p>
-                            <p>Overall Total Wages: <strong>€{{ overall_wages_cost|floatformat:2 }}</strong></p>
                             <p>Overall Total Agent Fees: <strong>€{{ overall_total_agent_fees|floatformat:2 }}</strong></p>
                             <p>Overall Total Driver Fees: <strong>€{{ overall_total_driver_fees|floatformat:2 }}</strong></p>
                             <p>Total Profit from Jobs: <strong>€{{ total_job_profit|floatformat:2 }}</strong></p>
+                            <p>Total Expenses: <strong>€{{ overall_expenses_total|floatformat:2 }}</strong></p>
                             <p>Overall Profit (After Expenses): <strong>€{{ overall_total_profit|floatformat:2 }}</strong></p>
                         </div>
                     </div>
@@ -53,12 +51,6 @@
                             <td>{{ job.customer_name|truncate_words_chars }}</td>
                             <td>{{ job.job_date }}</td>
                             <td>€{{ job.job_price|floatformat:2 }}</td>
-                            <td class="tablet">
-                                {% if job.fuel_cost %}
-                                    €{{ job.fuel_cost|floatformat:2 }}
-                                {% else %}
-                                {% endif %}
-                            </td>
                             <td class="tablet">
                                 {% if job.driver_fee %}
                                     €{{ job.driver_fee|floatformat:2 }}

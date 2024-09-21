@@ -30,7 +30,6 @@ class CalculationsViewTests(TestCase):
             job_time=time(12, 30),
             no_of_passengers=4,
             job_price=Decimal('1000.00'),
-            fuel_cost=Decimal('100.00'),
             driver_fee=Decimal('50.00'),
             agent_name=self.agent1,
             agent_percentage='5'
@@ -75,7 +74,6 @@ class AllCalculationsViewTests(TestCase):
             job_time=time(12, 30),
             no_of_passengers=3,
             job_price=Decimal('2000.00'),
-            fuel_cost=Decimal('200.00'),
             driver_fee=Decimal('100.00'),
             agent_name=self.agent1,
             agent_percentage='10'
@@ -136,7 +134,6 @@ class BillingCalculationsTests(TestCase):
 
         # Create expenses for the current month
         Expense.objects.create(
-            expense_type='fuel',
             expense_amount_in_euros=Decimal('100.00'),
             expense_amount=Decimal('100.00'),  # Provide a value for expense_amount
             expense_currency='EUR',
@@ -220,7 +217,6 @@ class AgentFeeCalculationTests(TestCase):
             job_time=time(12, 30),
             no_of_passengers=3,
             job_price=Decimal('2000.00'),
-            fuel_cost=Decimal('200.00'),
             driver_fee=Decimal('100.00'),
             agent_name=self.agent2,
             agent_percentage='10'
@@ -228,7 +224,7 @@ class AgentFeeCalculationTests(TestCase):
 
         agent_fee_amount, profit = self.calculate_job_profit(job)
         self.assertEqual(agent_fee_amount, Decimal('200.00'))  # 10% of 2000.00
-        self.assertEqual(profit, Decimal('1500.00'))  # 2000 - 200 (agent fee) - 200 (fuel) - 100 (driver)
+        self.assertEqual(profit, Decimal('1700.00'))  # 2000 - 200 (agent fee) - 100 (driver)
 
     @patch('jobs.models.get_exchange_rate')  # Mock the exchange rate API call
     def test_agent_fee_50_percent(self, mock_get_exchange_rate):
@@ -240,15 +236,14 @@ class AgentFeeCalculationTests(TestCase):
             job_time=time(12, 30),
             no_of_passengers=4,
             job_price=Decimal('3000.00'),
-            fuel_cost=Decimal('300.00'),
             driver_fee=Decimal('150.00'),
             agent_name=self.agent1,
             agent_percentage='50'
         )
 
         agent_fee_amount, profit = self.calculate_job_profit(job)
-        self.assertEqual(agent_fee_amount, Decimal('1275.00'))  # 50% of (3000 - 300 - 150)
-        self.assertEqual(profit, Decimal('1275.00'))  # Profit split equally with agent
+        self.assertEqual(agent_fee_amount, Decimal('1425.00'))  # 50% of (3000 - 300 - 150)
+        self.assertEqual(profit, Decimal('1425.00'))  # Profit split equally with agent
 
     @patch('jobs.models.get_exchange_rate')  # Mock the exchange rate API call
     def test_no_agent_fee(self, mock_get_exchange_rate):
@@ -260,7 +255,6 @@ class AgentFeeCalculationTests(TestCase):
             job_time=time(12, 30),
             no_of_passengers=5,
             job_price=Decimal('4000.00'),
-            fuel_cost=Decimal('400.00'),
             driver_fee=Decimal('200.00'),
             agent_name=None,
             agent_percentage=None
@@ -268,28 +262,27 @@ class AgentFeeCalculationTests(TestCase):
 
         agent_fee_amount, profit = self.calculate_job_profit(job)
         self.assertEqual(agent_fee_amount, Decimal('0.00'))  # No agent fee
-        self.assertEqual(profit, Decimal('3400.00'))  # 4000 - 400 (fuel) - 200 (driver)
+        self.assertEqual(profit, Decimal('3800.00'))  # 4000 - 200 (driver)
 
     def calculate_job_profit(self, job):
         # Mimicking your profit calculation logic
         job_price = job.job_price or Decimal('0.00')
-        fuel_cost = job.fuel_cost or Decimal('0.00')
         driver_fee = job.driver_fee or Decimal('0.00')
         agent_fee_amount = Decimal('0.00')
         profit = Decimal('0.00')
 
         if job.agent_percentage == '5':
             agent_fee_amount = job_price * Decimal('0.05')
-            profit = job_price - agent_fee_amount - fuel_cost - driver_fee
+            profit = job_price - agent_fee_amount - driver_fee
         elif job.agent_percentage == '10':
             agent_fee_amount = job_price * Decimal('0.10')
-            profit = job_price - agent_fee_amount - fuel_cost - driver_fee
+            profit = job_price - agent_fee_amount - driver_fee
         elif job.agent_percentage == '50':
-            profit_before_agent = job_price - fuel_cost - driver_fee
+            profit_before_agent = job_price - driver_fee
             agent_fee_amount = profit_before_agent * Decimal('0.50')
             profit = profit_before_agent - agent_fee_amount
         else:
-            profit = job_price - fuel_cost - driver_fee
+            profit = job_price - driver_fee
 
         return agent_fee_amount, profit
 

@@ -152,8 +152,6 @@ def view_job(request, job_id):
     job = get_object_or_404(Job, pk=job_id)
     logger.debug(f"Viewing Job ID: {job.id}, CC Fee: {job.cc_fee}")
 
-    # Ensure default values for fuel cost, driver fee, and kilometers
-    fuel_cost_in_euros = job.fuel_cost_in_euros or Decimal('0.00')
     driver_fee_in_euros = job.driver_fee_in_euros or Decimal('0.00')
     kilometers = job.kilometers or Decimal('0.00')
     
@@ -164,10 +162,9 @@ def view_job(request, job_id):
     
     return render(request, 'view_job.html', {
         'job': job,
-        'fuel_cost_in_euros': fuel_cost_in_euros,
         'driver_fee_in_euros': driver_fee_in_euros,
         'kilometers': kilometers,
-        'total_with_cc_fee': total_with_cc_fee,  # Add this to pass the total including the CC fee
+        'total_with_cc_fee': total_with_cc_fee,
     })
 
 @login_required

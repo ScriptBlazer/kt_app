@@ -62,12 +62,6 @@
                             <td>{{ job.customer_name|truncate_words_chars }}</td>
                             <td>{{ job.job_date }}</td>
                             <td>€{{ job.job_price|floatformat:2 }}</td>
-                            <!-- <td class="tablet">
-                                {% if job.fuel_cost %}
-                                    €{{ job.fuel_cost|floatformat:2 }}
-                                {% else %}
-                                {% endif %}
-                            </td> -->
                             <td class="tablet">
                                 {% if job.driver_fee %}
                                     €{{ job.driver_fee|floatformat:2 }}
