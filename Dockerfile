@@ -35,8 +35,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 FROM builder-base AS app-base
 
-USER app:app
-
 WORKDIR /app
 
 # copy virtual environment
@@ -45,9 +43,13 @@ COPY --chown=app:app --from=python-base /venv /venv
 # copy project
 COPY  . .
 
-RUN mkdir -p staticfiles && \
-    python manage.py collectstatic --no-input
+# set ownership of app folder
+RUN chown -R app:app /app
+
+# run as app user
+USER app:app
 
 # expose ports for gunicorn
 EXPOSE 8000
+
 ENTRYPOINT [ "/app/docker/entrypoints/web.sh" ]

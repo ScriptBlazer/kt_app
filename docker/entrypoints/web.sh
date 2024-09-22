@@ -2,6 +2,8 @@
 
 set -e
 
+python manage.py collectstatic --no-input --settings "${DJANGO_SETTINGS_MODULE}"
+
 python "/app/docker/scripts/wait_for_postgres.py"
 
 echo "Running migrations"
