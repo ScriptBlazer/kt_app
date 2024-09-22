@@ -14,6 +14,7 @@ class Expense(models.Model):
         ('renovations', 'Office Works/repairs'),
         ('car_wash', 'Car Wash'),
         ('toll', 'Tolls'),
+        ('parking_ticket', 'Parking Ticket'),
         ('other', 'Other'),
     ]
 

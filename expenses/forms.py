@@ -23,8 +23,12 @@ class ExpenseForm(forms.ModelForm):
         expense_type = cleaned_data.get('expense_type')
         driver = cleaned_data.get('driver')
 
-        # Check if expense_type is 'wages' and driver is not provided
+        # Check if 'wages' is selected and driver is not provided
         if expense_type == 'wages' and not driver:
             self.add_error('driver', 'Driver is required when "wages" is selected.')
+
+        # Check if 'parking ticket' is selected and driver is not provided
+        if expense_type == 'parking_ticket' and not driver:
+            self.add_error('driver', 'Driver is required when "parking ticket" is selected.')
 
         return cleaned_data
