@@ -170,6 +170,7 @@ def all_calculations(request):
 
     # Calculate overall expenses in one go (sum all expenses in euros)
     overall_expenses_total = Expense.objects.aggregate(Sum('expense_amount_in_euros'))['expense_amount_in_euros__sum'] or Decimal('0.00')
+    print("Overall Expenses Total: ", overall_expenses_total)
 
     # Calculate overall profit after all expenses
     overall_total_profit = total_job_profit - overall_expenses_total

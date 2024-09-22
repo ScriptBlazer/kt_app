@@ -62,6 +62,10 @@ def edit_expense(request, expense_id):
 
 @login_required
 def delete_expense(request, expense_id):
-    expense = get_object_or_404(Expense, pk=expense_id)
-    expense.delete()
-    return redirect('expenses:expenses')
+    expense = get_object_or_404(Expense, id=expense_id)
+
+    if request.method == 'POST':
+        expense.delete()
+        return redirect('expenses:expenses')
+
+    return render(request, 'delete_expense.html', {'expense': expense})
