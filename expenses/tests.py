@@ -86,11 +86,27 @@ class ExpenseTestCase(TestCase):
         self.assertEqual(self.expense.expense_notes, 'Updated repair expense')
 
     @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.2'))
-    def test_delete_expense(self, mock_get_exchange_rate):
-        """Test deleting an expense."""
+    def test_delete_expense_as_superuser(self, mock_get_exchange_rate):
+        """Test deleting an expense as a superuser."""
+        # Create a superuser
+        superuser = User.objects.create_superuser(username='superuser', password='12345')
+        self.client.login(username='superuser', password='12345')
+
+        # Try deleting the expense as a superuser
         response = self.client.post(reverse('expenses:delete_expense', args=[self.expense.id]))
-        self.assertEqual(response.status_code, 302)
-        self.assertFalse(Expense.objects.filter(id=self.expense.id).exists())
+        self.assertEqual(response.status_code, 302)  # Check for redirect after deletion
+        self.assertFalse(Expense.objects.filter(id=self.expense.id).exists())  # Expense should no longer exist
+
+    @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.2'))
+    def test_delete_expense_as_non_superuser(self, mock_get_exchange_rate):
+        """Test deleting an expense as a non-superuser."""
+        # Login as the normal user (non-superuser)
+        self.client.login(username='testuser', password='12345')
+
+        # Try deleting the expense as a non-superuser
+        response = self.client.post(reverse('expenses:delete_expense', args=[self.expense.id]))
+        self.assertEqual(response.status_code, 403)  # Should return 403 Forbidden
+        self.assertTrue(Expense.objects.filter(id=self.expense.id).exists())  # Expense should still exist
 
     @patch('expenses.models.get_exchange_rate', return_value=Decimal('1.2'))
     def test_view_expense(self, mock_get_exchange_rate):

@@ -19,11 +19,12 @@
                         <canvas id="monthlyChart"></canvas>
                     </div> -->
                     <div class="totals-text">
-                        <p>Total Profit from Jobs for {{ now|date:"F Y" }}: <strong>€{{ total_job_profit|floatformat:2 }}</strong></p>
-                        <p>Total Expenses for {{ now|date:"F Y" }}: <strong>€{{ monthly_expenses_total|floatformat:2 }}</strong></p>
-                        <p>Total Agent Fees for {{ now|date:"F Y" }}: <strong>€{{ monthly_total_agent_fees|floatformat:2 }}</strong></p>
-                        <p>Total Driver Fees for {{ now|date:"F Y" }}: <strong>€{{ monthly_total_driver_fees|floatformat:2 }}</strong></p>
-                        <p>Overall Profit (After Expenses) for {{ now|date:"F Y" }}: <strong>€{{ monthly_overall_profit|floatformat:2 }}</strong></p>
+                        <p>Total Profit from Jobs {{ now|date:"F Y" }}: <strong>€{{ total_job_profit|floatformat:2 }}</strong></p>
+                        <p>Total Expenses {{ now|date:"F Y" }}: <strong>€{{ monthly_expenses_total|floatformat:2 }}</strong></p>
+                        <p>Total Agent Fees {{ now|date:"F Y" }}: <strong>€{{ monthly_total_agent_fees|floatformat:2 }}</strong></p>
+                        <p>Total Driver Fees {{ now|date:"F Y" }}: <strong>€{{ monthly_total_driver_fees|floatformat:2 }}</strong></p>
+                        <p>Total Shuttle Income {{ now|date:"F Y" }}: <strong>€{{ monthly_shuttle_income|floatformat:2 }}</strong></p>
+                        <p>Overall Profit (After Expenses) {{ now|date:"F Y" }}: <strong>€{{ monthly_overall_profit|floatformat:2 }}</strong></p>
                     </div>
                 </div>
 
@@ -33,11 +34,12 @@
                         <canvas id="yearlyChart"></canvas>
                     </div> -->
                     <div class="totals-text">
-                        <p>Total Profit from Jobs for {{ now.year }}: <strong>€{{ total_yearly_profit|floatformat:2 }}</strong></p>
-                        <p>Total Expenses for {{ now.year }}: <strong>€{{ yearly_expenses_total|floatformat:2 }}</strong></p>
-                        <p>Total Agent Fees for {{ now.year }}: <strong>€{{ yearly_total_agent_fees|floatformat:2 }}</strong></p>
-                        <p>Total Driver Fees for {{ now.year }}: <strong>€{{ yearly_total_driver_fees|floatformat:2 }}</strong></p>
-                        <p>Overall Profit (After Expenses) for {{ now.year }}: <strong>€{{ overall_profit|floatformat:2 }}</strong></p>
+                        <p>Total Profit from Jobs {{ now.year }}: <strong>€{{ total_yearly_profit|floatformat:2 }}</strong></p>
+                        <p>Total Expenses {{ now.year }}: <strong>€{{ yearly_expenses_total|floatformat:2 }}</strong></p>
+                        <p>Total Agent Fees {{ now.year }}: <strong>€{{ yearly_total_agent_fees|floatformat:2 }}</strong></p>
+                        <p>Total Driver Fees {{ now.year }}: <strong>€{{ yearly_total_driver_fees|floatformat:2 }}</strong></p>
+                        <p>Total Shuttle Income {{ now.year }}: <strong>€{{ yearly_shuttle_income|floatformat:2 }}</strong></p>
+                        <p>Overall Profit (After Expenses) {{ now.year }}: <strong>€{{ overall_profit|floatformat:2 }}</strong></p>
                     </div>
                 </div>
             </div>

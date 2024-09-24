@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.db.models import Sum
 from jobs.models import Job
 from expenses.models import Expense
+from shuttle.models import Shuttle
 from decimal import Decimal
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
@@ -116,23 +117,32 @@ def calculations(request):
             'profit': profit,
         })
 
+    # Fetch shuttle income for the current month and year
+    monthly_shuttles = Shuttle.objects.filter(shuttle_date__year=current_year, shuttle_date__month=current_month)
+    yearly_shuttles = Shuttle.objects.filter(shuttle_date__year=current_year)
+
+    monthly_shuttle_income = monthly_shuttles.aggregate(Sum('price'))['price__sum'] or Decimal('0.00')
+    yearly_shuttle_income = yearly_shuttles.aggregate(Sum('price'))['price__sum'] or Decimal('0.00')
+
     # Calculate overall profit for the month and year (deducting all expenses)
-    monthly_overall_profit = total_monthly_profit - monthly_expenses_total
-    overall_profit = total_yearly_profit - yearly_expenses_total
+    monthly_overall_profit = total_monthly_profit + monthly_shuttle_income - monthly_expenses_total
+    overall_profit = total_yearly_profit + yearly_shuttle_income - yearly_expenses_total
 
     # Render the template with context
     return render(request, 'calculations.html', {
         'now': now,
         'monthly_total_agent_fees': monthly_total_agent_fees,
         'monthly_total_driver_fees': monthly_total_driver_fees,
-        'monthly_expenses_total': monthly_expenses_total,  # All monthly expenses combined
+        'monthly_expenses_total': monthly_expenses_total, 
+        'monthly_shuttle_income': monthly_shuttle_income,
         'total_job_profit': total_monthly_profit,
         'yearly_total_agent_fees': yearly_total_agent_fees,
         'yearly_total_driver_fees': yearly_total_driver_fees,
-        'yearly_expenses_total': yearly_expenses_total,  # All yearly expenses combined
+        'yearly_expenses_total': yearly_expenses_total,
+        'yearly_shuttle_income': monthly_shuttle_income,
         'total_yearly_profit': total_yearly_profit,
-        'monthly_overall_profit': monthly_overall_profit,  # Profit after expenses for the month
-        'overall_profit': overall_profit,  # Profit after expenses for the year
+        'monthly_overall_profit': monthly_overall_profit,
+        'overall_profit': overall_profit, 
         'job_breakdowns': yearly_job_breakdowns,
         'agent_totals': get_agent_totals(yearly_jobs),
     })
@@ -172,8 +182,11 @@ def all_calculations(request):
     overall_expenses_total = Expense.objects.aggregate(Sum('expense_amount_in_euros'))['expense_amount_in_euros__sum'] or Decimal('0.00')
     print("Overall Expenses Total: ", overall_expenses_total)
 
+    # Fetch overall shuttle income
+    overall_shuttle_income = Shuttle.objects.aggregate(Sum('price'))['price__sum'] or Decimal('0.00')
+
     # Calculate overall profit after all expenses
-    overall_total_profit = total_job_profit - overall_expenses_total
+    overall_total_profit = total_job_profit + overall_shuttle_income - overall_expenses_total
 
     # Prepare the chart data
     job_dates = [job.job_date.strftime("%Y-%m-%d") for job in all_jobs]
@@ -188,6 +201,7 @@ def all_calculations(request):
         'total_job_profit': total_job_profit,
         'overall_total_profit': overall_total_profit,
         'overall_expenses_total': overall_expenses_total,
+        'overall_shuttle_income': overall_shuttle_income,
         'job_breakdowns': all_job_breakdowns,
         'agent_totals': get_agent_totals(all_jobs),
         'job_dates': json.dumps(job_dates),
