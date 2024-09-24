@@ -29,3 +29,6 @@ git push origin 1.0.0
 ```
 
 Once the Git tag is pushed, the GitHub Actions workflow will trigger automatically, building and pushing the Docker image to Docker Hub with the corresponding tag. The built image will be available at `scriptblazer/kt-app:1.0.0`
+
+In the instance change the .env tag to to new tag and save
+Then type `docker compose up -d`
