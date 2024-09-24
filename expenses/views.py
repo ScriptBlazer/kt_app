@@ -64,6 +64,10 @@ def edit_expense(request, expense_id):
 def delete_expense(request, expense_id):
     expense = get_object_or_404(Expense, id=expense_id)
 
+    # Check if the user is a superuser
+    if not request.user.is_superuser:
+         return render(request, '403.html', status=403)
+
     if request.method == 'POST':
         expense.delete()
         return redirect('expenses:expenses')

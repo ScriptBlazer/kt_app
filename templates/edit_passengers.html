@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Edit Passengers{% endblock %}
+
+{% block content %}
+<div class="container">
+    <form method="POST">
+        {% csrf_token %}
+
+        <div class="form-group-inline">
+            <div class="field-wrapper">
+                {{ form.customer_name.label_tag }}*<br>
+                {{ form.customer_name }}
+            </div>
+            <div class="field-wrapper">
+                {{ form.customer_number.label_tag }}*<br>
+                {{ form.customer_number }}
+            </div>
+        </div>
+        <div class="field-wrapper">
+            {{ form.customer_email.label_tag }}<br>
+            {{ form.customer_email }}
+        </div>
+        <div class="form-group-inline">
+            <div class="field-wrapper">
+                {{ form.shuttle_date.label_tag }}*<br>
+                {{ form.shuttle_date }}
+            </div>
+            <div class="field-wrapper">
+                {{ form.shuttle_direction.label_tag }}*<br>
+                {{ form.shuttle_direction }}
+            </div>
+        </div>
+        <div class="field-wrapper">
+            {{ form.no_of_passengers.label_tag }}*<br>
+            {{ form.no_of_passengers }}
+        </div>
+        <div class="field-wrapper">
+            {{ form.shuttle_notes.label_tag }}<br>
+            {{ form.shuttle_notes }}
+        </div>
+        <p class="nm">*Required fields</p>
+
+        <div class="button-group">
+            <button type="submit" class="button">Save Changes</button>
+            <a href="{% url 'shuttle:shuttle' %}" class="button cancel-button">Cancel</a>
+        </div>
+    </form>
+
+    {% if form.errors %}
+        <div class="errors">
+            <h2>Form Errors:</h2>
+            <ul>
+                {% for field in form %}
+                    {% if field.errors %}
+                        <li>{{ field.label }}: {{ field.errors|striptags }}</li>
+                    {% endif %}
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'script.js' %}"></script>
+{% endblock %}
