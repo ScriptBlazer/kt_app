@@ -22,6 +22,7 @@ Tests can be run with `python manage.py test`
 This project uses GitHub Actions to automatically publish Docker images to Docker Hub for tags matching the format `x.y.z`.
 
 To publish a new version, create a Git tag with the desired version number (e.g., `1.0.0`):
+
 ```bash
 git tag 1.0.0
 git push origin 1.0.0

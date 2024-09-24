@@ -143,3 +143,5 @@ pgbackups
 staticfiles
 
 .DS_Store
+
+django_logs.log

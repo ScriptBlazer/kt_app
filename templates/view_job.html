@@ -18,10 +18,10 @@
     <p><strong>Job Time:</strong> {{ job.job_time|time_format|default_if_none:"" }}</p>
     <p><strong>Pick-up Location:</strong> {{ job.pick_up_location|default_if_none:"" }}</p>
     <p><strong>Drop-off Location:</strong> {{ job.drop_off_location|default_if_none:"" }}</p>
+    <p><strong>flight Number:</strong> {{ job.flight_number|default_if_none:"" }}</p>
     <p><strong>Job Description:</strong> {{ job.job_description|default_if_none:"" }}</p>
     <p><strong>No of Passengers:</strong> {{ job.no_of_passengers|default_if_none:"" }}</p>
     <p><strong>Vehicle Type:</strong> {{ job.vehicle_type|default_if_none:"" }}</p>
-    <p><strong>Drop-off Location:</strong> {{ job.drop_off_location|default_if_none:"" }}</p>
     <p><strong>Kilometers:</strong> {{ calculation.kilometers|default_if_none:"" }}</p>
     <p><strong>Payment Type:</strong> {{ job.payment_type|default_if_none:"" }}</p>
     <p>

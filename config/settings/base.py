@@ -135,7 +135,7 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGOUT_REDIRECT_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/jobs/'
-
+LOG_FILE_PATH = os.path.join(BASE_DIR, 'django_logs.log')
 
 LOGGING = {
     'version': 1,
@@ -163,7 +163,6 @@ LOGGING = {
         },
     },
 }
-
 
 # API Keys
 EXCHANGE_RATE_API_KEY = os.getenv('EXCHANGE_RATE_API_KEY')

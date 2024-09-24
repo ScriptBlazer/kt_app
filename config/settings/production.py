@@ -14,3 +14,31 @@ DATABASES = {
 }
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'class': 'logging.FileHandler',
+            'filename': LOG_FILE_PATH,
+            'formatter': 'verbose',
+        },
+    },
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file'],
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'), 
+        },
+        'kt': {
+            'handlers': ['file'], 
+            'level': 'INFO', 
+        },
+    },
+}

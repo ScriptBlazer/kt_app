@@ -22,27 +22,33 @@ hungary_tz = pytz.timezone('Europe/Budapest')
 @login_required
 def home(request):
     now_hungary = timezone.now().astimezone(hungary_tz)
+    logger.info(f"Current time in Budapest: {now_hungary}")
     two_days_ago = now_hungary - timedelta(days=2)
+    logger.debug(f"Fetching jobs from two days ago: {two_days_ago}")
 
     # Query for upcoming jobs
     upcoming_jobs = Job.objects.filter(
         Q(job_date__gt=now_hungary.date()) |
         (Q(job_date=now_hungary.date()) & Q(job_time__gt=now_hungary.time()))
     ).order_by('job_date', 'job_time')
+    logger.info(f"Found {upcoming_jobs.count()} upcoming jobs.")
 
     # Query for recent jobs
     recent_jobs = Job.objects.filter(
         Q(job_date__lt=now_hungary.date()) |
         (Q(job_date=now_hungary.date()) & Q(job_time__lt=now_hungary.time()))
     ).filter(job_date__gte=two_days_ago.date()).order_by('-job_date', '-job_time')
+    logger.info(f"Found {recent_jobs.count()} recent jobs.")
 
     # Assign colors to upcoming jobs
     for job in upcoming_jobs:
         job.color = assign_job_color(job, now_hungary)
+        logger.debug(f"Assigned color {job.color} to upcoming job {job.id}")
     
     # Assign colors to recent jobs
     for job in recent_jobs:
         job.color = assign_job_color(job, now_hungary)
+        logger.debug(f"Assigned color {job.color} to recent job {job.id}")
 
     return render(request, 'index.html', {
         'recent_jobs': recent_jobs,
@@ -60,7 +66,7 @@ def add_job(request):
 
     if request.method == 'POST':
         logger.debug("Request method is POST")
-        logger.debug(f"POST data: {request.POST}")  # Log POST data
+        logger.debug(f"POST data: {request.POST}")
 
         job_form = JobForm(request.POST)
 
@@ -100,6 +106,7 @@ def add_job(request):
     
 @login_required
 def edit_job(request, job_id):
+    logger.info(f"Edit job view accessed for job ID: {job_id} by user: {request.user}")
     job = get_object_or_404(Job, pk=job_id)
 
     if request.method == 'POST':
@@ -126,8 +133,8 @@ def edit_job(request, job_id):
 
 @login_required
 def past_jobs(request):
-    now = timezone.now()  # Get the current time
-    query = request.GET.get('q', '')  # Get the search query
+    now = timezone.now()
+    query = request.GET.get('q', '') 
 
     if query:
         past_jobs = Job.objects.filter(
@@ -137,9 +144,12 @@ def past_jobs(request):
             Q(pick_up_location__icontains=query),  # Search by pick up location (correct field)
             job_date__lt=now  # Ensure the job is in the past
         ).order_by('-job_date')
+        logger.info(f"Found {past_jobs.count()} jobs matching query.")
     else:
         # If no query, return all past jobs
         past_jobs = Job.objects.filter(job_date__lt=now).order_by('-job_date')
+    
+    logger.info(f"Found {past_jobs.count()} past jobs.")
 
     # Assign colors to past jobs
     for job in past_jobs:
