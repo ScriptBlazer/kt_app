@@ -4,11 +4,12 @@ from people.forms import AgentForm, DriverForm
 from django.contrib.auth.decorators import login_required
 from django.db.models.deletion import ProtectedError
 from django.contrib import messages
+from django.db.models.functions import Lower
 
 @login_required
 def manage(request):
-    agents = Agent.objects.all()
-    drivers = Driver.objects.all()
+    agents = Agent.objects.all().order_by(Lower('name'))
+    drivers = Driver.objects.all().order_by(Lower('name'))
 
     form = None
     driver_form = None
