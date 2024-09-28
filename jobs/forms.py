@@ -2,6 +2,8 @@ from django import forms
 from decimal import Decimal
 from .models import Job
 from django.core.exceptions import ValidationError
+from people.models import Agent, Driver
+from django.db.models.functions import Lower
 
 # Custom time field to validate time format
 class CustomTimeField(forms.TimeField):
@@ -32,7 +34,7 @@ class JobForm(forms.ModelForm):
             'customer_name', 'customer_number', 'job_date', 'job_time',
             'job_description', 'no_of_passengers', 'vehicle_type', 'kilometers',
             'pick_up_location', 'drop_off_location', 'flight_number', 'payment_type',
-            'job_price', 'driver_fee', 'driver', 'driver_name',
+            'job_price', 'driver_fee', 'driver',
             'number_plate', 'agent_name', 'agent_percentage', 'job_currency', 'driver_currency'
         ]
         error_messages = {
@@ -46,6 +48,11 @@ class JobForm(forms.ModelForm):
             'job_price': {'required': 'Please enter the job price.', 'invalid': 'Enter a valid price.'},
             'job_currency': {'required': 'Please select a currency for the job price.'}
         }
+
+    def __init__(self, *args, **kwargs):
+        super(JobForm, self).__init__(*args, **kwargs)
+        self.fields['driver'].queryset = Driver.objects.order_by(Lower('name'))
+        self.fields['agent_name'].queryset = Agent.objects.order_by(Lower('name'))
 
     def clean(self):
         cleaned_data = super().clean()
