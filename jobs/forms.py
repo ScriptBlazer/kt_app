@@ -32,7 +32,7 @@ class JobForm(forms.ModelForm):
             'customer_name', 'customer_number', 'job_date', 'job_time',
             'job_description', 'no_of_passengers', 'vehicle_type', 'kilometers',
             'pick_up_location', 'drop_off_location', 'flight_number', 'payment_type',
-            'job_price', 'driver_fee', 'driver_name',
+            'job_price', 'driver_fee', 'driver', 'driver_name',
             'number_plate', 'agent_name', 'agent_percentage', 'job_currency', 'driver_currency'
         ]
         error_messages = {
