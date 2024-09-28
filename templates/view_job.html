@@ -68,7 +68,7 @@
             {% endif %}
         {% endif %}
     </p>
-
+    <p><strong>Driver New:</strong> {{ job.driver|default_if_none:"" }}</p>
     <p><strong>Driver Name:</strong> {{ job.driver_name|default_if_none:"" }}</p>
     <p><strong>Number Plate:</strong> {{ job.number_plate|default_if_none:"" }}</p>
     <p><strong>Agent Name:</strong> {{ job.agent_name.name|default_if_none:"" }}</p>

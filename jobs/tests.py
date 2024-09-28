@@ -12,6 +12,7 @@ from datetime import timedelta
 from unittest import mock
 import pytz
 from common.utils import get_exchange_rate
+from people.models import Driver
 
 from decimal import Decimal, ROUND_HALF_UP
 
@@ -306,17 +307,17 @@ class JobColorAssignmentTest(TestCase):
         self.hungary_tz = pytz.timezone('Europe/Budapest')
         self.now = timezone.now().astimezone(self.hungary_tz)
 
-    def create_job(self, job_date, job_time=None, driver_name='', is_completed=False, is_paid=False):
+    def create_job(self, job_date, job_time=None, driver=None, is_completed=False, is_paid=False):
         if job_time is None:
-            job_time = self.now.time()  # Set current time if not provided
-        
+            job_time = self.now.time() 
+
         return Job.objects.create(
             job_date=job_date,
-            job_time=timezone.now().time(),  # Set a default job time
-            driver_name=driver_name,
+            job_time=job_time,
+            driver=driver, 
             is_completed=is_completed,
             is_paid=is_paid,
-            job_currency='EUR',  # Some defaults for required fields
+            job_currency='EUR', 
             job_price=Decimal('100'),
             pick_up_location='Budapest',
             customer_name='John Doe',
@@ -330,7 +331,7 @@ class JobColorAssignmentTest(TestCase):
         """
         Test that a job with no driver assigned stays white.
         """
-        job = self.create_job(self.now.date() + timedelta(days=1))  # Future job with no driver
+        job = self.create_job(self.now.date() + timedelta(days=1)) 
         color = assign_job_color(job, self.now)
         self.assertEqual(color, 'white')
 
@@ -338,7 +339,8 @@ class JobColorAssignmentTest(TestCase):
         """
         Test that a job with a driver assigned turns orange.
         """
-        job = self.create_job(self.now.date() + timedelta(days=1), driver_name="John Doe")  # Driver assigned
+        driver = Driver.objects.create(name="John Doe")
+        job = self.create_job(self.now.date() + timedelta(days=1), driver=driver) 
         color = assign_job_color(job, self.now)
         self.assertEqual(color, 'orange')
 
@@ -346,7 +348,8 @@ class JobColorAssignmentTest(TestCase):
         """
         Test that a job with a driver assigned and marked as completed turns green.
         """
-        job = self.create_job(self.now.date() + timedelta(days=1), driver_name="John Doe", is_completed=True)  # Completed job
+        driver = Driver.objects.create(name="John Doe") 
+        job = self.create_job(self.now.date() + timedelta(days=1), driver=driver, is_completed=True) 
         color = assign_job_color(job, self.now)
         self.assertEqual(color, 'green')
 
@@ -354,7 +357,8 @@ class JobColorAssignmentTest(TestCase):
         """
         Test that a job that is one day old, with a driver assigned, and not paid turns red.
         """
-        job = self.create_job(self.now.date() - timedelta(days=1), driver_name="John Doe", is_paid=False)  # One day old and unpaid
+        driver = Driver.objects.create(name="John Doe") 
+        job = self.create_job(self.now.date() - timedelta(days=1), driver=driver, is_paid=False) 
         color = assign_job_color(job, self.now)
         self.assertEqual(color, 'red')
 
@@ -363,7 +367,8 @@ class JobColorAssignmentTest(TestCase):
         Test that a job that meets both the criteria for green (completed and driver assigned)
         and red (one day old, unpaid, and driver assigned) always turns red.
         """
-        job = self.create_job(self.now.date() - timedelta(days=1), driver_name="John Doe", is_completed=True, is_paid=False)  # Old, unpaid, completed
+        driver = Driver.objects.create(name="John Doe")  
+        job = self.create_job(self.now.date() - timedelta(days=1), driver=driver, is_completed=True, is_paid=False) 
         color = assign_job_color(job, self.now)
         self.assertEqual(color, 'red')
 
@@ -372,7 +377,8 @@ class JobColorAssignmentTest(TestCase):
         Test that a job that meets both the criteria for orange (driver assigned)
         and red (one day old, unpaid, and driver assigned) always turns red.
         """
-        job = self.create_job(self.now.date() - timedelta(days=1), driver_name="John Doe", is_paid=False)  # One day old, unpaid, driver assigned
+        driver = Driver.objects.create(name="John Doe") 
+        job = self.create_job(self.now.date() - timedelta(days=1), driver=driver, is_paid=False)  
         color = assign_job_color(job, self.now)
         self.assertEqual(color, 'red')
 

@@ -70,7 +70,7 @@ def assign_job_color(job, now):
     - Red: If the job is one day old, the driver is assigned, and the customer has not paid.
     """
     # Check if the driver is assigned
-    if not job.driver_name:
+    if not job.driver:
         return 'white'  # No driver assigned yet
     
     # Check if the job is one day old and the customer has not paid
