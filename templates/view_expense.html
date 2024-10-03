@@ -11,7 +11,7 @@
         <a href="{% url 'expenses:expenses' %}" class="button">Back to Expenses</a>
     </div>
     <br>
-    <h1>View Expense</h1>
+    <h2>View Expense</h2>
     <p><strong>Driver:</strong> {{ expense.driver.name|default_if_none:"" }}</p>
     <p><strong>Expense Type:</strong> {{ expense.expense_type|default_if_none:"" }}</p>
     <p><strong>Expense Amount:</strong> 

@@ -7,7 +7,7 @@
 <div class="container">
     <a href="{% url 'people:manage' %}" class="button">Back to Manage</a>
     <br><br>
-    <h1>Edit Agent</h1>
+    <h2>Edit Agent</h2>
     <form method="post">
         {% csrf_token %}
         {{ form.as_p }}

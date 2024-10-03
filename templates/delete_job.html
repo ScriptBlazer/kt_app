@@ -6,7 +6,7 @@
 
 {% block content %}
 <div class="container delete">
-    <h1>Delete Job</h1>
+    <h2>Delete Job</h2>
     <form method="post">
         {% csrf_token %}
         <h3>Are you sure you want to delete the job for {{ job.customer_name }} on {{ job.job_date }} at {{ job.job_time|time_format }}? </h3>

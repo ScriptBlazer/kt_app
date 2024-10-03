@@ -6,7 +6,7 @@
 
 {% block content %}
 <div class="container delete">
-    <h1>Delete Expense</h1>
+    <h2>Delete Expense</h2>
     <form method="post">
         {% csrf_token %}
         <h3>Are you sure you want to delete the expense for {{ expense.driver.name|default_if_none:"Office" }} on {{ expense.expense_date }} at {{ expense.expense_time|time_format }}?</h3>

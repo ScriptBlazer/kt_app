@@ -9,9 +9,14 @@
     <div class="buttons">
         <a href="{% url 'home' %}" class="button">Back to Home</a>
         <a href="{% url 'jobs:past_jobs' %}" class="button">Back to Past Jobs</a>
+        <!-- Add the Copy to Clipboard Button -->
+        <button onclick="copyJobDetails()" class="button">Copy Job Details</button>
+
+        <!-- Success Message -->
+        <p id="copy-success" style="display: none; color: green;">Job details copied to clipboard!</p>
     </div>
     <br>
-    <h1>View Job</h1>
+    <h2>View Job</h2>
     <p><strong>Customer Name:</strong> {{ job.customer_name|default_if_none:"" }}</p>
     <p><strong>Customer Number:</strong> {{ job.customer_number|default_if_none:"" }}</p>
     <p><strong>Job Date:</strong> {{ job.job_date|default_if_none:"" }}</p>
@@ -48,17 +53,6 @@
             {% endif %}
         {% endif %}
     </p>
-
-    <!-- <p>
-        <strong>Fuel Cost:</strong> 
-        {% if job.fuel_cost_in_euros %}
-            €{{ job.fuel_cost_in_euros }}  
-            {% if job.fuel_currency != 'EUR' %} 
-                ({% if job.fuel_currency == 'GBP' %}£{% elif job.fuel_currency == 'USD' %}${% elif job.fuel_currency == 'HUF' %}Ft {% else %}{{ job.fuel_currency }}{% endif %}{{ job.fuel_cost }})
-            {% endif %}
-        {% endif %}
-    </p> -->
-    
     <p>
         <strong>Driver Fee:</strong> 
         {% if job.driver_fee_in_euros %}
@@ -97,5 +91,47 @@
 {% endblock %}
 
 {% block extra_scripts %}
+<script>
+    function copyJobDetails() {
+        // Gather the job details you want to copy
+        let jobDetails = `*Customer Name:* {{ job.customer_name|default_if_none:"" }}
+*Customer Number:* {{ job.customer_number|default_if_none:"" }}
+*Job Date:* {{ job.job_date|default_if_none:"" }}
+*Job Time:* {{ job.job_time|time_format|default_if_none:"" }}
+*Pick-up Location:* {{ job.pick_up_location|default_if_none:"" }}
+*Drop-off Location:* {{ job.drop_off_location|default_if_none:"" }}`;
+
+        // Check if the flight number is not empty and add it if available
+        let flightNumber = `{{ job.flight_number|default_if_none:"" }}`;
+        if (flightNumber) {
+            jobDetails += `\n*Flight Number:* ${flightNumber}`;
+        }
+        
+        jobDetails += `
+*No of Passengers:* {{ job.no_of_passengers|default_if_none:"" }}
+*Vehicle Type:* {{ job.vehicle_type|default_if_none:"" }}
+*Job Price:* {{ job.job_price|default_if_none:"" }} {{ job.job_currency|default_if_none:"" }}`;
+
+        // Create a temporary textarea to hold the job details
+        const tempTextArea = document.createElement('textarea');
+        tempTextArea.value = jobDetails;
+        document.body.appendChild(tempTextArea);
+
+        // Select the text and copy it to the clipboard
+        tempTextArea.select();
+        document.execCommand('copy');
+
+        // Remove the temporary textarea
+        document.body.removeChild(tempTextArea);
+
+        // Show the success message
+        document.getElementById('copy-success').style.display = 'block';
+
+        // Hide the success message after 2 seconds
+        setTimeout(function() {
+            document.getElementById('copy-success').style.display = 'none';
+        }, 2000);
+    }
+</script>
 <script src="{% static 'script.js' %}"></script>
 {% endblock %}

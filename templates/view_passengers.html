@@ -5,13 +5,18 @@
 {% block title %}View Passenger{% endblock %}
 
 {% block content %}
-<div class="view-passengers">
+<div class="view-job">
     <div class="buttons">
         <a href="{% url 'home' %}" class="button">Back to Home</a>
         <a href="{% url 'shuttle:shuttle' %}" class="button">Back to Shuttle List</a>
+        <!-- Add the Copy to Clipboard Button -->
+        <button onclick="copyShuttleDetails()" class="button">Copy Shuttle Details</button>
+
+        <!-- Success Message -->
+        <p id="copy-success" style="display: none; color: green;">Shuttle details copied to clipboard!</p>
     </div>
     <br>
-    <h1>View Passengers</h1>
+    <h2>View Passengers</h2>
     <p><strong>Customer Name:</strong> {{ shuttle.customer_name|default_if_none:"" }}</p>
     <p><strong>Customer Number:</strong> {{ shuttle.customer_number|default_if_none:"" }}</p>
     <p><strong>Customer Email:</strong> {{ shuttle.customer_email|default_if_none:"N/A" }}</p>
@@ -27,5 +32,37 @@
 {% endblock %}
 
 {% block extra_scripts %}
+<script>
+    function copyShuttleDetails() {
+        // Gather the shuttle details you want to copy
+        const shuttleDetails = `*Customer Name:* {{ shuttle.customer_name|default_if_none:"" }}
+*Customer Number:* {{ shuttle.customer_number|default_if_none:"" }}
+*Customer Email:* {{ shuttle.customer_email|default_if_none:"N/A" }}
+*Shuttle Date:* {{ shuttle.shuttle_date|default_if_none:"" }}
+*Shuttle Direction:* {{ shuttle.get_shuttle_direction_display|default_if_none:"" }}
+*No of Passengers:* {{ shuttle.no_of_passengers|default_if_none:"" }}
+*Price:* €{{ shuttle.price|default_if_none:"" }}`;
+
+        // Create a temporary textarea to hold the shuttle details
+        const tempTextArea = document.createElement('textarea');
+        tempTextArea.value = shuttleDetails;
+        document.body.appendChild(tempTextArea);
+
+        // Select the text and copy it to the clipboard
+        tempTextArea.select();
+        document.execCommand('copy');
+
+        // Remove the temporary textarea
+        document.body.removeChild(tempTextArea);
+
+        // Show the success message
+        document.getElementById('copy-success').style.display = 'block';
+
+        // Hide the success message after 2 seconds
+        setTimeout(function() {
+            document.getElementById('copy-success').style.display = 'none';
+        }, 2000);
+    }
+</script>
 <script src="{% static 'script.js' %}"></script>
 {% endblock %}
