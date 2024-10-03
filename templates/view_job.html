@@ -11,7 +11,7 @@
         <a href="{% url 'jobs:past_jobs' %}" class="button">Back to Past Jobs</a>
     </div>
     <br>
-    <h1>View Job</h1>
+    <h2>View Job</h2>
     <p><strong>Customer Name:</strong> {{ job.customer_name|default_if_none:"" }}</p>
     <p><strong>Customer Number:</strong> {{ job.customer_number|default_if_none:"" }}</p>
     <p><strong>Job Date:</strong> {{ job.job_date|default_if_none:"" }}</p>

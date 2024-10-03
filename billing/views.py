@@ -1,21 +1,23 @@
 from django.shortcuts import render
 from django.db.models import Sum
+from django.contrib.auth.decorators import login_required
+from django.http import HttpResponseForbidden
+from django.utils import timezone
 from jobs.models import Job
 from expenses.models import Expense
 from shuttle.models import Shuttle
 from decimal import Decimal
-from django.utils import timezone
-from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseForbidden
 import pytz
 import json
 
 # Set the timezone to Hungary (Budapest)
 budapest_tz = pytz.timezone('Europe/Budapest')
 
+
 def calculate_agent_fee_and_profit(job):
     job_price = job.job_price_in_euros or Decimal('0.00')
     driver_fee = job.driver_fee_in_euros or Decimal('0.00')
+
     if job.agent_percentage == '5':
         agent_fee_amount = job_price * Decimal('0.05')
     elif job.agent_percentage == '10':
@@ -28,23 +30,28 @@ def calculate_agent_fee_and_profit(job):
     profit = job_price - driver_fee - agent_fee_amount
     return agent_fee_amount, profit
 
+
 def get_agent_totals(jobs):
     agent_totals = {}
+
     for job in jobs:
         agent_fee_amount, _ = calculate_agent_fee_and_profit(job)
         agent = job.agent_name or "None"
+
         if agent not in agent_totals:
             agent_totals[agent] = {
                 'monthly': {'agent_fees': Decimal('0.00')},
                 'yearly': {'agent_fees': Decimal('0.00')},
                 'overall': {'agent_fees': Decimal('0.00')}
             }
+
         if job.job_date.month == timezone.now().astimezone(budapest_tz).month:
             agent_totals[agent]['monthly']['agent_fees'] += agent_fee_amount
         agent_totals[agent]['yearly']['agent_fees'] += agent_fee_amount
         agent_totals[agent]['overall']['agent_fees'] += agent_fee_amount
 
     return agent_totals
+
 
 @login_required
 def calculations(request):
@@ -55,20 +62,31 @@ def calculations(request):
     current_year = now.year
     current_month = now.month
 
-    # Fetch all jobs for the current year
-    yearly_jobs = Job.objects.filter(job_date__year=current_year).order_by('-job_date')
+    # Fetch all expense types dynamically from the Expense model
+    expense_types = [expense_type[0] for expense_type in Expense.EXPENSE_TYPES]
+
+
+    """All monthly calculations"""
+    # Fetch all jobs and shuttles for the current month
+    monthly_jobs = Job.objects.filter(job_date__year=current_year, job_date__month=current_month)
+    monthly_shuttles = Shuttle.objects.filter(shuttle_date__year=current_year, shuttle_date__month=current_month)
+    monthly_expenses = Expense.objects.filter(expense_date__year=current_year, expense_date__month=current_month, expense_type__in=expense_types)
 
     # Monthly calculations
-    monthly_jobs = yearly_jobs.filter(job_date__month=current_month)
+    monthly_total_job_income = monthly_jobs.aggregate(Sum('job_price_in_euros'))['job_price_in_euros__sum'] or Decimal('0.00')
     monthly_total_driver_fees = monthly_jobs.aggregate(Sum('driver_fee_in_euros'))['driver_fee_in_euros__sum'] or Decimal('0.00')
+    monthly_total_expenses = monthly_expenses.aggregate(Sum('expense_amount_in_euros'))['expense_amount_in_euros__sum'] or Decimal('0.00')
+    monthly_shuttle_income = monthly_shuttles.aggregate(Sum('price'))['price__sum'] or Decimal('0.00')
     monthly_total_agent_fees = Decimal('0.00')
-    total_monthly_profit = Decimal('0.00')
+    monthly_total_profit = Decimal('0.00')
+
+    
 
     monthly_job_breakdowns = []  
     for job in monthly_jobs:
         agent_fee_amount, profit = calculate_agent_fee_and_profit(job)
         monthly_total_agent_fees += agent_fee_amount
-        total_monthly_profit += profit
+        monthly_total_profit += profit
         monthly_job_breakdowns.append({
             'customer_name': job.customer_name,
             'job_date': job.job_date,
@@ -80,32 +98,30 @@ def calculations(request):
             'profit': profit,
         })
 
-    # Fetch all expense types dynamically from the Expense model
-    expense_types = [expense_type[0] for expense_type in Expense.EXPENSE_TYPES]
+    # Total monthly income and profit
+    monthly_total_income = monthly_total_job_income + monthly_shuttle_income
+    monthly_overall_profit = monthly_total_profit + monthly_shuttle_income - monthly_total_expenses
 
-    # Calculate the total of all monthly expenses
-    monthly_expenses_total = Expense.objects.filter(
-        expense_date__year=current_year,
-        expense_date__month=current_month,
-        expense_type__in=expense_types
-    ).aggregate(Sum('expense_amount_in_euros'))['expense_amount_in_euros__sum'] or Decimal('0.00')
 
-    # Calculate the total of all yearly expenses
-    yearly_expenses_total = Expense.objects.filter(
-        expense_date__year=current_year,
-        expense_type__in=expense_types
-    ).aggregate(Sum('expense_amount_in_euros'))['expense_amount_in_euros__sum'] or Decimal('0.00')
+    """All yearly calculations"""
+    # Fetch jobs for the current year
+    yearly_jobs = Job.objects.filter(job_date__year=current_year)
+    yearly_shuttles = Shuttle.objects.filter(shuttle_date__year=current_year)
+    yearly_expenses = Expense.objects.filter(expense_date__year=current_year, expense_type__in=expense_types)
 
     # Yearly calculations
+    yearly_total_job_income = yearly_jobs.aggregate(Sum('job_price_in_euros'))['job_price_in_euros__sum'] or Decimal('0.00')
     yearly_total_driver_fees = yearly_jobs.aggregate(Sum('driver_fee_in_euros'))['driver_fee_in_euros__sum'] or Decimal('0.00')
+    yearly_total_expenses = yearly_expenses.aggregate(Sum('expense_amount_in_euros'))['expense_amount_in_euros__sum'] or Decimal('0.00')
+    yearly_shuttle_income = yearly_shuttles.aggregate(Sum('price'))['price__sum'] or Decimal('0.00')
     yearly_total_agent_fees = Decimal('0.00')
-    total_yearly_profit = Decimal('0.00')
-    yearly_job_breakdowns = []  
+    yearly_total_profit = Decimal('0.00')
 
+    yearly_job_breakdowns = []  
     for job in yearly_jobs:
         agent_fee_amount, profit = calculate_agent_fee_and_profit(job)
         yearly_total_agent_fees += agent_fee_amount
-        total_yearly_profit += profit
+        yearly_total_profit += profit
         yearly_job_breakdowns.append({
             'customer_name': job.customer_name,
             'job_date': job.job_date,
@@ -117,32 +133,29 @@ def calculations(request):
             'profit': profit,
         })
 
-    # Fetch shuttle income for the current month and year
-    monthly_shuttles = Shuttle.objects.filter(shuttle_date__year=current_year, shuttle_date__month=current_month)
-    yearly_shuttles = Shuttle.objects.filter(shuttle_date__year=current_year)
+    yearly_total_income = yearly_total_job_income + yearly_shuttle_income
+    yearly_overall_profit = yearly_total_profit + yearly_shuttle_income - yearly_total_expenses
 
-    monthly_shuttle_income = monthly_shuttles.aggregate(Sum('price'))['price__sum'] or Decimal('0.00')
-    yearly_shuttle_income = yearly_shuttles.aggregate(Sum('price'))['price__sum'] or Decimal('0.00')
-
-    # Calculate overall profit for the month and year (deducting all expenses)
-    monthly_overall_profit = total_monthly_profit + monthly_shuttle_income - monthly_expenses_total
-    overall_profit = total_yearly_profit + yearly_shuttle_income - yearly_expenses_total
-
+    """Render all calculations"""
     # Render the template with context
     return render(request, 'calculations.html', {
         'now': now,
+        'monthly_total_income': monthly_total_income,
         'monthly_total_agent_fees': monthly_total_agent_fees,
         'monthly_total_driver_fees': monthly_total_driver_fees,
-        'monthly_expenses_total': monthly_expenses_total, 
+        'monthly_total_expenses': monthly_total_expenses, 
         'monthly_shuttle_income': monthly_shuttle_income,
-        'total_job_profit': total_monthly_profit,
+        'monthly_total_job_income': monthly_total_job_income,
+        'monthly_total_profit': monthly_total_profit,
+        'monthly_overall_profit': monthly_overall_profit,
+        'yearly_total_income': yearly_total_income,
         'yearly_total_agent_fees': yearly_total_agent_fees,
         'yearly_total_driver_fees': yearly_total_driver_fees,
-        'yearly_expenses_total': yearly_expenses_total,
+        'yearly_total_expenses': yearly_total_expenses,
         'yearly_shuttle_income': monthly_shuttle_income,
-        'total_yearly_profit': total_yearly_profit,
-        'monthly_overall_profit': monthly_overall_profit,
-        'overall_profit': overall_profit, 
+        'yearly_total_job_income': yearly_total_job_income,
+        'yearly_total_profit': yearly_total_profit,
+        'yearly_overall_profit': yearly_overall_profit, 
         'job_breakdowns': yearly_job_breakdowns,
         'agent_totals': get_agent_totals(yearly_jobs),
     })
@@ -158,15 +171,18 @@ def all_calculations(request):
     # Fetch all jobs for the "all calculations" page
     all_jobs = Job.objects.all().order_by('job_date')
 
+    overall_total_income = all_jobs.aggregate(Sum('job_price_in_euros'))['job_price_in_euros__sum'] or Decimal('0.00')
     overall_total_driver_fees = all_jobs.aggregate(Sum('driver_fee_in_euros'))['driver_fee_in_euros__sum'] or Decimal('0.00')
+    overall_expenses_total = Expense.objects.aggregate(Sum('expense_amount_in_euros'))['expense_amount_in_euros__sum'] or Decimal('0.00')
+    overall_shuttle_income = Shuttle.objects.aggregate(Sum('price'))['price__sum'] or Decimal('0.00')
     overall_total_agent_fees = Decimal('0.00')
-    total_job_profit = Decimal('0.00')
+    overall_total_job_profit = Decimal('0.00')
 
     all_job_breakdowns = []
     for job in all_jobs:
         agent_fee_amount, profit = calculate_agent_fee_and_profit(job)
         overall_total_agent_fees += agent_fee_amount
-        total_job_profit += profit
+        overall_total_job_profit += profit
         all_job_breakdowns.append({
             'customer_name': job.customer_name,
             'job_date': job.job_date,
@@ -178,15 +194,8 @@ def all_calculations(request):
             'profit': profit,
         })
 
-    # Calculate overall expenses in one go (sum all expenses in euros)
-    overall_expenses_total = Expense.objects.aggregate(Sum('expense_amount_in_euros'))['expense_amount_in_euros__sum'] or Decimal('0.00')
-    print("Overall Expenses Total: ", overall_expenses_total)
-
-    # Fetch overall shuttle income
-    overall_shuttle_income = Shuttle.objects.aggregate(Sum('price'))['price__sum'] or Decimal('0.00')
-
     # Calculate overall profit after all expenses
-    overall_total_profit = total_job_profit + overall_shuttle_income - overall_expenses_total
+    overall_total_profit = overall_total_job_profit + overall_shuttle_income - overall_expenses_total
 
     # Prepare the chart data
     job_dates = [job.job_date.strftime("%Y-%m-%d") for job in all_jobs]
@@ -196,12 +205,13 @@ def all_calculations(request):
 
     # Render the template with context
     return render(request, 'all_calculations.html', {
+        'overall_total_income': overall_total_income,
+        'overall_shuttle_income': overall_shuttle_income,
         'overall_total_agent_fees': overall_total_agent_fees,
         'overall_total_driver_fees': overall_total_driver_fees,
-        'total_job_profit': total_job_profit,
+        'overall_total_job_profit': overall_total_job_profit,
         'overall_total_profit': overall_total_profit,
         'overall_expenses_total': overall_expenses_total,
-        'overall_shuttle_income': overall_shuttle_income,
         'job_breakdowns': all_job_breakdowns,
         'agent_totals': get_agent_totals(all_jobs),
         'job_dates': json.dumps(job_dates),

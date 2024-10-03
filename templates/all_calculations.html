@@ -10,7 +10,7 @@
             <a href="{% url 'home' %}" class="button">Back to Home</a>
             <a href="{% url 'billing:calculations' %}" class="button">Back to Calculations</a>
             <br><br>
-            <h1>All Calculations</h1>
+            <h2>All Calculations</h2>
 
             <div class="all">
                 <div class="row">
@@ -20,11 +20,12 @@
                             <canvas id="lineChart" width="800" height="400"></canvas>
                         </div> -->
                         <div class="overall_totals-text">
-                            <p>Overall Total Agent Fees: <strong>€{{ overall_total_agent_fees|floatformat:2 }}</strong></p>
-                            <p>Overall Total Driver Fees: <strong>€{{ overall_total_driver_fees|floatformat:2 }}</strong></p>
-                            <p>Total Profit from Jobs: <strong>€{{ total_job_profit|floatformat:2 }}</strong></p>
-                            <p>Total Expenses: <strong>€{{ overall_expenses_total|floatformat:2 }}</strong></p>
+                            <p>Total Income: <strong>€{{ overall_total_income|floatformat:2 }}</strong></p>
                             <p>Total Shuttle Income: <strong>€{{ overall_shuttle_income|floatformat:2 }}</strong></p>
+                            <p>Total Agent Fees: <strong>€{{ overall_total_agent_fees|floatformat:2 }}</strong></p>
+                            <p>Total Driver Fees: <strong>€{{ overall_total_driver_fees|floatformat:2 }}</strong></p>
+                            <p>Total Expenses: <strong>€{{ overall_expenses_total|floatformat:2 }}</strong></p>
+                            <p>Total Profit from Jobs: <strong>€{{ overall_total_job_profit|floatformat:2 }}</strong></p>
                             <p>Overall Profit (After Expenses): <strong>€{{ overall_total_profit|floatformat:2 }}</strong></p>
                         </div>
                     </div>

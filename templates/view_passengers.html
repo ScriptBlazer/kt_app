@@ -5,13 +5,13 @@
 {% block title %}View Passenger{% endblock %}
 
 {% block content %}
-<div class="view-passengers">
+<div class="view-job">
     <div class="buttons">
         <a href="{% url 'home' %}" class="button">Back to Home</a>
         <a href="{% url 'shuttle:shuttle' %}" class="button">Back to Shuttle List</a>
     </div>
     <br>
-    <h1>View Passengers</h1>
+    <h2>View Passengers</h2>
     <p><strong>Customer Name:</strong> {{ shuttle.customer_name|default_if_none:"" }}</p>
     <p><strong>Customer Number:</strong> {{ shuttle.customer_number|default_if_none:"" }}</p>
     <p><strong>Customer Email:</strong> {{ shuttle.customer_email|default_if_none:"N/A" }}</p>
