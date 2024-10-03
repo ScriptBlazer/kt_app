@@ -35,9 +35,9 @@
 <script>
     function copyShuttleDetails() {
         // Gather the shuttle details you want to copy
-        const shuttleDetails = `*Customer Name:* {{ shuttle.customer_name|default_if_none:"" }}
-*Customer Number:* {{ shuttle.customer_number|default_if_none:"" }}
-*Customer Email:* {{ shuttle.customer_email|default_if_none:"N/A" }}
+        const shuttleDetails = `*Name:* {{ shuttle.customer_name|default_if_none:"" }}
+*Number:* {{ shuttle.customer_number|default_if_none:"" }}
+*Email:* {{ shuttle.customer_email|default_if_none:"N/A" }}
 *Shuttle Date:* {{ shuttle.shuttle_date|default_if_none:"" }}
 *Shuttle Direction:* {{ shuttle.get_shuttle_direction_display|default_if_none:"" }}
 *No of Passengers:* {{ shuttle.no_of_passengers|default_if_none:"" }}

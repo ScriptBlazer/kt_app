@@ -94,8 +94,8 @@
 <script>
     function copyJobDetails() {
         // Gather the job details you want to copy
-        let jobDetails = `*Customer Name:* {{ job.customer_name|default_if_none:"" }}
-*Customer Number:* {{ job.customer_number|default_if_none:"" }}
+        let jobDetails = `*Name:* {{ job.customer_name|default_if_none:"" }}
+*Number:* {{ job.customer_number|default_if_none:"" }}
 *Job Date:* {{ job.job_date|default_if_none:"" }}
 *Job Time:* {{ job.job_time|time_format|default_if_none:"" }}
 *Pick-up Location:* {{ job.pick_up_location|default_if_none:"" }}
