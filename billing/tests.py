@@ -11,7 +11,7 @@ from expenses.models import Expense
 
 budapest_tz = pytz.timezone('Europe/Budapest')
 
-class CalculationsViewTests(TestCase):
+class TotalsViewTests(TestCase):
     def setUp(self):
         # Create a superuser and a regular user
         self.superuser = User.objects.create_superuser(username='admin', password='12345')
@@ -20,7 +20,7 @@ class CalculationsViewTests(TestCase):
         self.agent1 = Agent.objects.create(name="Gilli")
 
     @patch('jobs.models.get_exchange_rate')  # Mock the exchange rate API call
-    def test_calculations_view_as_superuser(self, mock_get_exchange_rate):
+    def test_totals_view_as_superuser(self, mock_get_exchange_rate):
         mock_get_exchange_rate.return_value = Decimal('1.00')
 
         # Create job
@@ -38,24 +38,24 @@ class CalculationsViewTests(TestCase):
         # Log in as superuser
         self.client.login(username='admin', password='12345')
 
-        # Ensure the calculations view renders successfully for superuser
-        response = self.client.get(reverse('billing:calculations'))
+        # Ensure the totals view renders successfully for superuser
+        response = self.client.get(reverse('billing:totals'))
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'calculations.html')
+        self.assertTemplateUsed(response, 'totals.html')
 
     @patch('jobs.models.get_exchange_rate')  # Mock the exchange rate API call
-    def test_calculations_view_as_non_superuser(self, mock_get_exchange_rate):
+    def test_totals_view_as_non_superuser(self, mock_get_exchange_rate):
         mock_get_exchange_rate.return_value = Decimal('1.00')
 
         # Log in as a regular user
         self.client.login(username='testuser', password='12345')
 
-        # Ensure the calculations view returns 403 Forbidden for non-superuser
-        response = self.client.get(reverse('billing:calculations'))
+        # Ensure the totals view returns 403 Forbidden for non-superuser
+        response = self.client.get(reverse('billing:totals'))
         self.assertEqual(response.status_code, 403)
 
 
-class AllCalculationsViewTests(TestCase):
+class AllTotalsViewTests(TestCase):
     def setUp(self):
         # Create a superuser and a regular user
         self.superuser = User.objects.create_superuser(username='admin', password='12345')
@@ -64,7 +64,7 @@ class AllCalculationsViewTests(TestCase):
         self.agent1 = Agent.objects.create(name="Gilli")
 
     @patch('jobs.models.get_exchange_rate')  # Mock the exchange rate API call
-    def test_all_calculations_view_as_superuser(self, mock_get_exchange_rate):
+    def test_all_totals_view_as_superuser(self, mock_get_exchange_rate):
         mock_get_exchange_rate.return_value = Decimal('1.00')
 
         # Create job
@@ -82,24 +82,24 @@ class AllCalculationsViewTests(TestCase):
         # Log in as superuser
         self.client.login(username='admin', password='12345')
 
-        # Ensure the all_calculations view renders successfully for superuser
-        response = self.client.get(reverse('billing:all_calculations'))
+        # Ensure the all_totals view renders successfully for superuser
+        response = self.client.get(reverse('billing:all_totals'))
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'all_calculations.html')
+        self.assertTemplateUsed(response, 'all_totals.html')
 
     @patch('jobs.models.get_exchange_rate')  # Mock the exchange rate API call
-    def test_all_calculations_view_as_non_superuser(self, mock_get_exchange_rate):
+    def test_all_totals_view_as_non_superuser(self, mock_get_exchange_rate):
         mock_get_exchange_rate.return_value = Decimal('1.00')
 
         # Log in as a regular user
         self.client.login(username='testuser', password='12345')
 
-        # Ensure the all_calculations view returns 403 Forbidden for non-superuser
-        response = self.client.get(reverse('billing:all_calculations'))
+        # Ensure the all_totals view returns 403 Forbidden for non-superuser
+        response = self.client.get(reverse('billing:all_totals'))
         self.assertEqual(response.status_code, 403)
 
 
-class BillingCalculationsTests(TestCase):
+class BillingTotalsTests(TestCase):
     def setUp(self):
         # Create a superuser and a regular user
         self.superuser = User.objects.create_superuser(username='admin', password='12345')
@@ -143,8 +143,8 @@ class BillingCalculationsTests(TestCase):
         # Log in as superuser
         self.client.login(username='admin', password='12345')
 
-        # Access the calculations view
-        response = self.client.get(reverse('billing:calculations'))
+        # Access the totals view
+        response = self.client.get(reverse('billing:totals'))
         self.assertEqual(response.status_code, 200)
 
         # Check for correct overall profit after expenses
@@ -174,8 +174,8 @@ class BillingCalculationsTests(TestCase):
         # Log in as superuser
         self.client.login(username='admin', password='12345')
 
-        # Access the all calculations view
-        response = self.client.get(reverse('billing:all_calculations'))
+        # Access the all totals view
+        response = self.client.get(reverse('billing:all_totals'))
         self.assertEqual(response.status_code, 200)
 
         # Check for correct overall yearly profit after expenses

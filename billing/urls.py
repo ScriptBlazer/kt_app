@@ -4,6 +4,6 @@ from . import views
 app_name = 'billing'
 
 urlpatterns = [
-    path('all_calculations/', views.all_calculations, name='all_calculations'),
-    path('calculations/', views.calculations, name='calculations'),
+    path('all_totals/', views.all_totals, name='all_totals'),
+    path('totals/', views.totals, name='totals'),
 ]
