@@ -112,6 +112,12 @@
 *Vehicle Type:* {{ job.vehicle_type|default_if_none:"" }}
 *Job Price:* {{ job.job_price|default_if_none:"" }} {{ job.job_currency|default_if_none:"" }}`;
 
+        // Check if the job description is not empty and add it if available
+        let jobDescription = `{{ job.job_description|default_if_none:"" }}`;
+        if (jobDescription) {
+            jobDetails += `\n*Job Description:* ${jobDescription}`;
+        }
+
         // Create a temporary textarea to hold the job details
         const tempTextArea = document.createElement('textarea');
         tempTextArea.value = jobDetails;

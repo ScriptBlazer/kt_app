@@ -11,6 +11,9 @@ class PaymentSettings(models.Model):
 
     def __str__(self):
         return f"Credit Card Fee: {self.cc_fee_percentage}%"
+    
+    class Meta:
+        verbose_name_plural = "Payment Settings"
 
 
 class Job(models.Model):

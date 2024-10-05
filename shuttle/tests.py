@@ -170,7 +170,7 @@ class ShuttleViewTest(TestCase):
         self.assertContains(response, shuttle.customer_name)
         self.assertContains(response, shuttle.customer_number)
 
-class ShuttleCalculationsTest(TestCase):
+class ShuttleTotalsTest(TestCase):
 
     def setUp(self):
         self.budapest_tz = pytz.timezone('Europe/Budapest')

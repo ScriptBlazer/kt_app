@@ -1,16 +1,16 @@
 {% extends 'base.html' %}
 {% load custom_filters %}
 
-{% block title %}All Calculations{% endblock %}
+{% block title %}All Totals{% endblock %}
 
 {% block content %}
     <div class="calc">
         <div class="container">
             <br>
             <a href="{% url 'home' %}" class="button">Back to Home</a>
-            <a href="{% url 'billing:calculations' %}" class="button">Back to Calculations</a>
+            <a href="{% url 'billing:totals' %}" class="button">Back to Totals</a>
             <br><br>
-            <h2>All Calculations</h2>
+            <h2>All Totals</h2>
 
             <div class="all">
                 <div class="row">

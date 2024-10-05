@@ -54,7 +54,7 @@ def get_agent_totals(jobs):
 
 
 @login_required
-def calculations(request):
+def totals(request):
     if not request.user.is_superuser:
         return HttpResponseForbidden(render(request, 'access_denied.html'))
 
@@ -66,13 +66,13 @@ def calculations(request):
     expense_types = [expense_type[0] for expense_type in Expense.EXPENSE_TYPES]
 
 
-    """All monthly calculations"""
+    """All monthly totals"""
     # Fetch all jobs and shuttles for the current month
     monthly_jobs = Job.objects.filter(job_date__year=current_year, job_date__month=current_month)
     monthly_shuttles = Shuttle.objects.filter(shuttle_date__year=current_year, shuttle_date__month=current_month)
     monthly_expenses = Expense.objects.filter(expense_date__year=current_year, expense_date__month=current_month, expense_type__in=expense_types)
 
-    # Monthly calculations
+    # Monthly totals
     monthly_total_job_income = monthly_jobs.aggregate(Sum('job_price_in_euros'))['job_price_in_euros__sum'] or Decimal('0.00')
     monthly_total_driver_fees = monthly_jobs.aggregate(Sum('driver_fee_in_euros'))['driver_fee_in_euros__sum'] or Decimal('0.00')
     monthly_total_expenses = monthly_expenses.aggregate(Sum('expense_amount_in_euros'))['expense_amount_in_euros__sum'] or Decimal('0.00')
@@ -103,13 +103,13 @@ def calculations(request):
     monthly_overall_profit = monthly_total_profit + monthly_shuttle_income - monthly_total_expenses
 
 
-    """All yearly calculations"""
+    """All yearly totals"""
     # Fetch jobs for the current year
     yearly_jobs = Job.objects.filter(job_date__year=current_year)
     yearly_shuttles = Shuttle.objects.filter(shuttle_date__year=current_year)
     yearly_expenses = Expense.objects.filter(expense_date__year=current_year, expense_type__in=expense_types)
 
-    # Yearly calculations
+    # Yearly totals
     yearly_total_job_income = yearly_jobs.aggregate(Sum('job_price_in_euros'))['job_price_in_euros__sum'] or Decimal('0.00')
     yearly_total_driver_fees = yearly_jobs.aggregate(Sum('driver_fee_in_euros'))['driver_fee_in_euros__sum'] or Decimal('0.00')
     yearly_total_expenses = yearly_expenses.aggregate(Sum('expense_amount_in_euros'))['expense_amount_in_euros__sum'] or Decimal('0.00')
@@ -136,9 +136,9 @@ def calculations(request):
     yearly_total_income = yearly_total_job_income + yearly_shuttle_income
     yearly_overall_profit = yearly_total_profit + yearly_shuttle_income - yearly_total_expenses
 
-    """Render all calculations"""
+    """Render all totals"""
     # Render the template with context
-    return render(request, 'calculations.html', {
+    return render(request, 'totals.html', {
         'now': now,
         'monthly_total_income': monthly_total_income,
         'monthly_total_agent_fees': monthly_total_agent_fees,
@@ -162,13 +162,13 @@ def calculations(request):
 
 
 @login_required
-def all_calculations(request):
+def all_totals(request):
     if not request.user.is_superuser:
         return HttpResponseForbidden(render(request, 'access_denied.html'))
 
     now = timezone.now().astimezone(budapest_tz)
 
-    # Fetch all jobs for the "all calculations" page
+    # Fetch all jobs for the "all totals" page
     all_jobs = Job.objects.all().order_by('job_date')
 
     overall_total_income = all_jobs.aggregate(Sum('job_price_in_euros'))['job_price_in_euros__sum'] or Decimal('0.00')
@@ -204,7 +204,7 @@ def all_calculations(request):
     profits = [float(calculate_agent_fee_and_profit(job)[1] or Decimal('0.00')) for job in all_jobs]
 
     # Render the template with context
-    return render(request, 'all_calculations.html', {
+    return render(request, 'all_totals.html', {
         'overall_total_income': overall_total_income,
         'overall_shuttle_income': overall_shuttle_income,
         'overall_total_agent_fees': overall_total_agent_fees,
