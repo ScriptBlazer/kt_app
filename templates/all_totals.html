@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load custom_filters %}
+{% load humanize %}
 
 {% block title %}All Totals{% endblock %}
 
@@ -20,13 +21,13 @@
                             <canvas id="lineChart" width="800" height="400"></canvas>
                         </div> -->
                         <div class="overall_totals-text">
-                            <p>Total Income: <strong>€{{ overall_total_income|floatformat:2 }}</strong></p>
-                            <p>Total Shuttle Income: <strong>€{{ overall_shuttle_income|floatformat:2 }}</strong></p>
-                            <p>Total Agent Fees: <strong>€{{ overall_total_agent_fees|floatformat:2 }}</strong></p>
-                            <p>Total Driver Fees: <strong>€{{ overall_total_driver_fees|floatformat:2 }}</strong></p>
-                            <p>Total Expenses: <strong>€{{ overall_expenses_total|floatformat:2 }}</strong></p>
-                            <p>Total Profit from Jobs: <strong>€{{ overall_total_job_profit|floatformat:2 }}</strong></p>
-                            <p>Overall Profit (After Expenses): <strong>€{{ overall_total_profit|floatformat:2 }}</strong></p>
+                            <p>Total Income: <strong>€{{ overall_total_income|floatformat:2|intcomma }}</strong></p>
+                            <p>Total Shuttle Income: <strong>€{{ overall_shuttle_income|floatformat:2|intcomma }}</strong></p>
+                            <p>Total Agent Fees: <strong>€{{ overall_total_agent_fees|floatformat:2|intcomma }}</strong></p>
+                            <p>Total Driver Fees: <strong>€{{ overall_total_driver_fees|floatformat:2|intcomma }}</strong></p>
+                            <p>Total Expenses: <strong>€{{ overall_expenses_total|floatformat:2|intcomma }}</strong></p>
+                            <p>Total Profit from Jobs: <strong>€{{ overall_total_job_profit|floatformat:2|intcomma }}</strong></p>
+                            <p>Overall Profit (After Expenses): <strong>€{{ overall_total_profit|floatformat:2|intcomma }}</strong></p>
                         </div>
                     </div>
                 </div>
@@ -51,10 +52,10 @@
                         <tr>
                             <td>{{ job.customer_name|truncate_words_chars }}</td>
                             <td>{{ job.job_date }}</td>
-                            <td>€{{ job.job_price|floatformat:2 }}</td>
+                            <td>€{{ job.job_price|floatformat:2|intcomma }}</td>
                             <td class="tablet">
                                 {% if job.driver_fee %}
-                                    €{{ job.driver_fee|floatformat:2 }}
+                                    €{{ job.driver_fee|floatformat:2|intcomma }}
                                 {% else %}
                                 {% endif %}
                             </td>
@@ -72,11 +73,11 @@
                             </td>
                             <td>
                                 {% if job.agent_fee_amount %}
-                                    €{{ job.agent_fee_amount|floatformat:2 }}
+                                    €{{ job.agent_fee_amount|floatformat:2|intcomma }}
                                 {% else %}
                                 {% endif %}
                             </td>
-                            <td>€{{ job.profit|floatformat:2 }}</td>
+                            <td>€{{ job.profit|floatformat:2|intcomma }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>
@@ -95,7 +96,7 @@
                         {% if agent and agent != "None" %}
                             <tr>
                                 <td>{{ agent }}</td>
-                                <td>€{{ totals.overall.agent_fees|floatformat:2 }}</td>
+                                <td>€{{ totals.overall.agent_fees|floatformat:2|intcomma }}</td>
                             </tr>
                         {% endif %}
                     {% endfor %}

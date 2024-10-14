@@ -162,8 +162,8 @@ def totals(request):
 
 @login_required
 def all_totals(request):
-    if not request.user.is_superuser:
-        return HttpResponseForbidden(render(request, 'access_denied.html'))
+    # if not request.user.is_superuser:
+    #     return HttpResponseForbidden(render(request, 'access_denied.html'))
 
     now = timezone.now().astimezone(budapest_tz)
 

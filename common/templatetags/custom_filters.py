@@ -1,4 +1,5 @@
 from django import template
+import locale
 
 register = template.Library()
 
@@ -25,3 +26,13 @@ def get(dictionary, key):
 def format_expense_type(value):
     """Replace underscores with spaces and capitalize each word."""
     return value.replace('_', ' ').title()
+
+@register.filter
+def custom_comma_format(value):
+    try:
+        """Set locale to format with commas"""
+        locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
+        formatted_value = locale.format_string("%.2f", value, grouping=True)
+        return formatted_value
+    except (ValueError, TypeError):
+        return value
