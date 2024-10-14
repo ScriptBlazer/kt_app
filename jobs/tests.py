@@ -13,17 +13,12 @@ from unittest import mock
 import pytz
 from common.utils import get_exchange_rate
 from people.models import Driver
-
+from django.contrib.auth.models import User
 from decimal import Decimal, ROUND_HALF_UP
 
 import logging
 
 logger = logging.getLogger('kt')
-
-
-
-
-
 
 
 BUDAPEST_TZ = pytz.timezone('Europe/Budapest')
@@ -426,3 +421,95 @@ class ExchangeRateCacheTest(TestCase):
             cached_rate = cache.get('exchange_rate_GBP')
             self.assertIsNotNone(cached_rate, "The exchange rate should be cached")
             self.assertEqual(cached_rate, Decimal('1.19'))
+
+
+class EnquiriesViewTests(TestCase):
+    @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.2'))
+    def setUp(self, mock_get_exchange_rate):
+
+        # Create a regular user and log them in
+        self.user = User.objects.create_user(username='testuser', password='12345')
+        self.client.login(username='testuser', password='12345')
+
+        # Create unconfirmed job
+        self.unconfirmed_job = Job.objects.create(
+            customer_name="John Doe",
+            customer_number="123456789",
+            job_date=timezone.now() + timedelta(days=1),
+            job_time=timezone.now().time(),
+            no_of_passengers=1,
+            job_price=Decimal('100.00'),
+            job_currency='GBP',
+            is_confirmed=False
+        )
+
+        # Create confirmed job
+        self.confirmed_job = Job.objects.create(
+            customer_name="Jane Smith",
+            customer_number="987654321",
+            job_date=timezone.now() - timedelta(days=1),
+            job_time=timezone.now().time(),
+            no_of_passengers=2,
+            job_price=Decimal('150.00'),
+            job_currency='GBP',
+            is_confirmed=True
+        )
+
+    def test_unconfirmed_jobs_show_up_in_enquiries(self):
+        """Test that unconfirmed jobs appear in the enquiries page."""
+        response = self.client.get(reverse('jobs:enquiries'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "John Doe") 
+        self.assertNotContains(response, "Jane Smith") 
+
+    def test_confirmed_jobs_do_not_show_up_in_enquiries(self):
+        """Test that confirmed jobs do not appear in the enquiries page."""
+        response = self.client.get(reverse('jobs:enquiries'))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Jane Smith") 
+
+
+class EnquiriesViewTests(TestCase):
+    @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.2'))
+    def setUp(self, mock_get_exchange_rate):
+
+        # Create a regular user and log them in
+        self.user = User.objects.create_user(username='testuser', password='12345')
+        self.client.login(username='testuser', password='12345')
+
+        # Create unconfirmed job
+        self.unconfirmed_job = Job.objects.create(
+            customer_name="John Doe",
+            customer_number="123456789",
+            job_date=timezone.now() + timedelta(days=1),
+            job_time=timezone.now().time(),
+            no_of_passengers=1,
+            job_price=Decimal('100.00'),
+            job_currency='GBP',
+            is_confirmed=False
+        )
+
+        # Create confirmed job
+        self.confirmed_job = Job.objects.create(
+            customer_name="Jane Smith",
+            customer_number="987654321",
+            job_date=timezone.now() - timedelta(days=1),
+            job_time=timezone.now().time(),
+            no_of_passengers=2,
+            job_price=Decimal('150.00'),
+            job_currency='GBP',
+            is_confirmed=True
+        )
+
+    def test_unconfirmed_jobs_show_up_in_enquiries(self):
+        """Test that unconfirmed jobs appear in the enquiries page."""
+        response = self.client.get(reverse('jobs:enquiries'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "John Doe") 
+        self.assertNotContains(response, "Jane Smith")
+
+    def test_confirmed_jobs_do_not_show_up_in_enquiries(self):
+        """Test that confirmed jobs do not appear in the enquiries page."""
+        response = self.client.get(reverse('jobs:enquiries'))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Jane Smith")  

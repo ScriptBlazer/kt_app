@@ -8,8 +8,8 @@
 <div class="view-job">
     <div class="buttons">
         <a href="{% url 'home' %}" class="button">Back to Home</a>
+        <a href="{% url 'jobs:enquiries' %}" class="button">Back to Enquiries</a>
         <a href="{% url 'jobs:past_jobs' %}" class="button">Back to Past Jobs</a>
-        <!-- Add the Copy to Clipboard Button -->
         <button onclick="copyJobDetails()" class="button">Copy Job Details</button>
 
         <!-- Success Message -->
@@ -69,6 +69,10 @@
 
     <form method="POST" action="{% url 'jobs:update_job_status' job.id %}">
         {% csrf_token %}
+        <p><strong>Confirm Job:</strong> 
+            <input class="sbig" type="checkbox" id="is_confirmed" name="is_confirmed" {% if job.is_confirmed %}checked{% endif %}>
+        </p>
+
         <p><strong>Customer Paid:</strong> 
             <input class="sbig" type="checkbox" id="is_paid" name="is_paid" {% if job.is_paid %}checked{% endif %}>
         </p>

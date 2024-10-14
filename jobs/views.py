@@ -26,19 +26,19 @@ def home(request):
     two_days_ago = now_hungary - timedelta(days=2)
     logger.debug(f"Fetching jobs from two days ago: {two_days_ago}")
 
-    # Query for upcoming jobs
+    # Fetch only confirmed upcoming jobs
     upcoming_jobs = Job.objects.filter(
-        Q(job_date__gt=now_hungary.date()) |
-        (Q(job_date=now_hungary.date()) & Q(job_time__gt=now_hungary.time()))
+        (Q(job_date__gt=now_hungary.date()) |
+        (Q(job_date=now_hungary.date()) & Q(job_time__gt=now_hungary.time()))) &
+        Q(is_confirmed=True)
     ).order_by('job_date', 'job_time')
-    logger.info(f"Found {upcoming_jobs.count()} upcoming jobs.")
 
-    # Query for recent jobs
+    # Fetch only confirmed recent jobs (past 2 days)
     recent_jobs = Job.objects.filter(
-        Q(job_date__lt=now_hungary.date()) |
-        (Q(job_date=now_hungary.date()) & Q(job_time__lt=now_hungary.time()))
+        (Q(job_date__lt=now_hungary.date()) |
+        (Q(job_date=now_hungary.date()) & Q(job_time__lt=now_hungary.time()))) &
+        Q(is_confirmed=True)
     ).filter(job_date__gte=two_days_ago.date()).order_by('-job_date', '-job_time')
-    logger.info(f"Found {recent_jobs.count()} recent jobs.")
 
     # Assign colors to upcoming jobs
     for job in upcoming_jobs:
@@ -59,6 +59,21 @@ def home(request):
 def manage(request):
     jobs = Job.objects.all().order_by('-job_date')
     return render(request, 'manage_jobs.html', {'jobs': jobs})
+
+@login_required
+def enquiries(request):
+    # Fetch all jobs that are not confirmed
+    enquiries_jobs = Job.objects.filter(is_confirmed=False).order_by('-job_date', '-job_time')
+    return render(request, 'enquiries.html', {'enquiries_jobs': enquiries_jobs})
+
+@login_required
+@require_POST
+def confirm_job(request, job_id):
+    job = get_object_or_404(Job, pk=job_id)
+    job.is_confirmed = True 
+    job.save()
+    
+    return redirect('home')
 
 @login_required
 def add_job(request):
@@ -138,22 +153,25 @@ def past_jobs(request):
 
     if query:
         past_jobs = Job.objects.filter(
-            Q(customer_name__icontains=query) |  # Search by customer name
-            Q(customer_number__icontains=query) |  # Search by customer number
-            Q(job_description__icontains=query) |  # Search by job description
-            Q(pick_up_location__icontains=query),  # Search by pick up location (correct field)
-            job_date__lt=now  # Ensure the job is in the past
+            Q(customer_name__icontains=query) |  
+            Q(customer_number__icontains=query) |
+            Q(job_description__icontains=query) |
+            Q(pick_up_location__icontains=query),
+            Q(job_date__lt=now),
+            Q(is_confirmed=True)
         ).order_by('-job_date')
-        logger.info(f"Found {past_jobs.count()} jobs matching query.")
     else:
-        # If no query, return all past jobs
-        past_jobs = Job.objects.filter(job_date__lt=now).order_by('-job_date')
+        # Fetch only confirmed past jobs
+        past_jobs = Job.objects.filter(
+            Q(job_date__lt=now) &
+            Q(is_confirmed=True) 
+        ).order_by('-job_date')
     
     logger.info(f"Found {past_jobs.count()} past jobs.")
 
     # Assign colors to past jobs
     for job in past_jobs:
-        job.color = assign_job_color(job, now)  # Pass the current time (now)
+        job.color = assign_job_color(job, now) 
 
     return render(request, 'past_jobs.html', {'past_jobs': past_jobs, 'query': query})
 
@@ -217,6 +235,9 @@ def toggle_completed(request, job_id):
 @require_POST
 def update_job_status(request, job_id):
     job = get_object_or_404(Job, pk=job_id)
+
+    # Check if 'is_confirmed' checkbox was checked
+    job.is_confirmed = 'is_confirmed' in request.POST
 
     # Check if 'is_paid' checkbox was checked
     job.is_paid = 'is_paid' in request.POST

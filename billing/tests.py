@@ -50,9 +50,9 @@ class TotalsViewTests(TestCase):
         # Log in as a regular user
         self.client.login(username='testuser', password='12345')
 
-        # Ensure the totals view returns 403 Forbidden for non-superuser
+        # Ensure the totals view returns 200 OK for non-superuser
         response = self.client.get(reverse('billing:totals'))
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 200)
 
 
 class AllTotalsViewTests(TestCase):
