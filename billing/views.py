@@ -65,10 +65,9 @@ def totals(request):
     # Fetch all expense types dynamically from the Expense model
     expense_types = [expense_type[0] for expense_type in Expense.EXPENSE_TYPES]
 
-
     """All monthly totals"""
-    # Fetch all jobs and shuttles for the current month
-    monthly_jobs = Job.objects.filter(job_date__year=current_year, job_date__month=current_month)
+    # Fetch all jobs and shuttles for the current month (ordered by date descending)
+    monthly_jobs = Job.objects.filter(job_date__year=current_year, job_date__month=current_month).order_by('-job_date')
     monthly_shuttles = Shuttle.objects.filter(shuttle_date__year=current_year, shuttle_date__month=current_month)
     monthly_expenses = Expense.objects.filter(expense_date__year=current_year, expense_date__month=current_month, expense_type__in=expense_types)
 
@@ -80,9 +79,7 @@ def totals(request):
     monthly_total_agent_fees = Decimal('0.00')
     monthly_total_profit = Decimal('0.00')
 
-    
-
-    monthly_job_breakdowns = []  
+    monthly_job_breakdowns = []
     for job in monthly_jobs:
         agent_fee_amount, profit = calculate_agent_fee_and_profit(job)
         monthly_total_agent_fees += agent_fee_amount
@@ -102,10 +99,9 @@ def totals(request):
     monthly_total_income = monthly_total_job_income + monthly_shuttle_income
     monthly_overall_profit = monthly_total_profit + monthly_shuttle_income - monthly_total_expenses
 
-
     """All yearly totals"""
-    # Fetch jobs for the current year
-    yearly_jobs = Job.objects.filter(job_date__year=current_year)
+    # Fetch jobs for the current year (ordered by date descending)
+    yearly_jobs = Job.objects.filter(job_date__year=current_year).order_by('-job_date')
     yearly_shuttles = Shuttle.objects.filter(shuttle_date__year=current_year)
     yearly_expenses = Expense.objects.filter(expense_date__year=current_year, expense_type__in=expense_types)
 
@@ -117,7 +113,7 @@ def totals(request):
     yearly_total_agent_fees = Decimal('0.00')
     yearly_total_profit = Decimal('0.00')
 
-    yearly_job_breakdowns = []  
+    yearly_job_breakdowns = []
     for job in yearly_jobs:
         agent_fee_amount, profit = calculate_agent_fee_and_profit(job)
         yearly_total_agent_fees += agent_fee_amount
@@ -152,7 +148,7 @@ def totals(request):
         'yearly_total_agent_fees': yearly_total_agent_fees,
         'yearly_total_driver_fees': yearly_total_driver_fees,
         'yearly_total_expenses': yearly_total_expenses,
-        'yearly_shuttle_income': monthly_shuttle_income,
+        'yearly_shuttle_income': yearly_shuttle_income,
         'yearly_total_job_income': yearly_total_job_income,
         'yearly_total_profit': yearly_total_profit,
         'yearly_overall_profit': yearly_overall_profit, 
