@@ -119,6 +119,7 @@ class BillingTotalsTests(TestCase):
             agent_percentage=kwargs.get("agent_percentage", "5"),
             no_of_passengers=kwargs.get("no_of_passengers", 4),
             job_currency="EUR",  # Ensure EUR is used in the tests to avoid conversion issues
+            is_paid=kwargs.get("is_paid", True)
         )
 
     @patch('jobs.models.get_exchange_rate')  # Mock the exchange rate API call
