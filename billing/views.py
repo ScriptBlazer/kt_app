@@ -70,7 +70,7 @@ def totals(request):
 
     """All monthly totals"""
     # Fetch all jobs and shuttles for the current month (ordered by date descending)
-    monthly_jobs = Job.objects.filter(job_date__year=current_year, job_date__month=current_month).order_by('-job_date')
+    monthly_jobs = Job.objects.filter(job_date__year=current_year, job_date__month=current_month, is_paid=True).order_by('-job_date')
     monthly_shuttles = Shuttle.objects.filter(shuttle_date__year=current_year, shuttle_date__month=current_month)
     monthly_expenses = Expense.objects.filter(expense_date__year=current_year, expense_date__month=current_month, expense_type__in=expense_types)
 
@@ -104,7 +104,7 @@ def totals(request):
 
     """All yearly totals"""
     # Fetch jobs for the current year (ordered by date descending)
-    yearly_jobs = Job.objects.filter(job_date__year=current_year).order_by('-job_date')
+    yearly_jobs = Job.objects.filter(job_date__year=current_year, is_paid=True).order_by('-job_date')
     yearly_shuttles = Shuttle.objects.filter(shuttle_date__year=current_year)
     yearly_expenses = Expense.objects.filter(expense_date__year=current_year, expense_type__in=expense_types)
 
