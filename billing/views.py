@@ -55,8 +55,8 @@ def get_agent_totals(jobs):
 
 @login_required
 def totals(request):
-    if not request.user.is_superuser:
-        return HttpResponseForbidden(render(request, 'access_denied.html'))
+    # if not request.user.is_superuser:
+    #     return HttpResponseForbidden(render(request, 'access_denied.html'))
 
     now = timezone.now().astimezone(budapest_tz)
     current_year = now.year

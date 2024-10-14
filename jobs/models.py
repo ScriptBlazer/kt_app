@@ -69,6 +69,7 @@ class Job(models.Model):
     ], null=True, blank=True)
 
     # Job Completion and Payment Method
+    is_confirmed = models.BooleanField(default=False)
     is_completed = models.BooleanField(default=False)
     is_paid = models.BooleanField(default=False)
     payment_type = models.CharField(max_length=10, choices=[
