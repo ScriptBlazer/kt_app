@@ -23,7 +23,10 @@ def calculate_agent_fee_and_profit(job):
     elif job.agent_percentage == '10':
         agent_fee_amount = job_price * Decimal('0.10')
     elif job.agent_percentage == '50':
-        agent_fee_amount = (job_price - driver_fee) * Decimal('0.50')
+        if job_price > Decimal('0.00'):
+            agent_fee_amount = (job_price - driver_fee) * Decimal('0.50')
+        else:
+            agent_fee_amount = Decimal('0.00')  # Agent fee is 0 when job price is 0
     else:
         agent_fee_amount = Decimal('0.00')
 
