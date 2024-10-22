@@ -53,7 +53,8 @@ class HotelBookingTests(TestCase):
             quantity=2
         )
 
-    def test_assign_multiple_bed_types(self):
+    @patch('hotels.models.get_exchange_rate', return_value=Decimal('1.2'))
+    def test_assign_multiple_bed_types(self, mock_get_exchange_rate):
         """Test that multiple bed types can be assigned to a booking."""
         HotelBookingBedType.objects.create(hotel_booking=self.booking, bed_type=self.bed_type_double, quantity=1)
 
@@ -62,7 +63,8 @@ class HotelBookingTests(TestCase):
         self.assertEqual(booking_bed_types.first().bed_type, self.bed_type_single)
         self.assertEqual(booking_bed_types.last().bed_type, self.bed_type_double)
 
-    def test_validate_bed_type_quantity(self):
+    @patch('hotels.models.get_exchange_rate', return_value=Decimal('1.2'))
+    def test_validate_bed_type_quantity(self, mock_get_exchange_rate):
         """Test that a booking must have at least one bed type with quantity > 0."""
         form_data = {
             'customer_name': 'Test Guest',
@@ -92,7 +94,8 @@ class HotelBookingTests(TestCase):
         expected_fee = Decimal('100.00') * Decimal('7.00') / Decimal('100')
         self.assertEqual(self.booking.cc_fee, expected_fee)
 
-    def test_no_credit_card_fee_for_cash(self):
+    @patch('hotels.models.get_exchange_rate', return_value=Decimal('1.2'))
+    def test_no_credit_card_fee_for_cash(self, mock_get_exchange_rate):
         """Test that no credit card fee is applied for non-card payments."""
         self.booking.payment_type = 'Cash'
         self.booking.save()
@@ -100,7 +103,8 @@ class HotelBookingTests(TestCase):
         self.booking.refresh_from_db()
         self.assertEqual(self.booking.cc_fee, Decimal('0.00'))
 
-    def test_add_guest_view(self):
+    @patch('hotels.models.get_exchange_rate', return_value=Decimal('1.2'))
+    def test_add_guest_view(self, mock_get_exchange_rate):
         """Test that a guest can be successfully added."""
         form_data = {
             'customer_name': 'Jane Doe',
@@ -134,7 +138,8 @@ class HotelBookingTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertTrue(HotelBooking.objects.filter(customer_name='Jane Doe').exists())
 
-    def test_edit_guest_view(self):
+    @patch('hotels.models.get_exchange_rate', return_value=Decimal('1.2'))
+    def test_edit_guest_view(self, mock_get_exchange_rate):
         """Test editing guest details."""
         form_data = {
             'customer_name': 'John Doe',
