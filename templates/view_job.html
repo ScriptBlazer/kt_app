@@ -1,11 +1,12 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load humanize %}
 {% load custom_filters %}
 
 {% block title %}View Job{% endblock %}
 
 {% block content %}
-<div class="view-job">
+<div class="view">
     <div class="buttons">
         <a href="{% url 'home' %}" class="button">Back to Home</a>
         <a href="{% url 'jobs:enquiries' %}" class="button">Back to Enquiries</a>
@@ -31,25 +32,25 @@
     <p><strong>Payment Type:</strong> {{ job.payment_type|default_if_none:"" }}</p>
     <p>
         <strong>Job Price:</strong> 
-        €{{ job.job_price_in_euros|default_if_none:"" }} 
+        €{{ job.job_price_in_euros|intcomma|default_if_none:"" }} 
         {% if job.job_currency != 'EUR' %} 
-            ({% if job.job_currency == 'GBP' %}£{% elif job.job_currency == 'USD' %}${% elif job.job_currency == 'HUF' %}Ft {% else %}{{ job.job_currency }}{% endif %}{{ job.job_price|default_if_none:"" }}) 
+            ({% if job.job_currency == 'GBP' %}£{% elif job.job_currency == 'USD' %}${% elif job.job_currency == 'HUF' %}Ft {% else %}{{ job.job_currency }}{% endif %}{{ job.job_price|intcomma|default_if_none:"" }}) 
         {% endif %}
         
         {% if job.payment_type == 'Card' %} 
             <strong> | Credit Card Fee:</strong> 
             {% if job.job_currency == 'EUR' %}
-                €{{ job.cc_fee|default_if_none:"" }} 
-                (€{{ total_with_cc_fee|default_if_none:"" }})
+                €{{ job.cc_fee|intcomma|default_if_none:"" }} 
+                (€{{ total_with_cc_fee|intcomma|default_if_none:"" }})
             {% elif job.job_currency == 'GBP' %}
-                £{{ job.cc_fee|default_if_none:"" }} 
-                (£{{ total_with_cc_fee|default_if_none:"" }})
+                £{{ job.cc_fee|intcomma|default_if_none:"" }} 
+                (£{{ total_with_cc_fee|intcomma|default_if_none:"" }})
             {% elif job.job_currency == 'HUF' %}
-                Ft {{ job.cc_fee|default_if_none:"" }} 
-                (Ft {{ total_with_cc_fee|default_if_none:"" }})
+                Ft {{ job.cc_fee|intcomma|default_if_none:"" }} 
+                (Ft {{ total_with_cc_fee|intcomma|default_if_none:"" }})
             {% elif job.job_currency == 'USD' %}
-                ${{ job.cc_fee|default_if_none:"" }} 
-                (${{ total_with_cc_fee|default_if_none:"" }})
+                ${{ job.cc_fee|intcomma|default_if_none:"" }} 
+                (${{ total_with_cc_fee|intcomma|default_if_none:"" }})
             {% endif %}
         {% endif %}
     </p>
@@ -98,26 +99,26 @@
 <script>
     function copyJobDetails() {
         // Gather the job details you want to copy
-        let jobDetails = `*Name:* {{ job.customer_name|default_if_none:"" }}
-*Number:* {{ job.customer_number|default_if_none:"" }}
-*Job Date:* {{ job.job_date|default_if_none:"" }}
-*Job Time:* {{ job.job_time|time_format|default_if_none:"" }}
-*Pick-up Location:* {{ job.pick_up_location|default_if_none:"" }}
-*Drop-off Location:* {{ job.drop_off_location|default_if_none:"" }}`;
+        let jobDetails = `*Name:* {{ job.customer_name|default_if_none:""|escapejs }}
+*Number:* {{ job.customer_number|default_if_none:""|escapejs }}
+*Job Date:* {{ job.job_date|default_if_none:""|escapejs }}
+*Job Time:* {{ job.job_time|time_format|default_if_none:""|escapejs }}
+*Pick-up Location:* {{ job.pick_up_location|default_if_none:""|escapejs }}
+*Drop-off Location:* {{ job.drop_off_location|default_if_none:""|escapejs }}`;
 
         // Check if the flight number is not empty and add it if available
-        let flightNumber = `{{ job.flight_number|default_if_none:"" }}`;
+        let flightNumber = `{{ job.flight_number|default_if_none:""|escapejs }}`;
         if (flightNumber) {
             jobDetails += `\n*Flight Number:* ${flightNumber}`;
         }
         
         jobDetails += `
-*No of Passengers:* {{ job.no_of_passengers|default_if_none:"" }}
-*Vehicle Type:* {{ job.vehicle_type|default_if_none:"" }}
-*Job Price:* {{ job.job_price|default_if_none:"" }} {{ job.job_currency|default_if_none:"" }}`;
+*No of Passengers:* {{ job.no_of_passengers|default_if_none:""|escapejs }}
+*Vehicle Type:* {{ job.vehicle_type|default_if_none:""|escapejs }}
+*Job Price:* {{ job.job_price|default_if_none:""|escapejs }} {{ job.job_currency|default_if_none:""|escapejs }}`;
 
         // Check if the job description is not empty and add it if available
-        let jobDescription = `{{ job.job_description|default_if_none:"" }}`;
+        let jobDescription = `{{ job.job_description|default_if_none:""|escapejs }}`;
         if (jobDescription) {
             jobDetails += `\n*Job Description:* ${jobDescription}`;
         }

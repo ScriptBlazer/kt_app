@@ -41,7 +41,7 @@ class TotalsViewTests(TestCase):
         # Ensure the totals view renders successfully for superuser
         response = self.client.get(reverse('billing:totals'))
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'totals.html')
+        self.assertTemplateUsed(response, 'billing/totals.html')
 
     @patch('jobs.models.get_exchange_rate')  # Mock the exchange rate API call
     def test_totals_view_as_non_superuser(self, mock_get_exchange_rate):
@@ -85,7 +85,7 @@ class AllTotalsViewTests(TestCase):
         # Ensure the all_totals view renders successfully for superuser
         response = self.client.get(reverse('billing:all_totals'))
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'all_totals.html')
+        self.assertTemplateUsed(response, 'billing/all_totals.html')
 
     @patch('jobs.models.get_exchange_rate')  # Mock the exchange rate API call
     def test_all_totals_view_as_non_superuser(self, mock_get_exchange_rate):

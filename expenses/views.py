@@ -15,7 +15,7 @@ def add_expense(request):
     else:
         form = ExpenseForm()
 
-    return render(request, 'add_expense.html', {'form': form})
+    return render(request, 'expenses/add_expense.html', {'form': form})
 
 @login_required
 def expense_list(request):
@@ -37,7 +37,7 @@ def expense_list(request):
             # If an unexpected expense type is found, log an error or handle accordingly
             print(f"Unexpected expense type: {expense.expense_type}")
 
-    return render(request, 'expenses.html', {
+    return render(request, 'expenses/expenses.html', {
         'grouped_expenses': grouped_expenses,
         'expense_types': expense_types,
         'totals': totals,
@@ -45,7 +45,7 @@ def expense_list(request):
 
 def view_expense(request, expense_id):
     expense = get_object_or_404(Expense, id=expense_id)
-    return render(request, 'view_expense.html', {'expense': expense})
+    return render(request, 'expenses/view_expense.html', {'expense': expense})
 
 @login_required
 def edit_expense(request, expense_id):
@@ -58,7 +58,7 @@ def edit_expense(request, expense_id):
     else:
         form = ExpenseForm(instance=expense)
 
-    return render(request, 'edit_expense.html', {'form': form})
+    return render(request, 'expenses/edit_expense.html', {'form': form})
 
 @login_required
 def delete_expense(request, expense_id):
@@ -72,4 +72,4 @@ def delete_expense(request, expense_id):
         expense.delete()
         return redirect('expenses:expenses')
 
-    return render(request, 'delete_expense.html', {'expense': expense})
+    return render(request, 'expenses/delete_expense.html', {'expense': expense})

@@ -34,7 +34,7 @@ class AgentViewTest(TestCase):
     def test_manage_view(self):
         response = self.client.get(reverse('people:manage'))
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'manage.html')
+        self.assertTemplateUsed(response, 'people/manage.html')
 
     def test_add_agent_view(self):
         response = self.client.post(reverse('people:manage'), {
@@ -68,7 +68,7 @@ class DriverViewTest(TestCase):
     def test_manage_view(self):
         response = self.client.get(reverse('people:manage'))
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'manage.html')
+        self.assertTemplateUsed(response, 'people/manage.html')
 
     def test_add_driver_view(self):
         response = self.client.post(reverse('people:manage'), {

@@ -11,6 +11,29 @@ logger = logging.getLogger('kt')
 
 BUDAPEST_TZ = pytz.timezone('Europe/Budapest')
 
+# Currency choices
+CURRENCY_CHOICES = [
+    ('EUR', 'Euros'),
+    ('GBP', 'Pound Sterling'),
+    ('HUF', 'Hungarian Forint'),
+    ('USD', 'US Dollar')
+]
+
+# Agent fee percentage choices
+AGENT_FEE_CHOICES = [
+    ('5', '5% Turnover'),
+    ('10', '10% Turnover'),
+    ('50', '50% Profit')
+]
+
+# Payment type choices
+PAYMENT_TYPE_CHOICES = [
+    ('Cash', 'Cash'),
+    ('Card', 'Card'),
+    ('Transfer', 'Transfer'),
+    ('Quick Pay', 'Quick Pay')
+]
+
 def fetch_and_cache_exchange_rate(currency):
     """Fetch the exchange rate from the API and cache it until midnight in Budapest."""
     api_key = settings.EXCHANGE_RATE_API_KEY

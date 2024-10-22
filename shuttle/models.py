@@ -1,6 +1,7 @@
 from django.db import models
 import pytz
 from django.utils import timezone
+from common.utils import PAYMENT_TYPE_CHOICES
 
 class ShuttleConfig(models.Model):
     price_per_passenger = models.DecimalField(max_digits=10, decimal_places=2, default=60.00)
@@ -31,6 +32,7 @@ class Shuttle(models.Model):
     shuttle_date = models.DateField(default=timezone.now)
     shuttle_direction = models.CharField(max_length=20, choices=DIRECTION_CHOICES)
     no_of_passengers = models.PositiveIntegerField()
+    payment_type = models.CharField(max_length=10, choices=PAYMENT_TYPE_CHOICES, null=True, blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     driver = models.CharField(max_length=255)
     shuttle_notes = models.TextField(blank=True, null=True)

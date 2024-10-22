@@ -1,25 +1,25 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load humanize %}
 {% load custom_filters %}
 
 {% block title %}Shuttle{% endblock %}
 
 {% block content %}
 <div class="container">
-    <div>
+    <div class="buttons">
         <a href="{% url 'home' %}" class="button">Back to Home</a>
+        <a href="{% url 'common:services' %}" class="button">Back to Services</a>
         <a href="{% url 'shuttle:add_passengers' %}" class="button">Add Passengers</a>
     </div>
-
-    <br>
     <div class="column">
         <div class="overall_totals-text">
             <p>Total Passengers in {% now "F" %}: <strong>{{ total_passengers_this_month|default:"0" }}</strong></p>
-            <p>Total Money in {% now "F" %}: <strong>€{{ total_price_this_month|floatformat:2|default:"0.00" }}</strong></p>
+            <p>Total Money in {% now "F" %}: <strong>€{{ total_price_this_month|floatformat:2|intcomma|default:"0.00" }}</strong></p>
         </div>
         <div class="overall_totals-text">
             <p>Total Passengers Overall: <strong>{{ total_passengers|default:"0" }}</strong></p>
-            <p>Total Money Overall: <strong>€{{ total_price|floatformat:2|default:"0.00" }}</strong></p>
+            <p>Total Money Overall: <strong>€{{ total_price|floatformat:2|intcomma|default:"0.00" }}</strong></p>
         </div>
     </div>
 
@@ -29,15 +29,15 @@
             <br>
             <h3>{{ group.date|date:"l, d F Y" }}</h3>
             <p><strong>Total Passengers:</strong> {{ group.total_passengers }}</p>
-            <p><strong>Total Price:</strong> €{{ group.total_price }}</p>
+            <p><strong>Total Price:</strong> €{{ group.total_price |intcomma}}</p>
             <table>
                 <thead>
                     <tr>
                         <th>Customer Name</th>
                         <th class="tablet">Customer Number</th>
                         <th>No. of Passengers</th>
-                        <th>Price</th>
-                        <th>Shuttle Direction</th>
+                        <th class="phone">Price</th>
+                        <th class="phone">Shuttle Direction</th>
                         <th class="tablet">Notes</th>
                         <th>Actions</th>
                     </tr>
@@ -48,8 +48,8 @@
                         <td>{{ shuttle.customer_name }}</td>
                         <td class="tablet">{{ shuttle.customer_number }}</td>
                         <td>{{ shuttle.no_of_passengers }}</td>
-                        <td>€{{ shuttle.price }}</td>
-                        <td>{{ shuttle.get_shuttle_direction_display }}</td>
+                        <td class="phone">€{{ shuttle.price }}</td>
+                        <td class="phone">{{ shuttle.get_shuttle_direction_display }}</td>
                         <td class="tablet">{{ shuttle.shuttle_notes|default:"No notes" |truncate_words_chars }}</td>
                         <td>
                             <a href="{% url 'shuttle:edit_passengers' shuttle.id %}" class="button tablet">Edit</a>
@@ -79,8 +79,8 @@
                             <th>Customer Name</th>
                             <th class="tablet">Customer Number</th>
                             <th>No. of Passengers</th>
-                            <th>Price</th>
-                            <th>Shuttle Direction</th>
+                            <th class="phone">Price</th>
+                            <th class="phone">Shuttle Direction</th>
                             <th class="tablet">Notes</th>
                             <th>Actions</th>
                         </tr>
@@ -91,8 +91,8 @@
                             <td>{{ shuttle.customer_name }}</td>
                             <td class="tablet">{{ shuttle.customer_number }}</td>
                             <td>{{ shuttle.no_of_passengers }}</td>
-                            <td>€{{ shuttle.price }}</td>
-                            <td>{{ shuttle.get_shuttle_direction_display }}</td>
+                            <td class="phone">€{{ shuttle.price }}</td>
+                            <td class="phone">{{ shuttle.get_shuttle_direction_display }}</td>
                             <td class="tablet">{{ shuttle.shuttle_notes|default:"No notes" |truncate_words_chars }}</td>
                             <td>
                                 <a href="{% url 'shuttle:edit_passengers' shuttle.id %}" class="button tablet">Edit</a>

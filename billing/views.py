@@ -137,7 +137,7 @@ def totals(request):
 
     """Render all totals"""
     # Render the template with context
-    return render(request, 'totals.html', {
+    return render(request, 'billing/totals.html', {
         'now': now,
         'monthly_total_income': monthly_total_income,
         'monthly_total_agent_fees': monthly_total_agent_fees,
@@ -203,7 +203,7 @@ def all_totals(request):
     profits = [float(calculate_agent_fee_and_profit(job)[1] or Decimal('0.00')) for job in all_jobs]
 
     # Render the template with context
-    return render(request, 'all_totals.html', {
+    return render(request, 'billing/all_totals.html', {
         'overall_total_income': overall_total_income,
         'overall_shuttle_income': overall_shuttle_income,
         'overall_total_agent_fees': overall_total_agent_fees,

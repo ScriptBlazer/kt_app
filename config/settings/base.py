@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'billing',
     'expenses',
     'shuttle',
+    'hotels',
 ]
 
 MIDDLEWARE = [

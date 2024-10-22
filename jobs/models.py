@@ -1,6 +1,6 @@
 from django.db import models
 from decimal import Decimal
-from common.utils import get_exchange_rate
+from common.utils import get_exchange_rate, CURRENCY_CHOICES, AGENT_FEE_CHOICES, PAYMENT_TYPE_CHOICES
 from people.models import Agent, Driver
 import logging
 
@@ -17,14 +17,6 @@ class PaymentSettings(models.Model):
 
 
 class Job(models.Model):
-    # Choices for currency options
-    CURRENCY_CHOICES = [
-        ('EUR', 'Euros'),
-        ('GBP', 'Pound Sterling'),
-        ('HUF', 'Hungarian Forint'),
-        ('USD', 'US Dollar')
-    ]
-    
     # Customer Information
     customer_name = models.CharField(max_length=100)
     customer_number = models.CharField(max_length=15)
@@ -62,22 +54,13 @@ class Job(models.Model):
 
     # Agent Information
     agent_name = models.ForeignKey(Agent, null=True, blank=True, on_delete=models.PROTECT)
-    agent_percentage = models.CharField(max_length=10, choices=[
-        ('5', '5% Turnover'),
-        ('10', '10% Turnover'),
-        ('50', '50% Profit')
-    ], null=True, blank=True)
+    agent_percentage = models.CharField(max_length=10, choices=AGENT_FEE_CHOICES, null=True, blank=True)
 
     # Job Completion and Payment Method
     is_confirmed = models.BooleanField(default=False)
     is_completed = models.BooleanField(default=False)
     is_paid = models.BooleanField(default=False)
-    payment_type = models.CharField(max_length=10, choices=[
-        ('Cash', 'Cash'),
-        ('Card', 'Card'),
-        ('Transfer', 'Transfer'),
-        ('Quick Pay', 'Quick Pay')
-    ], null=True, blank=True)
+    payment_type = models.CharField(max_length=10, choices=PAYMENT_TYPE_CHOICES, null=True, blank=True)
 
     # Exchange Rate for Currency Conversion
     exchange_rate = models.DecimalField(max_digits=10, decimal_places=6, null=True, blank=True)
