@@ -1,27 +1,28 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load humanize %}
 {% load custom_filters %}
 
 {% block title %}Expenses{% endblock %}
 
 {% block content %}
 <div class="container">
-    <br>
-    <a href="{% url 'home' %}" class="button">Back to Home</a>
-    <a href="{% url 'expenses:add_expense' %}" class="button phone">Add Expenses</a>
-
-    <br><br><br>
+    <div class="buttons">
+        <a href="{% url 'home' %}" class="button">Back to Home</a>
+        <a href="{% url 'common:admin' %}" class="button">Back to Admin</a>
+        <a href="{% url 'expenses:add_expense' %}" class="button phone">Add Expenses</a>
+    </div>
     <h2>Expense Totals</h2>
     <div class="column">
         <div class="overall_totals-text">
-            <p>Total Fuel Costs: <strong>€{{ totals.fuel|floatformat:2|default:"0.00" }}</strong></p>
-            <p>Total Wages: <strong>€{{ totals.wages|floatformat:2|default:"0.00" }}</strong></p>
-            <p>Total Car Repair Costs: <strong>€{{ totals.repair|floatformat:2|default:"0.00" }}</strong></p>
-            <p>Total Renovations: <strong>€{{ totals.renovations|floatformat:2|default:"0.00" }}</strong></p>
-            <p>Total Car Wash Costs: <strong>€{{ totals.car_wash|floatformat:2|default:"0.00" }}</strong></p>
-            <p>Total Toll Costs: <strong>€{{ totals.toll|floatformat:2|default:"0.00" }}</strong></p>
-            <p>Total Tickets Costs: <strong>€{{ totals.fines|floatformat:2|default:"0.00" }}</strong></p>
-            <p>Other Expenses: <strong>€{{ totals.other|floatformat:2|default:"0.00" }}</strong></p>
+            <p>Total Fuel Costs: <strong>€{{ totals.fuel|floatformat:2|intcomma|default:"0.00" }}</strong></p>
+            <p>Total Wages: <strong>€{{ totals.wages|floatformat:2|intcomma|default:"0.00" }}</strong></p>
+            <p>Total Car Repair Costs: <strong>€{{ totals.repair|floatformat:2|intcomma|default:"0.00" }}</strong></p>
+            <p>Total Renovations: <strong>€{{ totals.renovations|floatformat:2|intcomma|default:"0.00" }}</strong></p>
+            <p>Total Car Wash Costs: <strong>€{{ totals.car_wash|floatformat:2|intcomma|default:"0.00" }}</strong></p>
+            <p>Total Toll Costs: <strong>€{{ totals.toll|floatformat:2|intcomma|default:"0.00" }}</strong></p>
+            <p>Total Tickets Costs: <strong>€{{ totals.fines|floatformat:2|intcomma|default:"0.00" }}</strong></p>
+            <p>Other Expenses: <strong>€{{ totals.other|floatformat:2|intcomma|default:"0.00" }}</strong></p>
         </div>
     </div>
     <br>
@@ -47,7 +48,7 @@
                         {% for expense in expenses %}
                             <tr>
                                 <td>{{ expense.driver }}</td>
-                                <td>€{{ expense.expense_amount_in_euros }}</td>
+                                <td>€{{ expense.expense_amount_in_euros |intcomma}}</td>
                                 <td>{{ expense.expense_date }}</td>
                                 <td>{{ expense.expense_time |time_format}}</td>
                                 <td>{{ expense.expense_notes|default:"-" |truncate_words_chars}}</td>

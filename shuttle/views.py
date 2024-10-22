@@ -102,7 +102,7 @@ def shuttle(request):
         'total_price_this_month': total_price_this_month,
     }
 
-    return render(request, 'shuttle.html', context)
+    return render(request, 'shuttle/shuttle.html', context)
 
 
 @login_required
@@ -115,7 +115,7 @@ def add_passengers(request):
     else:
         form = ShuttleForm()
 
-    return render(request, 'add_passengers.html', {'form': form})
+    return render(request, 'shuttle/add_passengers.html', {'form': form})
 
 
 @login_required
@@ -126,11 +126,11 @@ def edit_passengers(request, shuttle_id):
         form = ShuttleForm(request.POST, instance=shuttle)
         if form.is_valid():
             form.save()
-            return redirect('shuttle:shuttle')  # Redirect back to shuttle list after saving
+            return redirect('shuttle:shuttle')
     else:
         form = ShuttleForm(instance=shuttle)
 
-    return render(request, 'edit_passengers.html', {'form': form})
+    return render(request, 'shuttle/edit_passengers.html', {'form': form})
 
 
 @login_required
@@ -139,7 +139,7 @@ def view_passengers(request, shuttle_id):
     context = {
         'shuttle': shuttle,
     }
-    return render(request, 'view_passengers.html', context)
+    return render(request, 'shuttle/view_passengers.html', context)
 
 
 @login_required
@@ -152,5 +152,5 @@ def delete_passengers(request, shuttle_id):
     
     if request.method == 'POST':
         shuttle.delete()
-        return redirect('shuttle:shuttle')  # Redirect back to shuttle list after deleting
-    return render(request, 'delete_passengers.html', {'shuttle': shuttle})
+        return redirect('shuttle:shuttle')
+    return render(request, 'shuttle/delete_passengers.html', {'shuttle': shuttle})

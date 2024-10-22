@@ -38,7 +38,7 @@ def manage(request):
         form = AgentForm()
         driver_form = DriverForm()
 
-    return render(request, 'manage.html', {
+    return render(request, 'people/manage.html', {
         'form': form,
         'driver_form': driver_form,
         'agents': agents,
@@ -55,7 +55,7 @@ def edit_agent(request, agent_id):
             return redirect('people:manage')
     else:
         form = AgentForm(instance=agent)
-    return render(request, 'edit_agent.html', {'form': form, 'agent': agent})
+    return render(request, 'people/edit_agent.html', {'form': form, 'agent': agent})
 
 @login_required
 def delete_agent(request, agent_id):
@@ -74,7 +74,7 @@ def edit_driver(request, driver_id):
             return redirect('people:manage')
     else:
         form = DriverForm(instance=driver)
-    return render(request, 'edit_driver.html', {'form': form, 'driver': driver})
+    return render(request, 'people/edit_driver.html', {'form': form, 'driver': driver})
 
 @login_required
 def delete_driver(request, driver_id):

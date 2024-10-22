@@ -1,10 +1,9 @@
 from django.db import models
-from jobs.models import Job
 from people.models import Driver
 from django.utils import timezone
 import pytz
 from decimal import Decimal
-from common.utils import get_exchange_rate
+from common.utils import get_exchange_rate, CURRENCY_CHOICES
 
 class Expense(models.Model):
     EXPENSE_TYPES = [
@@ -24,7 +23,7 @@ class Expense(models.Model):
     expense_type = models.CharField(max_length=255, choices=EXPENSE_TYPES)
     expense_amount = models.DecimalField(max_digits=10, decimal_places=2)
     expense_amount_in_euros = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    expense_currency = models.CharField(max_length=10, choices=Job.CURRENCY_CHOICES)
+    expense_currency = models.CharField(max_length=10, choices=CURRENCY_CHOICES)
     expense_date = models.DateField()
     expense_time = models.TimeField()
     expense_notes = models.TextField(blank=True, null=True)

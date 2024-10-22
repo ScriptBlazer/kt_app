@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Edit Guest{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>Edit Guest</h2>
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="form-group-inline">
+            <div class="field-wrapper">
+                <label for="customer_name">Customer Name:</label>
+                {{ form.customer_name }}
+            </div>
+            <div class="field-wrapper">
+                <label for="customer_number">Customer Number:</label>
+                {{ form.customer_number }}
+            </div>
+        </div>
+      
+        <div class="form-group-inline">
+            <div class="field-wrapper">
+                <label for="check_in">Check-in Date and Time:</label>
+                {{ form.check_in }}
+            </div>
+            <div class="field-wrapper">
+                <label for="check_out">Check-out Date and Time:</label>
+                {{ form.check_out }}
+            </div>
+        </div>
+
+        <div class="form-group-inline">
+            <div class="field-wrapper">
+                <label for="no_of_people">Number of People:</label>
+                {{ form.no_of_people }}
+            </div>
+            <div class="field-wrapper">
+                <label for="rooms">Number of Rooms:</label>
+                {{ form.rooms }}
+            </div>
+            <div class="field-wrapper">
+                <label for="no_of_beds">Number of Beds (per room):</label>
+                {{ form.no_of_beds }}
+            </div>
+        </div>
+      
+        <div class="bed-types-container" style="display: flex; flex-wrap: wrap;">
+            {% for field in bed_type_fields %}
+                <div class="bed-type-row">
+                    <label>{{ field.label }}</label>
+                    <div style="display: flex;">
+                        {{ field }}
+                        <div class="bed-type-buttons">
+                            <button type="button" class="bed-type-plus">+</button>
+                            <button type="button" class="bed-type-minus">-</button>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+          <br>
+      
+        <div>
+            <label for="hotel_tier">Hotel Tier:</label>
+            {{ form.hotel_tier }}
+        </div>
+      
+        <div>
+            <label for="special_requests">Special Requests:</label>
+            {{ form.special_requests }}
+        </div>
+
+        <div>
+            <label for="payment_type">Payment Type:</label>
+            {{ form.payment_type }}
+        </div>
+      
+        <div class="form-group-inline">
+            <div class="field-wrapper">
+                <label for="hotel_price">Customer Pays:</label>
+                {{ form.customer_pays }}
+            </div>
+            <div class="field-wrapper">
+                <label for="hotel_currency">Currency:</label>
+                {{ form.customer_pays_currency }}
+            </div>
+        </div>
+
+        <div class="form-group-inline">
+            <div class="field-wrapper">
+                <label for="hotel_price">Hotel Price:</label>
+                {{ form.hotel_price }}
+            </div>
+            <div class="field-wrapper">
+                <label for="hotel_currency">Currency:</label>
+                {{ form.hotel_price_currency }}
+            </div>
+        </div>
+
+        <div class="form-group-inline">
+            <div class="field-wrapper">
+                <label for="agent">Agent:</label>
+                {{ form.agent }}
+            </div>
+            <div class="field-wrapper">
+                <label for="agent_fee">Agent Fee:</label>
+                {{ form.agent_fee }}
+            </div>
+        </div>
+      
+        <div class="button-group">
+            <button type="submit" id="save-button">Save Changes</button>
+            <a href="{% url 'hotels:hotel_bookings' %}" class="button cancel-button">Cancel</a>
+        </div>
+
+        {% if form.errors %}
+            <div class="errors">
+                <h2>Form Errors:</h2>
+                <ul>
+                    {% for field, errors in form.errors.items %}
+                        <li>{{ field|capfirst }}: {{ errors|striptags }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+      </form>
+    </div>
+    <script>
+        // JavaScript for handling the plus and minus buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.bed-type-plus').forEach(function(button) {
+                button.addEventListener('click', function() {
+                    let input = this.closest('.bed-type-row').querySelector('.bed-type-quantity');
+                    let value = parseInt(input.value);
+                    input.value = value + 1;
+                });
+            });
+
+            document.querySelectorAll('.bed-type-minus').forEach(function(button) {
+                button.addEventListener('click', function() {
+                    let input = this.closest('.bed-type-row').querySelector('.bed-type-quantity');
+                    let value = parseInt(input.value);
+                    if (value > 0) {
+                        input.value = value - 1;
+                    }
+                });
+            });
+        });
+    </script>
+{% endblock %}

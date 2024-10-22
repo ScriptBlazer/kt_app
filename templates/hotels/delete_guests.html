@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Delete Guest{% endblock %}
+
+{% block content %}
+<div class="container delete">
+    <h2>Delete Guest Booking</h2>
+    <form method="post">
+        {% csrf_token %}
+        <h3>Are you sure you want to delete the booking for {{ guest.customer_name }} with check-in on {{ guest.check_in|date:"l, d F Y" }}? </h3>
+        <h2>This action cannot be undone!!</h2>
+        <a href="{% url 'hotels:view_guests' guest.id %}" class="button">Cancel</a>
+        <button type="submit" class="button cancel-button">Confirm Delete</button>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'script.js' %}"></script>
+{% endblock %}

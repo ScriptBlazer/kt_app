@@ -7,10 +7,11 @@
 {% block content %}
     <div class="calc">
         <div class="container">
-            <br>
-            <a href="{% url 'home' %}" class="button">Back to Home</a>
-            <a href="{% url 'billing:totals' %}" class="button">Back to Totals</a>
-            <br><br>
+            <div class="buttons">
+                <a href="{% url 'home' %}" class="button">Back to Home</a>
+                <a href="{% url 'common:admin' %}" class="button">Back to Admin</a>
+                <a href="{% url 'billing:totals' %}" class="button">Back to Totals</a>
+            </div>
             <h2>All Totals</h2>
 
             <div class="all">

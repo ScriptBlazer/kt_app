@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load custom_filters %}
+{% load humanize %}
+
+{% block title %}View Guest{% endblock %}
+
+{% block content %}
+<div class="view">
+    <div class="buttons">
+        <a href="{% url 'hotels:hotel_bookings' %}" class="button">Back to Bookings</a>
+        <button onclick="copyGuestDetails()" class="button">Copy Guest Details</button>
+        
+        <!-- Success Message -->
+        <p id="copy-success" style="display: none; color: green;">Guest details copied to clipboard!</p>
+    </div>
+    <h2>View Guest</h2>
+    <p><strong>Guest Name:</strong> {{ guest.customer_name }}</p>
+    <p><strong>Guest Number:</strong> {{ guest.customer_number }}</p>
+    <p><strong>Check-in Date:</strong> {{ guest.check_in|date:"l, d F Y" }} {{ guest.check_in|time:"H:i" }}</p>
+    <p><strong>Check-out Date:</strong> {{ guest.check_out|date:"l, d F Y" }} {{ guest.check_out|time:"H:i" }}</p>
+    <p><strong>No. of People:</strong> {{ guest.no_of_people }}</p>
+    <p><strong>Rooms:</strong> {{ guest.rooms }}</p>
+    <p><strong>No. of Beds (per room):</strong> {{ guest.no_of_beds }}</p>
+    <p><strong>Beds:</strong>
+        {% for bed in guest.hotelbookingbedtype_set.all %}
+            {{ bed.quantity }} {{ bed.bed_type.name }}{% if not forloop.last %}, {% endif %}
+        {% endfor %}
+    </p>
+    <p><strong>Hotel Tier:</strong> {{ guest.get_hotel_tier_display }}</p>
+    <p><strong>Customer Pays:</strong>
+        €{{ guest.customer_pays_in_euros|intcomma|default_if_none:"" }} 
+        {% if guest.customer_pays_currency != 'EUR' %} 
+            ({% if guest.customer_pays_currency == 'GBP' %}£{% elif guest.customer_pays_currency == 'USD' %}${% elif guest.customer_pays_currency == 'HUF' %}Ft {% else %}{{ guest.customer_pays_currency }}{% endif %}{{ guest.customer_pays|intcomma|default_if_none:"" }})
+        {% endif %}
+        
+        {% if guest.payment_type == 'Card' %}
+            <strong> | Credit Card Fee:</strong> 
+            {% if guest.customer_pays_currency == 'EUR' %}
+                €{{ guest.cc_fee|intcomma|default_if_none:"" }} 
+                (€{{ total_with_cc_fee|intcomma|default_if_none:"" }})
+            {% elif guest.customer_pays_currency == 'GBP' %}
+                £{{ guest.cc_fee|intcomma|default_if_none:"" }} 
+                (£{{ total_with_cc_fee|intcomma|default_if_none:"" }})
+            {% elif guest.customer_pays_currency == 'HUF' %}
+                Ft {{ guest.cc_fee|intcomma|default_if_none:"" }} 
+                (Ft {{ total_with_cc_fee|intcomma|default_if_none:"" }})
+            {% elif guest.customer_pays_currency == 'USD' %}
+                ${{ guest.cc_fee|intcomma|default_if_none:"" }} 
+                (${{ total_with_cc_fee|intcomma|default_if_none:"" }})
+            {% endif %}
+        {% endif %}
+    </p>
+    <p><strong>Hotel Price:</strong>
+        €{{ guest.hotel_price_in_euros|intcomma|default_if_none:"" }} 
+        {% if guest.hotel_price_currency != 'EUR' %} 
+            ({% if guest.hotel_price_currency == 'GBP' %}£{% elif guest.hotel_price_currency == 'USD' %}${% elif guest.hotel_price_currency == 'HUF' %}Ft {% else %}{{ guest.hotel_price_currency }}{% endif %}{{ guest.hotel_price|intcomma|default_if_none:"" }})
+        {% endif %}
+    </p>
+    <p><strong>Agent:</strong> {{ guest.agent }}</p>
+    <p><strong>Agent Fee:</strong> {% if guest.agent_fee %}{{ guest.agent_fee }}%{% endif %}</p>
+    <p><strong>Special Requests:</strong> {{ guest.special_requests|default:"No special requests" }}</p>
+    <br>
+    <div class="button-group">
+        <a href="{% url 'hotels:edit_guests' guest.id %}" class="button">Edit</a>
+        <a href="{% url 'hotels:delete_guests' guest.id %}" class="button cancel-button">Delete</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    function copyGuestDetails() {
+        // Gather the guest details you want to copy
+        let guestDetails = `*Name:* {{ guest.customer_name|default_if_none:"" }}
+*Number:* {{ guest.customer_number|default_if_none:"" }}
+*Check-in:* {{ guest.check_in|date:"l, d F Y" }} {{ guest.check_in|time:"H:i" }}
+*Check-out:* {{ guest.check_out|date:"l, d F Y" }} {{ guest.check_out|time:"H:i" }}
+*No of People:* {{ guest.no_of_people|default_if_none:"" }}
+*Rooms:* {{ guest.rooms|default_if_none:"" }}`;
+
+        {% if guest.hotel_tier %}
+            guestDetails += `\n*Hotel Tier:* {{ guest.get_hotel_tier_display|default_if_none:"" }}`;
+        {% endif %}
+
+        let specialRequests = `{{ guest.special_requests|escapejs|default_if_none:"" }}`;
+        if (specialRequests) {
+            guestDetails += `\n*Special Requests:* ${specialRequests}`;
+        }
+
+        // Create a temporary textarea to hold the guest details
+        const tempTextArea = document.createElement('textarea');
+        tempTextArea.value = guestDetails;
+        document.body.appendChild(tempTextArea);
+
+        // Select the text and copy it to the clipboard
+        tempTextArea.select();
+        document.execCommand('copy');
+
+        // Remove the temporary textarea
+        document.body.removeChild(tempTextArea);
+
+        // Show the success message
+        document.getElementById('copy-success').style.display = 'block';
+
+        // Hide the success message after 2 seconds
+        setTimeout(function() {
+            document.getElementById('copy-success').style.display = 'none';
+        }, 2000);
+    }
+</script>
+{% endblock %}

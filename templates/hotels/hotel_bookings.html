@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+{% load custom_filters %}
+
+{% block title %}Hotel Bookings{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="buttons">
+        <a href="{% url 'home' %}" class="button">Back to Home</a>
+        <a href="{% url 'common:services' %}" class="button">Back to Services</a>
+        <a href="{% url 'hotels:add_guests' %}" class="button">Add Guests</a>
+    </div>
+
+    <br><br>
+    <div class="column">
+        <div class="overall_totals-text">
+            <p>Total Guests in {% now "F" %}: <strong>{{ total_guests_this_month|default:"0" }}</strong></p>
+            <p>Total Money in {% now "F" %}: <strong>€{{ total_price_this_month|floatformat:2|intcomma|default:"0.00" }}</strong></p>
+        </div>
+        <div class="overall_totals-text">
+            <p>Total Guests Overall: <strong>{{ total_guests|default:"0" }}</strong></p>
+            <p>Total Money Overall: <strong>€{{ total_price|floatformat:2|intcomma|default:"0.00" }}</strong></p>
+        </div>
+    </div>
+
+    <h2>Upcoming Hotel Bookings</h2>
+    {% if upcoming_bookings_grouped %}
+        {% for group in upcoming_bookings_grouped %}
+            <br>
+            <h3>{{ group.date|date:"l, d F Y" }}</h3>
+            <p><strong>Total Guests:</strong> {{ group.total_guests }}</p>
+            <p><strong>Total Price:</strong> €{{ group.total_price |intcomma}}</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Guest Name</th>
+                        <th>Check in</th>
+                        <th class="phone">No. of People</th>
+                        <th class="phone">Price</th>
+                        <th class="phone">Hotel Tier</th>
+                        <th class="tablet">Special Requests</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for booking in group.bookings %}
+                    <tr>
+                        <td>{{ booking.customer_name }}</td>
+                        <td>{{ booking.check_in |date:"d M Y"}}</td>
+                        <td class="phone">{{ booking.no_of_people }}</td>
+                        <td class="phone">€{{ booking.hotel_price }}</td>
+                        <td class="phone">
+                            {% if booking.hotel_tier %}
+                                {{ booking.hotel_tier }} Star
+                            {% else %}
+                            {% endif %}
+                        </td>
+                        <td class="tablet">{{ booking.special_requests|default:"No special requests" |truncate_words_chars }}</td>
+                        <td>
+                            <a href="{% url 'hotels:edit_guests' booking.id %}" class="button laptop">Edit</a>
+                            <a href="{% url 'hotels:view_guests' booking.id %}" class="button">View</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endfor %}
+    {% else %}
+        <p>No upcoming hotel bookings.</p>
+    {% endif %}
+
+    <br><hr><br>
+    <h2 class="toggle-header" data-section-id="past-bookings-section">Past Hotel Bookings <span id="past-bookings-section-arrow">▼</span></h2>
+    <div id="past-bookings-section" style="display: none;">
+        {% if past_bookings_grouped %}
+            {% for group in past_bookings_grouped %}
+                <br>
+                <h3>{{ group.date|date:"l, d F Y" }}</h3>
+                <p><strong>Total Guests:</strong> {{ group.total_guests }}</p>
+                <p><strong>Total Price:</strong> €{{ group.total_price |intcomma}}</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Guest Name</th>
+                            <th>Check in</th>
+                            <th class="phone">No. of People</th>
+                            <th class="phone">Price</th>
+                            <th class="phone">Hotel Tier</th>
+                            <th class="tablet">Special Requests</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for booking in group.bookings %}
+                        <tr>
+                            <td>{{ booking.customer_name }}</td>
+                            <td>{{ booking.check_in |date:"d M Y"}}</td>
+                            <td class="phone">{{ booking.no_of_people }}</td>
+                            <td class="phone">€{{ booking.hotel_price }}</td>
+                            <td class="phone">
+                                {% if booking.hotel_tier %}
+                                    {{ booking.hotel_tier }} Star
+                                {% else %}
+                                {% endif %}
+                            </td>
+                            <td class="tablet">{{ booking.special_requests|default:"No special requests" |truncate_words_chars }}</td>
+                            <td>
+                                <a href="{% url 'hotels:edit_guests' booking.id %}" class="button laptop">Edit</a>
+                                <a href="{% url 'hotels:view_guests' booking.id %}" class="button">View</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endfor %}
+        {% else %}
+            <p>No past hotel bookings.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'script.js' %}"></script>
+{% endblock %}

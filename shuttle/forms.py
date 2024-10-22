@@ -9,4 +9,4 @@ class ShuttleForm(forms.ModelForm):
     
     class Meta:
         model = Shuttle
-        fields = ['customer_name', 'customer_number', 'customer_email', 'shuttle_date', 'shuttle_direction', 'no_of_passengers', 'shuttle_notes']
+        fields = ['customer_name', 'customer_number', 'customer_email', 'shuttle_date', 'shuttle_direction', 'payment_type', 'no_of_passengers', 'shuttle_notes']

@@ -231,7 +231,7 @@ form input::-webkit-inner-spin-button {
     gap: 10px;
 }
 
-.view-job {
+.view {
     padding: 50px;
 }
 
@@ -293,6 +293,10 @@ table tbody tr:hover {
     flex: 1;
     padding: 10px;
     min-width: 300px;
+    margin: 0px;
+}
+
+.total-box {
     margin: 10px;
 }
 
@@ -409,6 +413,41 @@ table tbody tr:hover {
     margin-top: 0px;
 }
 
+.bed-type-row {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-right: 20px;
+}
+
+.bed-type-row label {
+    text-align: center;
+}
+
+.bed-type-quantity {
+    width: 40px;
+    height: 40px;
+    text-align: center;
+    margin-bottom: 0px;
+}
+
+.bed-type-buttons {
+    display: flex;
+    flex-direction: column;
+    margin-left: 5px;
+}
+
+.bed-type-minus,
+.bed-type-plus {
+    border-radius: 3px;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    font-size: 12px;
+    cursor: pointer;
+    margin: 1px 0;
+}
+
 .content {
     flex: 1;
     padding: 20px;
@@ -423,124 +462,134 @@ table tbody tr:hover {
     padding: 10px 0;
 }
 
-/* Ipad screens */
-@media (max-width: 900px) {
-    .tablet {
+
+/* Small laptop screens */
+@media (max-width: 1200px) {
+
+    .laptop {
         display: none;
     }
 
-    .job-container .customer-name {
-        min-width: 90px;
-    }
-
-    .calc .container {
-        max-width: 95%;
-        margin: 10px;
-    }
-
-    .row {
-        flex-wrap: nowrap;
-    }
-
-    #monthlyChart {
-        width: 220px;
-        height: 220px;
-    }
-
-    #yearlyChart {
-        width: 220px;
-        height: 220px;
-    }
-
-    .column {
-        min-width: 80px;
-        max-width: 500px;
-        max-height: 600px;
-    }
-
-    #lineChart {
-        max-width: 600px;
-        margin: 0px -90px 0px 0px;
-    }
-
-    .all .column {
-        max-width: 700px !important;
-        justify-self: end;
-    }
 
 
-    /* regular Mobile screens */
-    @media (max-width: 600px) {
-        .container {
-            max-width: 90%;
-        }
-
-        .lne {
-            padding-right: 0px;
-        }
-
-        .lne h1 {
-            padding-left: 25px;
-            font-size: 1.4em;
-        };
-
-        .container {
-            min-width: 40%;
-            max-width: 95%;
-        }
-
-        .job-container {
-            width: auto;
-        }
-
-        form {
-            width: auto;
-        }
-
-        li {
-            width: auto;
-        }
-
-        .job-container .customer-name {
-            min-width: 60px;
-        }
-
-        h2 {
-            font-size: 1.2em;
-        }
-
-        .view-job {
-            padding: 10px;
-        }
-
-        .phone {
+    /* Ipad screens */
+    @media (max-width: 900px) {
+        .tablet {
             display: none;
         }
 
-        @media (max-width: 415px) {
-            .lne h1 {
-                position: relative;
+        .job-container .customer-name {
+            min-width: 90px;
+        }
+
+        .calc .container {
+            max-width: 95%;
+            margin: 10px;
+        }
+
+        .row {
+            flex-wrap: nowrap;
+        }
+
+        #monthlyChart {
+            width: 220px;
+            height: 220px;
+        }
+
+        #yearlyChart {
+            width: 220px;
+            height: 220px;
+        }
+
+        .column {
+            min-width: 80px;
+            max-width: 500px;
+            max-height: 600px;
+        }
+
+        #lineChart {
+            max-width: 600px;
+            margin: 0px -90px 0px 0px;
+        }
+
+        .all .column {
+            max-width: 700px !important;
+            justify-self: end;
+        }
+
+
+        /* regular Mobile screens */
+        @media (max-width: 600px) {
+            .container {
+                max-width: 90%;
             }
 
+            .lne {
+                padding-right: 0px;
+            }
+
+            .lne h1 {
+                padding-left: 25px;
+                font-size: 1.4em;
+            };
+
             .container {
+                min-width: 40%;
                 max-width: 95%;
             }
 
-            .content {
-                padding: 5px;
+            .job-container {
+                width: auto;
             }
 
-            .small-phone {
+            form {
+                width: auto;
+            }
+
+            li {
+                width: auto;
+            }
+
+            .job-container .customer-name {
+                min-width: 60px;
+            }
+
+            h2 {
+                font-size: 1.2em;
+            }
+
+            .view {
+                padding: 10px;
+            }
+
+            .phone {
                 display: none;
             }
 
-            @media (max-width: 295px) {
+            @media (max-width: 415px) {
+                .lne h1 {
+                    position: relative;
+                }
 
-            .slim {
-                display: none;
+                .container {
+                    max-width: 95%;
+                }
+
+                .content {
+                    padding: 5px;
+                }
+
+                .small-phone {
+                    display: none;
+                }
+
+                @media (max-width: 295px) {
+
+                    .slim {
+                        display: none;
+                    }
+                }
             }
-        }
-
         }
     }
 }

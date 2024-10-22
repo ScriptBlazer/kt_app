@@ -1,11 +1,12 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load humanize %}
 {% load custom_filters %}
 
 {% block title %}View Expense{% endblock %}
 
 {% block content %}
-<div class="view-job">
+<div class="view">
     <div class="buttons">
         <a href="{% url 'home' %}" class="button">Back to Home</a>
         <a href="{% url 'expenses:expenses' %}" class="button">Back to Expenses</a>
@@ -15,9 +16,9 @@
     <p><strong>Driver:</strong> {{ expense.driver.name|default_if_none:"" }}</p>
     <p><strong>Expense Type:</strong> {{ expense.expense_type|default_if_none:"" }}</p>
     <p><strong>Expense Amount:</strong> 
-        €{{ expense.expense_amount_in_euros|default_if_none:"" }} 
+        €{{ expense.expense_amount_in_euros|intcomma|default_if_none:"" }} 
         {% if expense.expense_currency != 'EUR' %} 
-            ({% if expense.expense_currency == 'GBP' %}£{% elif expense.expense_currency == 'USD' %}${% elif expense.expense_currency == 'HUF' %}Ft {% else %}{{ expense.expense_currency }}{% endif %}{{ expense.expense_amount|default_if_none:"" }}) 
+            ({% if expense.expense_currency == 'GBP' %}£{% elif expense.expense_currency == 'USD' %}${% elif expense.expense_currency == 'HUF' %}Ft {% else %}{{ expense.expense_currency }}{% endif %}{{ expense.expense_amount|intcomma|default_if_none:"" }}) 
         {% endif %}
     </p>
     <p><strong>Date:</strong> {{ expense.expense_date|date:"F j, Y"|default_if_none:"" }}</p>

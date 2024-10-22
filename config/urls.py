@@ -16,6 +16,8 @@ urlpatterns = [
     path('billing/', include('billing.urls', namespace='billing')),
     path('shuttle/', include('shuttle.urls', namespace='shuttle')),
     path('expenses/', include('expenses.urls', namespace='expenses')),
+    path('hotels/', include('hotels.urls', namespace='hotels')),
+    path('common/', include('common.urls', namespace='common')),
     path('', jobs_views.home, name='home'),
 ]
 

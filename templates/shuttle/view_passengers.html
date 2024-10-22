@@ -1,15 +1,14 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load humanize %}
 {% load custom_filters %}
 
 {% block title %}View Passenger{% endblock %}
 
 {% block content %}
-<div class="view-job">
+<div class="view">
     <div class="buttons">
-        <a href="{% url 'home' %}" class="button">Back to Home</a>
         <a href="{% url 'shuttle:shuttle' %}" class="button">Back to Shuttle List</a>
-        <!-- Add the Copy to Clipboard Button -->
         <button onclick="copyShuttleDetails()" class="button">Copy Passenger Details</button>
 
         <!-- Success Message -->
@@ -21,7 +20,7 @@
     <p><strong>Customer Number:</strong> {{ shuttle.customer_number|default_if_none:"" }}</p>
     <p><strong>Customer Email:</strong> {{ shuttle.customer_email|default_if_none:"N/A" }}</p>
     <p><strong>No. of Passengers:</strong> {{ shuttle.no_of_passengers|default_if_none:"" }}</p>
-    <p><strong>Price:</strong> €{{ shuttle.price|default_if_none:"" }}</p>
+    <p><strong>Price:</strong> €{{ shuttle.price|intcomma|default_if_none:"" }}</p>
     <p><strong>Notes:</strong> {{ shuttle.shuttle_notes|default_if_none:"-" }}</p>
 
     <div class="button-group">
@@ -35,16 +34,16 @@
 <script>
     function copyShuttleDetails() {
         // Gather the shuttle details you want to copy
-        let shuttleDetails = `*Name:* {{ shuttle.customer_name|default_if_none:"" }}
-*Number:* {{ shuttle.customer_number|default_if_none:"" }}
-*Email:* {{ shuttle.customer_email|default_if_none:"N/A" }}
-*Shuttle Date:* {{ shuttle.shuttle_date|default_if_none:"" }}
-*Shuttle Direction:* {{ shuttle.get_shuttle_direction_display|default_if_none:"" }}
-*No of Passengers:* {{ shuttle.no_of_passengers|default_if_none:"" }}
-*Price:* €{{ shuttle.price|default_if_none:"" }}`;
+        let shuttleDetails = `*Name:* {{ shuttle.customer_name|default_if_none:""|escapejs }}
+*Number:* {{ shuttle.customer_number|default_if_none:""|escapejs }}
+*Email:* {{ shuttle.customer_email|default_if_none:"N/A"|escapejs }}
+*Shuttle Date:* {{ shuttle.shuttle_date|default_if_none:""|escapejs }}
+*Shuttle Direction:* {{ shuttle.get_shuttle_direction_display|default_if_none:""|escapejs }}
+*No of Passengers:* {{ shuttle.no_of_passengers|default_if_none:""|escapejs }}
+*Price:* €{{ shuttle.price|default_if_none:""|escapejs }}`;
 
         // Check if the notes are not empty and add it if available
-        let shuttleNotes = `{{ shuttle.shuttle_notes|default_if_none:"" }}`;
+        let shuttleNotes = `{{ shuttle.shuttle_notes|default_if_none:""|escapejs }}`;
         if (shuttleNotes) {
             shuttleDetails += `\n*Notes:* ${shuttleNotes}`;
         }

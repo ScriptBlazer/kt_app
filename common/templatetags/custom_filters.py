@@ -1,10 +1,17 @@
 from django import template
+from datetime import datetime
 import locale
 
 register = template.Library()
 
 @register.filter
 def time_format(value):
+    if isinstance(value, str):
+        try:
+            # Try to convert string to time object
+            value = datetime.strptime(value, '%H:%M:%S').time()
+        except ValueError:
+            return value  # If parsing fails, return the original value
     return value.strftime('%-I:%M%p').lower()
 
 @register.filter
