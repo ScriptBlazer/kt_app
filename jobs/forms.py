@@ -1,9 +1,10 @@
 from django import forms
 from decimal import Decimal
-from .models import Job
+from jobs.models import Job
+from django.apps import apps
 from django.core.exceptions import ValidationError
-from people.models import Agent, Driver
-from django.db.models.functions import Lower
+from common.forms import PaidToMixin
+from common.utils import get_ordered_people
 
 # Custom time field to validate time format
 class CustomTimeField(forms.TimeField):
@@ -18,8 +19,8 @@ class CustomTimeField(forms.TimeField):
         except ValidationError:
             raise ValidationError(self.error_messages['invalid'], code='invalid')
 
-# Form for creating and editing Job instances
-class JobForm(forms.ModelForm):
+
+class JobForm(PaidToMixin, forms.ModelForm):
     job_time = CustomTimeField(widget=forms.TimeInput(format='%H:%M', attrs={'placeholder': 'HH:MM'}), error_messages={
         'required': 'Please enter the job time.'
     })
@@ -27,7 +28,7 @@ class JobForm(forms.ModelForm):
         'required': 'Please enter the job date.',
         'invalid': 'Enter a valid date.'
     })
-    
+
     class Meta:
         model = Job
         fields = [
@@ -35,7 +36,8 @@ class JobForm(forms.ModelForm):
             'job_description', 'no_of_passengers', 'vehicle_type', 'kilometers',
             'pick_up_location', 'drop_off_location', 'flight_number', 'payment_type',
             'job_price', 'driver_fee', 'driver',
-            'number_plate', 'agent_name', 'agent_percentage', 'job_currency', 'driver_currency'
+            'number_plate', 'agent_name', 'agent_percentage', 'job_currency', 'driver_currency',
+            'paid_to_agent', 'paid_to_driver', 'paid_to_staff'
         ]
         error_messages = {
             'customer_name': {'required': 'Please enter the customer name.'},
@@ -51,17 +53,36 @@ class JobForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(JobForm, self).__init__(*args, **kwargs)
-        self.fields['driver'].queryset = Driver.objects.order_by(Lower('name'))
-        self.fields['agent_name'].queryset = Agent.objects.order_by(Lower('name'))
+        self.initialize_paid_to_field()
+        self.set_paid_to_initial(self.instance)
+        agents, drivers, staffs = get_ordered_people()
+
+        self.fields['driver'].queryset = drivers
+        self.fields['agent_name'].queryset = agents
+
+    def set_paid_to_initial(self, instance):
+        if instance.paid_to_agent:
+            self.fields['paid_to'].initial = f'agent_{instance.paid_to_agent.id}'
+        elif instance.paid_to_driver:
+            self.fields['paid_to'].initial = f'driver_{instance.paid_to_driver.id}'
+        elif instance.paid_to_staff:
+            self.fields['paid_to'].initial = f'staff_{instance.paid_to_staff.id}'
 
     def clean(self):
         cleaned_data = super().clean()
+
+        # Validate other fields first
+        job_currency = cleaned_data.get('job_currency')
         job_price = cleaned_data.get('job_price')
         no_of_passengers = cleaned_data.get('no_of_passengers')
         driver_fee = cleaned_data.get('driver_fee')
         driver_currency = cleaned_data.get('driver_currency')
         agent_name = cleaned_data.get('agent_name')
         agent_percentage = cleaned_data.get('agent_percentage')
+
+        # Currency field validation
+        if not job_currency:
+            self.add_error('job_currency', 'Currency field is required.')
 
         if job_price and job_price <= Decimal('0.00'):
             self.add_error('job_price', 'Job price must be greater than zero.')

@@ -1,9 +1,9 @@
 from django.db import models
 from django.core.validators import MinValueValidator
 from decimal import Decimal
-from people.models import Agent
-from common.utils import get_exchange_rate, CURRENCY_CHOICES, AGENT_FEE_CHOICES, PAYMENT_TYPE_CHOICES
-from jobs.models import Job, PaymentSettings
+from people.models import Agent, Staff
+from common.utils import get_exchange_rate, CURRENCY_CHOICES, AGENT_FEE_CHOICES, PAYMENT_TYPE_CHOICES, calculate_cc_fee
+from common.models import PaymentSettings
 
 
 class HotelBooking(models.Model):
@@ -37,8 +37,15 @@ class HotelBooking(models.Model):
     customer_pays = models.DecimalField(max_digits=10, decimal_places=2, default=20.00)
     customer_pays_currency = models.CharField(max_length=10, choices=CURRENCY_CHOICES, default='EUR')
     customer_pays_in_euros = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    
     cc_fee = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+
+    # Paid to fields
+    paid_to_agent = models.ForeignKey(Agent, on_delete=models.PROTECT, null=True, blank=True, related_name='hotel_paid_to_agent')
+    paid_to_staff = models.ForeignKey(Staff, on_delete=models.PROTECT, null=True, blank=True, related_name='hotel_paid_to_staff')
+    
+    is_confirmed = models.BooleanField(default=False)
+    is_paid = models.BooleanField(default=False)
+    is_completed = models.BooleanField(default=False)
 
     # Agent Information
     agent = models.ForeignKey(Agent, on_delete=models.PROTECT, null=True, blank=True)
@@ -50,14 +57,14 @@ class HotelBooking(models.Model):
         # Convert to euros
         self.convert_to_euros()
 
-        # Calculate and apply credit card fee if payment type is 'Card'
-        if self.payment_type == 'Card':
-            payment_settings = PaymentSettings.objects.first()
-            fee_percentage = payment_settings.cc_fee_percentage if payment_settings else Decimal('7.00')  # Default to 7%
-            self.cc_fee = (self.customer_pays * fee_percentage / Decimal('100')).quantize(Decimal('0.01'))
-        else:
-            self.cc_fee = Decimal('0.00')
+        # Get the credit card fee percentage from PaymentSettings
+        payment_settings = PaymentSettings.objects.first()
+        cc_fee_percentage = payment_settings.cc_fee_percentage if payment_settings else Decimal('7.00')  # Fallback to 7%
 
+        # Calculate credit card fee using the utility function
+        self.cc_fee = calculate_cc_fee(self.hotel_price, self.payment_type, cc_fee_percentage)
+
+        # Save the booking
         super().save(*args, **kwargs)
 
     def convert_to_euros(self):

@@ -16,6 +16,14 @@ html, body {
     color: #fff;
 }
 
+.header_admin{
+    background-color: orange !important;
+}
+
+.header_services {
+    background-color: purple !important;
+}
+
 .password-container {
     position: relative;
     width: 100%;
@@ -35,6 +43,14 @@ html, body {
     text-align: right;
 }
 
+.logot_admin {
+    background-color: orange;
+}
+
+.logot_services {
+    background-color: purple;
+}
+
 .hunfrd {
     margin-right: 10px;
 }
@@ -50,9 +66,25 @@ html, body {
     color: #007bff;
 }
 
+.lne_admin button {
+    color: orange;
+}
+
+.lne_services button {
+    color: purple;
+}
+
 .lne button:hover {
     background-color: #d9d9d9 !important;
     color: #007bff;
+}
+
+.lne_admin button:hover {
+    color: orange !important;
+}
+
+.lne_services button:hover {
+    color: purple !important;
 }
 
 .lne h1 {
@@ -64,7 +96,12 @@ html, body {
 
 .buttons {
     display: flex;
-    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.left-buttons {
+    display: flex;
     gap: 10px;
 }
 
@@ -90,6 +127,30 @@ a.button:hover, button:hover {
 .cancel-button:hover {
     background-color: #b70517 !important;
     transition: background-color 0.3s ease;
+}
+
+.button-orange {
+    background-color: orange !important;
+}
+
+.button-orange:hover {
+    background-color: rgb(212, 143, 16) !important;
+}
+
+.button-red {
+    background-color: rgb(255, 75, 75) !important;
+}
+
+.button-red:hover {
+    background-color: rgb(234, 49, 49) !important;
+}
+
+.button-purple {
+    background-color: purple !important;
+}
+
+.button-purple:hover {
+    background-color: rgb(58, 3, 58) !important;
 }
 
 form button {
@@ -118,7 +179,7 @@ li {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    width: 100%;
+    /* width: 100%; */
     min-height: 60px;
 }
 .smaller li{
@@ -130,7 +191,7 @@ form {
     padding: 20px;
     border-radius: 10px;
     box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-    width: 100%;
+    width: 96%;
     display: inline-block;
 }
 
@@ -204,7 +265,7 @@ form input::-webkit-inner-spin-button {
     box-shadow: inset 0px 0px 10px rgba(0, 123, 255, 0.2);
     font-weight: bold;
     color: #333;
-    width: 100%;
+    /* width: 100%; */
 }
 
 .job-container .customer-name {
@@ -268,7 +329,7 @@ table th, table td {
 }
 
 table th {
-    background-color: #007bff;
+    background-color: orange;
     color: white;
 }
 
@@ -448,6 +509,149 @@ table tbody tr:hover {
     margin: 1px 0;
 }
 
+.assign-driver-form-container {
+    max-width: 350px;
+    border-radius: 4px;
+}
+
+.assign-driver-form {
+    display: flex;
+    flex-direction: column;
+}
+
+.assign-driver-field {
+    display: flex;
+    flex-direction: column;
+}
+
+.assign-driver-select {
+    padding: 6px;
+    border-radius: 4px;
+}
+
+.assign-driver-submit-button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 8px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin: 0%;
+    margin-top: 10px;
+}
+
+.assign-driver-submit-button:hover {
+    background-color: #45a049;
+}
+
+.assign-driver-form input,
+.assign-driver-form textarea,
+.assign-driver-form select {
+    font-size: 1em;
+
+    margin-bottom: 0px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box;
+}
+
+.assign-driver-form p {
+    margin: 0px;
+}
+
+.modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    position: relative;
+    background-color: #fff;
+    padding: 40px 30px;
+    border-radius: 8px; 
+    width: 350px; 
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5); 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.close-button {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    color: #ff5e5e;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.2s ease-in-out;
+}
+
+.close-button:hover {
+    color: #c2322d; 
+}
+
+.modal p {
+    font-size: 18px;
+    color: #333;
+    margin: 0;
+}
+
+.pagination {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.pagination .step-links {
+    display: inline-block;
+    margin: 0;
+    padding: 0;
+}
+
+.pagination-btn {
+    display: inline-block;
+    padding: 10px 15px;
+    margin: 0 5px;
+    background-color: #007bff;
+    color: white;
+    text-decoration: none;
+    font-size: 14px;
+    border-radius: 4px;
+    transition: background-color 0.3s ease, transform 0.2s;
+    border: none;
+}
+
+.pagination-btn:hover {
+    background-color: #0056b3;
+}
+
+.pagination .current-page {
+    display: inline-block;
+    padding: 10px 15px;
+    color: #333;
+    font-weight: bold;
+    font-size: 14px;
+    background-color: #f1f1f1;
+    border-radius: 4px;
+    margin: 0 5px;
+}
+
+.pagination-btn:disabled, .pagination-btn[disabled] {
+    background-color: #cccccc;
+    color: #666666;
+    pointer-events: none;
+    cursor: not-allowed;
+}
+
 .content {
     flex: 1;
     padding: 20px;
@@ -482,6 +686,16 @@ table tbody tr:hover {
             min-width: 90px;
         }
 
+        .buttons {
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .left-buttons {
+            display: flex;
+            flex-wrap: wrap;
+        }
+        
         .calc .container {
             max-width: 95%;
             margin: 10px;

@@ -1,0 +1,41 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}My App{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'styles.css' %}">
+</head>
+<body>
+    <div class="header header_services">
+        <div class="lne lne_services">
+            <h1>Kerestir Travel Jobs</h1>
+            {% if user.is_authenticated %}
+                <div class="hunfrd">
+                    <form class="logot logot_services" method="post" action="{% url 'logout' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="button">Logout</button>
+                    </form>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="wrapper">
+        <div class="content">
+            {% block content %}
+            <!-- Page-specific content will be included here -->
+            {% endblock %}
+        </div>
+
+        <div class="footer">
+            <p>Kerestir Travel © Copyright 2024</p>
+        </div>
+    </div>
+
+    {% block extra_scripts %}
+    <script src="{% static 'script.js' %}"></script>
+    {% endblock %}
+</body>
+</html>

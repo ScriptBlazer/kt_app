@@ -66,7 +66,7 @@ def delete_expense(request, expense_id):
 
     # Check if the user is a superuser
     if not request.user.is_superuser:
-         return render(request, '403.html', status=403)
+         return render(request, 'errors/403.html', status=403)
 
     if request.method == 'POST':
         expense.delete()

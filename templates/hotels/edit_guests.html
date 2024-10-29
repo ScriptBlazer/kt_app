@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'base/base_services.html' %}
 {% load static %}
 {% load custom_filters %}
 
@@ -73,9 +73,15 @@
             {{ form.special_requests }}
         </div>
 
-        <div>
-            <label for="payment_type">Payment Type:</label>
-            {{ form.payment_type }}
+        <div class="form-group-inline">
+            <div class="field-wrapper">
+                <label for="payment_type">Payment Type:</label>
+                {{ form.payment_type }}
+            </div>
+            <div class="field-wrapper">
+                <label for="payment_type">Paid To:</label>
+                {{ form.paid_to }}
+            </div>
         </div>
       
         <div class="form-group-inline">
@@ -112,7 +118,7 @@
         </div>
       
         <div class="button-group">
-            <button type="submit" id="save-button">Save Changes</button>
+            <button class="button-purple" type="submit" id="save-button">Save Changes</button>
             <a href="{% url 'hotels:hotel_bookings' %}" class="button cancel-button">Cancel</a>
         </div>
 

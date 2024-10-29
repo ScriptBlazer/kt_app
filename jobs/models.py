@@ -1,20 +1,11 @@
 from django.db import models
 from decimal import Decimal
-from common.utils import get_exchange_rate, CURRENCY_CHOICES, AGENT_FEE_CHOICES, PAYMENT_TYPE_CHOICES
-from people.models import Agent, Driver
+from common.utils import get_exchange_rate, CURRENCY_CHOICES, AGENT_FEE_CHOICES, PAYMENT_TYPE_CHOICES, calculate_cc_fee
+from common.models import PaymentSettings
+from people.models import Agent, Driver, Staff
 import logging
 
 logger = logging.getLogger('kt')
-
-class PaymentSettings(models.Model):
-    cc_fee_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=7.00)  # Default to 7%
-
-    def __str__(self):
-        return f"Credit Card Fee: {self.cc_fee_percentage}%"
-    
-    class Meta:
-        verbose_name_plural = "Payment Settings"
-
 
 class Job(models.Model):
     # Customer Information
@@ -36,6 +27,11 @@ class Job(models.Model):
     job_price_in_euros = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     job_currency = models.CharField(max_length=10, choices=CURRENCY_CHOICES)
     cc_fee = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+
+    # Paid to Fields with unique related names
+    paid_to_agent = models.ForeignKey(Agent, on_delete=models.PROTECT, null=True, blank=True, related_name='job_paid_to_agent')
+    paid_to_driver = models.ForeignKey(Driver, on_delete=models.PROTECT, null=True, blank=True, related_name='job_paid_to_driver')
+    paid_to_staff = models.ForeignKey(Staff, on_delete=models.PROTECT, null=True, blank=True, related_name='job_paid_to_staff')
 
     # Driver Fee Information
     driver_fee = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
@@ -68,13 +64,13 @@ class Job(models.Model):
     def save(self, *args, **kwargs):
         # Currency conversion first
         self.convert_to_euros()
-        
-        # Then apply credit card fee if necessary
-        if self.payment_type == 'Card':
-            payment_settings = PaymentSettings.objects.first()
-            fee_percentage = payment_settings.cc_fee_percentage if payment_settings else Decimal('7.00')  # Fallback to 7%
-            self.cc_fee = (self.job_price * fee_percentage / Decimal('100')).quantize(Decimal('0.01'))
-            logger.debug(f"Applying CC Fee: {self.cc_fee} on {self.job_price} with rate {fee_percentage}%")
+
+        # Get the credit card fee percentage from PaymentSettings
+        payment_settings = PaymentSettings.objects.first()
+        cc_fee_percentage = payment_settings.cc_fee_percentage if payment_settings else Decimal('7.00')  # Fallback
+
+        # Calculate credit card fee using the utility function
+        self.cc_fee = calculate_cc_fee(self.job_price, self.payment_type, cc_fee_percentage)
 
         # Finally, save the job
         super().save(*args, **kwargs)

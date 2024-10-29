@@ -1,124 +1,73 @@
-{% extends 'base.html' %}
+{% extends 'base/base_services.html' %}
 {% load static %}
 {% load humanize %}
 {% load custom_filters %}
-
-{% block title %}Hotel Bookings{% endblock %}
+{% block title %}Upcoming Hotel Bookings{% endblock %}
 
 {% block content %}
 <div class="container">
     <div class="buttons">
-        <a href="{% url 'home' %}" class="button">Back to Home</a>
-        <a href="{% url 'common:services' %}" class="button">Back to Services</a>
-        <a href="{% url 'hotels:add_guests' %}" class="button">Add Guests</a>
+        <div class="left-buttons">
+            <a href="{% url 'home' %}" class="button">Back to Home</a>
+            <a href="{% url 'common:services' %}" class="button button-purple">Back to Services</a>
+            <a href="{% url 'hotels:enquiries' %}" class="button button-purple">Enquiries</a>
+            <a href="{% url 'hotels:past_bookings' %}" class="button button-purple">Past Bookings</a>
+        </div>
+        <a href="{% url 'hotels:add_guests' %}" class="button button-purple">Add Guests</a>
     </div>
 
-    <br><br>
-    <div class="column">
-        <div class="overall_totals-text">
-            <p>Total Guests in {% now "F" %}: <strong>{{ total_guests_this_month|default:"0" }}</strong></p>
-            <p>Total Money in {% now "F" %}: <strong>€{{ total_price_this_month|floatformat:2|intcomma|default:"0.00" }}</strong></p>
-        </div>
-        <div class="overall_totals-text">
-            <p>Total Guests Overall: <strong>{{ total_guests|default:"0" }}</strong></p>
-            <p>Total Money Overall: <strong>€{{ total_price|floatformat:2|intcomma|default:"0.00" }}</strong></p>
-        </div>
+    <div class="column overall_totals-text">
+        <p>Total Guests This Month: <strong>{{ total_guests_this_month|default:"0" }}</strong></p>
+        <p>Total Revenue This Month: <strong>€{{ total_price_this_month|floatformat:2|intcomma|default:"0.00" }}</strong></p>
     </div>
 
     <h2>Upcoming Hotel Bookings</h2>
-    {% if upcoming_bookings_grouped %}
-        {% for group in upcoming_bookings_grouped %}
-            <br>
-            <h3>{{ group.date|date:"l, d F Y" }}</h3>
-            <p><strong>Total Guests:</strong> {{ group.total_guests }}</p>
-            <p><strong>Total Price:</strong> €{{ group.total_price |intcomma}}</p>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Guest Name</th>
-                        <th>Check in</th>
-                        <th class="phone">No. of People</th>
-                        <th class="phone">Price</th>
-                        <th class="phone">Hotel Tier</th>
-                        <th class="tablet">Special Requests</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for booking in group.bookings %}
-                    <tr>
-                        <td>{{ booking.customer_name }}</td>
-                        <td>{{ booking.check_in |date:"d M Y"}}</td>
-                        <td class="phone">{{ booking.no_of_people }}</td>
-                        <td class="phone">€{{ booking.hotel_price }}</td>
-                        <td class="phone">
-                            {% if booking.hotel_tier %}
-                                {{ booking.hotel_tier }} Star
-                            {% else %}
-                            {% endif %}
-                        </td>
-                        <td class="tablet">{{ booking.special_requests|default:"No special requests" |truncate_words_chars }}</td>
-                        <td>
-                            <a href="{% url 'hotels:edit_guests' booking.id %}" class="button laptop">Edit</a>
-                            <a href="{% url 'hotels:view_guests' booking.id %}" class="button">View</a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        {% endfor %}
+    {% if upcoming_bookings %}
+        <ul>
+            {% for booking in upcoming_bookings %}
+            <li class="job-container {% if booking.color == 'red' %}red-job{% elif booking.color == 'orange' %}orange-job{% elif booking.color == 'green' %}green-job{% else %}white-job{% endif %}">
+                <span class="customer-name">{{ booking.customer_name|truncate_words_chars }}</span>
+                <div class="job-info">
+                    <span>{{ booking.check_in|date:"d M Y" }}</span>
+                    <span>{{ booking.no_of_people }}</span>
+                    <span>{{ booking.customer_pays }} {{ booking.customer_pays_currency }}</span>
+                    <span> {{ booking.hotel_price }} {{ booking.hotel_price_currency }}</span>
+                </div>
+                <div class="button-group">
+                    <a href="{% url 'hotels:edit_guests' booking.id %}" class="button tablet button-purple">Edit</a>
+                    <a href="{% url 'hotels:view_guests' booking.id %}" class="button button-purple">View</a>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+
+        <!-- Pagination Controls -->
+        <div class="pagination">
+            <span class="step-links">
+                {% if upcoming_bookings.has_previous %}
+                    <a href="?page=1{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="pagination-btn button-purple">&laquo; First</a>
+                    <a href="?page={{ upcoming_bookings.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="pagination-btn button-purple">Previous</a>
+                {% else %}
+                    <span class="pagination-btn" disabled>&laquo; First</span>
+                    <span class="pagination-btn" disabled>Previous</span>
+                {% endif %}
+
+                <span class="current-page">
+                    Page {{ upcoming_bookings.number }} of {{ upcoming_bookings.paginator.num_pages }}.
+                </span>
+
+                {% if upcoming_bookings.has_next %}
+                    <a href="?page={{ upcoming_bookings.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="pagination-btn button-purple">Next</a>
+                    <a href="?page={{ upcoming_bookings.paginator.num_pages }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="pagination-btn button-purple">Last &raquo;</a>
+                {% else %}
+                    <span class="pagination-btn" disabled>Next</span>
+                    <span class="pagination-btn" disabled>Last &raquo;</span>
+                {% endif %}
+            </span>
+        </div>
     {% else %}
         <p>No upcoming hotel bookings.</p>
     {% endif %}
-
-    <br><hr><br>
-    <h2 class="toggle-header" data-section-id="past-bookings-section">Past Hotel Bookings <span id="past-bookings-section-arrow">▼</span></h2>
-    <div id="past-bookings-section" style="display: none;">
-        {% if past_bookings_grouped %}
-            {% for group in past_bookings_grouped %}
-                <br>
-                <h3>{{ group.date|date:"l, d F Y" }}</h3>
-                <p><strong>Total Guests:</strong> {{ group.total_guests }}</p>
-                <p><strong>Total Price:</strong> €{{ group.total_price |intcomma}}</p>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Guest Name</th>
-                            <th>Check in</th>
-                            <th class="phone">No. of People</th>
-                            <th class="phone">Price</th>
-                            <th class="phone">Hotel Tier</th>
-                            <th class="tablet">Special Requests</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for booking in group.bookings %}
-                        <tr>
-                            <td>{{ booking.customer_name }}</td>
-                            <td>{{ booking.check_in |date:"d M Y"}}</td>
-                            <td class="phone">{{ booking.no_of_people }}</td>
-                            <td class="phone">€{{ booking.hotel_price }}</td>
-                            <td class="phone">
-                                {% if booking.hotel_tier %}
-                                    {{ booking.hotel_tier }} Star
-                                {% else %}
-                                {% endif %}
-                            </td>
-                            <td class="tablet">{{ booking.special_requests|default:"No special requests" |truncate_words_chars }}</td>
-                            <td>
-                                <a href="{% url 'hotels:edit_guests' booking.id %}" class="button laptop">Edit</a>
-                                <a href="{% url 'hotels:view_guests' booking.id %}" class="button">View</a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            {% endfor %}
-        {% else %}
-            <p>No past hotel bookings.</p>
-        {% endif %}
-    </div>
 </div>
 {% endblock %}
 

@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'base/base_admin.html' %}
 {% load static %}
 {% load humanize %}
 {% load custom_filters %}
@@ -6,11 +6,18 @@
 {% block title %}Expenses{% endblock %}
 
 {% block content %}
+<!-- Mobile Warning Section -->
+<div id="mobile-warning" style="display: none;">
+    <p class="mobile-message">Please switch to desktop view to see this page.</p>
+</div>
+
 <div class="container">
     <div class="buttons">
-        <a href="{% url 'home' %}" class="button">Back to Home</a>
-        <a href="{% url 'common:admin' %}" class="button">Back to Admin</a>
-        <a href="{% url 'expenses:add_expense' %}" class="button phone">Add Expenses</a>
+        <div class="left-buttons">
+            <a href="{% url 'home' %}" class="button">Back to Home</a>
+            <a href="{% url 'common:admin' %}" class="button button-orange">Back to Admin</a>
+        </div>
+        <a href="{% url 'expenses:add_expense' %}" class="button phone button-orange">Add Expenses</a>
     </div>
     <h2>Expense Totals</h2>
     <div class="column">
@@ -54,8 +61,8 @@
                                 <td>{{ expense.expense_notes|default:"-" |truncate_words_chars}}</td>
                                 <td>
                                     <span class="button-group">
-                                        <a href="{% url 'expenses:edit_expense' expense.id %}" class="button">Edit</a>
-                                        <a href="{% url 'expenses:view_expense' expense.id %}" class="button">View</a>
+                                        <a href="{% url 'expenses:edit_expense' expense.id %}" class="button tablet button-orange">Edit</a>
+                                        <a href="{% url 'expenses:view_expense' expense.id %}" class="button button-orange">View</a>
                                     </span>
                                 </td>
                             </tr>
@@ -75,4 +82,36 @@
 
 {% block extra_scripts %}
 <script src="{% static 'script.js' %}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var expensesContainer = document.querySelector('.container');
+        var mobileWarning = document.getElementById('mobile-warning');
+        
+        // Detect if it's a mobile view and hide the expenses container content
+        if (window.innerWidth < 600) {  // Mobile view threshold
+            expensesContainer.style.display = 'none';
+            mobileWarning.style.display = 'block';
+        }
+
+        // Handle window resizing
+        window.addEventListener('resize', function () {
+            if (window.innerWidth < 600) {
+                expensesContainer.style.display = 'none';
+                mobileWarning.style.display = 'block';
+            } else {
+                expensesContainer.style.display = 'block';
+                mobileWarning.style.display = 'none';
+            }
+        });
+    });
+</script>
+
+<!-- Styling for the mobile message -->
+<style>
+    .mobile-message {
+        text-align: center;
+        font-size: 1.5em;
+        color: red;
+    }
+</style>
 {% endblock %}

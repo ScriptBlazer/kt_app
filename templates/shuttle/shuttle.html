@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'base/base_services.html' %}
 {% load static %}
 {% load humanize %}
 {% load custom_filters %}
@@ -8,10 +8,14 @@
 {% block content %}
 <div class="container">
     <div class="buttons">
-        <a href="{% url 'home' %}" class="button">Back to Home</a>
-        <a href="{% url 'common:services' %}" class="button">Back to Services</a>
-        <a href="{% url 'shuttle:add_passengers' %}" class="button">Add Passengers</a>
+        <div class="left-buttons">
+            <a href="{% url 'home' %}" class="button">Back to Home</a>
+            <a href="{% url 'common:services' %}" class="button button-purple">Back to Services</a>
+            <a href="{% url 'shuttle:enquiries' %}" class="button button-purple">Enquiries</a>
+        </div>
+        <a href="{% url 'shuttle:add_passengers' %}" class="button button-purple">Add Passengers</a>
     </div>
+
     <div class="column">
         <div class="overall_totals-text">
             <p>Total Passengers in {% now "F" %}: <strong>{{ total_passengers_this_month|default:"0" }}</strong></p>
@@ -26,40 +30,37 @@
     <h2>Upcoming Shuttles</h2>
     {% if upcoming_shuttles_grouped %}
         {% for group in upcoming_shuttles_grouped %}
-            <br>
-            <h3>{{ group.date|date:"l, d F Y" }}</h3>
-            <p><strong>Total Passengers:</strong> {{ group.total_passengers }}</p>
-            <p><strong>Total Price:</strong> €{{ group.total_price |intcomma}}</p>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Customer Name</th>
-                        <th class="tablet">Customer Number</th>
-                        <th>No. of Passengers</th>
-                        <th class="phone">Price</th>
-                        <th class="phone">Shuttle Direction</th>
-                        <th class="tablet">Notes</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for shuttle in group.shuttles %}
-                    <tr>
-                        <td>{{ shuttle.customer_name }}</td>
-                        <td class="tablet">{{ shuttle.customer_number }}</td>
-                        <td>{{ shuttle.no_of_passengers }}</td>
-                        <td class="phone">€{{ shuttle.price }}</td>
-                        <td class="phone">{{ shuttle.get_shuttle_direction_display }}</td>
-                        <td class="tablet">{{ shuttle.shuttle_notes|default:"No notes" |truncate_words_chars }}</td>
-                        <td>
-                            <a href="{% url 'shuttle:edit_passengers' shuttle.id %}" class="button tablet">Edit</a>
-                            <a href="{% url 'shuttle:view_passengers' shuttle.id %}" class="button">View</a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        {% endfor %}
+        <h3>{{ group.date|date:"l, d F Y" }}</h3>
+        <p><strong>Total Passengers:</strong> {{ group.total_passengers }}</p>
+        <p><strong>Total Price:</strong> €{{ group.total_price|intcomma }}</p>
+
+        <!-- Driver Assignment Form -->
+        <div class="assign-driver-form-container">
+            <form method="post" action="{% url 'shuttle:shuttle' %}" class="assign-driver-form">
+                {% csrf_token %}
+                {{ group.driver_form.as_p }}
+                <button type="submit" name="assign_driver" class="assign-driver-submit-button button-purple button-purple">Assign Driver</button>
+            </form>
+        </div>
+
+        <ul>
+            {% for shuttle in group.shuttles %}
+                <li class="job-container {% if shuttle.color == 'red' %}red-job{% elif shuttle.color == 'orange' %}orange-job{% elif shuttle.color == 'green' %}green-job{% else %}white-job{% endif %}">
+                    <span class="customer-name">{{ shuttle.customer_name|truncate_words_chars }}</span>
+                    <div class="job-info">
+                        <span class="slim">{{ shuttle.shuttle_date }}</span>
+                        <span class="phone">{{ shuttle.shuttle_direction|default_if_none:"No direction" }}</span>
+                        <span class="tablet">{{ shuttle.price|floatformat:2|intcomma }} EUR</span>
+                        <span class="phone">{{ shuttle.no_of_passengers }} Passengers</span>
+                    </div>
+                    <div class="button-group">
+                        <a href="{% url 'shuttle:edit_passengers' shuttle.id %}" class="button tablet button-purple">Edit</a>
+                        <a href="{% url 'shuttle:view_passengers' shuttle.id %}" class="button button-purple">View</a>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endfor %}
     {% else %}
         <p>No upcoming shuttles.</p>
     {% endif %}
@@ -72,36 +73,37 @@
                 <br>
                 <h3>{{ group.date|date:"l, d F Y" }}</h3>
                 <p><strong>Total Passengers:</strong> {{ group.total_passengers }}</p>
-                <p><strong>Total Price:</strong> €{{ group.total_price }}</p>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Customer Name</th>
-                            <th class="tablet">Customer Number</th>
-                            <th>No. of Passengers</th>
-                            <th class="phone">Price</th>
-                            <th class="phone">Shuttle Direction</th>
-                            <th class="tablet">Notes</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for shuttle in group.shuttles %}
-                        <tr>
-                            <td>{{ shuttle.customer_name }}</td>
-                            <td class="tablet">{{ shuttle.customer_number }}</td>
-                            <td>{{ shuttle.no_of_passengers }}</td>
-                            <td class="phone">€{{ shuttle.price }}</td>
-                            <td class="phone">{{ shuttle.get_shuttle_direction_display }}</td>
-                            <td class="tablet">{{ shuttle.shuttle_notes|default:"No notes" |truncate_words_chars }}</td>
-                            <td>
-                                <a href="{% url 'shuttle:edit_passengers' shuttle.id %}" class="button tablet">Edit</a>
-                                <a href="{% url 'shuttle:view_passengers' shuttle.id %}" class="button">View</a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                <p><strong>Total Price:</strong> €{{ group.total_price|floatformat:2|intcomma }}</p>
+
+                <!-- Driver assignment form for each date -->
+                <div class="assign-driver-form-container">
+                    <form method="post" action="{% url 'shuttle:shuttle' %}" class="assign-driver-form">
+                        {% csrf_token %}
+                        {{ group.driver_form.as_p }}
+                        <button type="submit" name="assign_driver" class="assign-driver-submit-button button-purple">Assign Driver</button>
+                    </form>
+                </div>
+
+                <ul>
+                    {% for shuttle in group.shuttles %}
+                    <li class="job-container {% if shuttle.color == 'red' %}red-job
+                    {% elif shuttle.color == 'orange' %}orange-job
+                    {% elif shuttle.color == 'green' %}green-job
+                    {% else %}white-job{% endif %}">
+                    <span class="customer-name">{{ shuttle.customer_name|truncate_words_chars }}</span>
+                    <div class="job-info">
+                        <span class="slim">{{ shuttle.shuttle_date }}</span>
+                        <span class="phone">{{ shuttle.shuttle_direction|default_if_none:"No direction" }}</span>
+                        <span class="tablet">{{ shuttle.price|floatformat:2|intcomma }} EUR</span>
+                        <span class="phone">{{ shuttle.no_of_passengers }} Passengers</span>
+                    </div>
+                    <div class="button-group">
+                        <a href="{% url 'shuttle:edit_passengers' shuttle.id %}" class="button phone button-purple">Edit</a>
+                        <a href="{% url 'shuttle:view_passengers' shuttle.id %}" class="button button-purple">View</a>
+                    </div>
+                </li>
+                    {% endfor %}
+                </ul>
             {% endfor %}
         {% else %}
             <p>No past shuttles.</p>

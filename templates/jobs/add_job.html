@@ -1,12 +1,13 @@
-{% extends 'base.html' %}
+{% extends 'base/base.html' %}
 {% load static %}
+{% load custom_filters %}
 
-{% block title %}Edit Job{% endblock %}
+{% block title %}Add Job{% endblock %}
 
 {% block content %}
 <div class="container">
-    <h2>Edit Job</h2>
-    <form method="post">
+    <h2>Add Job</h2>
+    <form method="post" id="job-form">
         {% csrf_token %}
         <!-- Job Form Fields -->
         <div class="form-group">
@@ -63,9 +64,15 @@
         </div>
 
         <!-- Pricing and Payment Fields -->
-        <div class="form-group">
-            {{ job_form.payment_type.label_tag }}<br>
-            {{ job_form.payment_type }}
+        <div class="form-group-inline">
+            <div class="field-wrapper">
+                {{ job_form.payment_type.label_tag }}<br>
+                {{ job_form.payment_type }}
+            </div>
+            <div class="field-wrapper">
+                {{ job_form.paid_to.label_tag }}<br>
+                {{ job_form.paid_to }}
+            </div>
         </div>
         <div class="form-group-inline">
             <div class="field-wrapper">
@@ -74,7 +81,7 @@
             </div>
             <div class="field-wrapper">
                 {{ job_form.job_currency.label_tag }}*<br>
-                {{ job_form.job_currency }}  <!-- Corrected from {{ job_form.currency }} -->
+                {{ job_form.job_currency }} 
             </div>
         </div>
         <div class="form-group-inline">
@@ -112,7 +119,7 @@
             </div>
         </div>
         <p class="nm">*Required fields</p>
-        
+
         <div class="button-group">
             <button type="submit" id="save-button">Save Job</button>
             <a href="{% url 'home' %}" class="button cancel-button">Cancel</a>
@@ -132,6 +139,12 @@
         </div>
     {% endif %}
 </div>
+
+<!-- Loading animation -->
+<div class="loading-overlay" id="loading-overlay" style="display: none;">
+    <div class="loading-spinner"></div>
+</div>
+
 {% endblock %}
 
 {% block extra_scripts %}

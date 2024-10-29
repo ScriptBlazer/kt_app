@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'base/base.html' %}
 {% load static %}
 {% load humanize %}
 {% load custom_filters %}
@@ -8,14 +8,15 @@
 {% block content %}
 <div class="view">
     <div class="buttons">
-        <a href="{% url 'home' %}" class="button">Back to Home</a>
-        <a href="{% url 'jobs:enquiries' %}" class="button">Back to Enquiries</a>
-        <a href="{% url 'jobs:past_jobs' %}" class="button">Back to Past Jobs</a>
-        <button onclick="copyJobDetails()" class="button">Copy Job Details</button>
-
-        <!-- Success Message -->
-        <p id="copy-success" style="display: none; color: green;">Job details copied to clipboard!</p>
+        <div class="left-buttons">
+            <a href="{% url 'home' %}" class="button">Back to Home</a>
+            <a href="{% url 'jobs:enquiries' %}" class="button">Back to Enquiries</a>
+            <a href="{% url 'jobs:past_jobs' %}" class="button">Back to Past Jobs</a>
+            <button onclick="copyJobDetails()" class="button">Copy Job Details</button>
+        </div>
     </div>
+    <!-- Success Message -->
+    <p id="copy-success" style="display: none; color: green;">Job details copied to clipboard!</p>
     <br>
     <h2>View Job</h2>
     <p><strong>Customer Name:</strong> {{ job.customer_name|default_if_none:"" }}</p>
@@ -30,6 +31,7 @@
     <p><strong>Vehicle Type:</strong> {{ job.vehicle_type|default_if_none:"" }}</p>
     <p><strong>Kilometers:</strong> {{ calculation.kilometers|default_if_none:"" }}</p>
     <p><strong>Payment Type:</strong> {{ job.payment_type|default_if_none:"" }}</p>
+    <p><strong>Paid To:</strong> {{ paid_to_name }}</p>
     <p>
         <strong>Job Price:</strong> 
         €{{ job.job_price_in_euros|intcomma|default_if_none:"" }} 
@@ -70,6 +72,12 @@
 
     <form method="POST" action="{% url 'jobs:update_job_status' job.id %}">
         {% csrf_token %}
+
+        <!-- Modal Trigger if Error -->
+        {% if error_message %}
+        <p id="modal-trigger" style="display:none;">{{ error_message }}</p>
+        {% endif %}
+
         <p><strong>Confirm Job:</strong> 
             <input class="sbig" type="checkbox" id="is_confirmed" name="is_confirmed" {% if job.is_confirmed %}checked{% endif %}>
         </p>
@@ -93,12 +101,20 @@
     </div>
     
 </div>
+
+<!-- Modal Structure -->
+<div id="error-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close-button" onclick="closeModal()">&times;</span>
+        <p id="modal-message">{{ error_message }}</p>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_scripts %}
 <script>
+    // Function to copy job details
     function copyJobDetails() {
-        // Gather the job details you want to copy
         let jobDetails = `*Name:* {{ job.customer_name|default_if_none:""|escapejs }}
 *Number:* {{ job.customer_number|default_if_none:""|escapejs }}
 *Job Date:* {{ job.job_date|default_if_none:""|escapejs }}
@@ -106,39 +122,22 @@
 *Pick-up Location:* {{ job.pick_up_location|default_if_none:""|escapejs }}
 *Drop-off Location:* {{ job.drop_off_location|default_if_none:""|escapejs }}`;
 
-        // Check if the flight number is not empty and add it if available
-        let flightNumber = `{{ job.flight_number|default_if_none:""|escapejs }}`;
-        if (flightNumber) {
-            jobDetails += `\n*Flight Number:* ${flightNumber}`;
-        }
-        
-        jobDetails += `
-*No of Passengers:* {{ job.no_of_passengers|default_if_none:""|escapejs }}
-*Vehicle Type:* {{ job.vehicle_type|default_if_none:""|escapejs }}
-*Job Price:* {{ job.job_price|default_if_none:""|escapejs }} {{ job.job_currency|default_if_none:""|escapejs }}`;
-
-        // Check if the job description is not empty and add it if available
+        // Add Job Description if it's not empty
         let jobDescription = `{{ job.job_description|default_if_none:""|escapejs }}`;
         if (jobDescription) {
             jobDetails += `\n*Job Description:* ${jobDescription}`;
         }
 
-        // Create a temporary textarea to hold the job details
         const tempTextArea = document.createElement('textarea');
         tempTextArea.value = jobDetails;
         document.body.appendChild(tempTextArea);
 
-        // Select the text and copy it to the clipboard
         tempTextArea.select();
         document.execCommand('copy');
-
-        // Remove the temporary textarea
         document.body.removeChild(tempTextArea);
 
-        // Show the success message
         document.getElementById('copy-success').style.display = 'block';
 
-        // Hide the success message after 2 seconds
         setTimeout(function() {
             document.getElementById('copy-success').style.display = 'none';
         }, 2000);

@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'base/base_services.html' %}
 {% load static %}
 {% load custom_filters %}
 {% block title %}Services{% endblock %}
@@ -6,57 +6,59 @@
 {% block content %}
 <div class="container">
     <div class="buttons">
-        <a href="{% url 'home' %}" class="button">Back to Home</a>
-        <a href="{% url 'shuttle:shuttle' %}" class="button">Shuttle</a>
-        <a href="{% url 'hotels:hotel_bookings' %}" class="button">Hotels</a>
+        <div class="left-buttons">
+            <a href="{% url 'home' %}" class="button">Back to Home</a>
+            <a href="{% url 'shuttle:shuttle' %}" class="button button-purple">Shuttle</a>
+            <a href="{% url 'hotels:hotel_bookings' %}" class="button button-purple">Hotels</a>
+        </div>
     </div>
 
-    <!-- Recent Shuttle Jobs -->
-    <h2>Recent Shuttle Jobs</h2>
+    <h2>Shuttle Jobs Today</h2>
     <ul>
-        {% if recent_shuttle_jobs %}
-            {% for shuttle in recent_shuttle_jobs %}
-                <li>
-                    <strong>{{ shuttle.customer_name }}</strong>
-                    
-                    <p class="phone">Date: {{ shuttle.shuttle_date }}</p>
-                    <p>Passengers: {{ shuttle.no_of_passengers }}</p>
-                    <p class="phone">Direction: {{ shuttle.get_shuttle_direction_display }}</p>
-                    <p class="phone">Price: €{{ shuttle.price|floatformat:2 }} 
-                    <div class="button-group">
-                        <a href="{% url 'shuttle:view_passengers' shuttle.id %}" class="button">View</a>
-                    </div>
-                </li>
-            {% endfor %}
-        {% else %}
-            <li>No recent shuttle jobs found.</li>
-        {% endif %}
+        {% for shuttle in shuttle_jobs_today %}
+        <li class="job-container">
+            <span class="customer-name">{{ shuttle.customer_name|truncate_words_chars }}</span>
+            <div class="job-info">
+                <span class="slim">{{ shuttle.shuttle_date }}</span>
+                <span class="tablet">€{{ shuttle.price }} {{ shuttle.currency }}</span>
+                <span class="phone">Passengers: {{ shuttle.no_of_passengers }}</span>
+                <span class="phone">{{ shuttle.shuttle_direction }}</span>
+            </div>
+            <div class="button-group">
+                {% if shuttle.id %}
+                    <a href="{% url 'shuttle:edit_passengers' shuttle.id %}" class="button phone button-purple">Edit</a>
+                    <a href="{% url 'shuttle:view_passengers' shuttle.id %}" class="button button-purple">View</a>
+                {% endif %}
+            </div>
+        </li>
+        {% empty %}
+            <li>No shuttles today</li>
+        {% endfor %}
     </ul>
 
-    <br><hr><br>
-    <!-- Recent Hotel Bookings -->
-    <h2>Recent Hotel Bookings</h2>
+    <h2>Hotel Bookings Today</h2>
     <ul>
-        {% if recent_hotel_jobs %}
-            {% for hotel in recent_hotel_jobs %}
-                <li>
-                    <strong>{{ hotel.customer_name }}</strong>
-                    <p class="phone">Check-in: {{ hotel.check_in|date:"d M Y" }}</p>
-                    <p>People: {{ hotel.no_of_people }}</p>
-                    <p class="phone">Rooms: {{ hotel.rooms }}</p>
-                    <p class="phone">Customer pays: {{ hotel.customer_pays|floatformat:2 }} {{ hotel.customer_pays_currency }}</p>
-                    <div class="button-group">
-                        <a href="{% url 'hotels:view_guests' hotel.id %}" class="button">View</a>
-                    </div>
-                </li>
-            {% endfor %}
-        {% else %}
-            <li>No recent hotel bookings found.</li>
-        {% endif %}
+        {% for booking in hotel_bookings_today %}
+        <li class="job-container">
+            <span class="customer-name">{{ booking.customer_name|truncate_words_chars }}</span>
+            <div class="job-info">
+                <span class="slim">{{ booking.check_in|date:"d M Y" }}</span>
+                <span class="tablet">Booking Fee: {{ booking.customer_pays_in_euros }} {{ booking.customer_pays_currency}}</span>
+                <span class="phone">People: {{ booking.no_of_people }}</span>
+            </div>
+            <div class="button-group">
+                {% if booking.id %}
+                    <a href="{% url 'hotels:edit_guests' booking.id %}" class="button phone button-purple">Edit</a>
+                    <a href="{% url 'hotels:view_guests' booking.id %}" class="button button-purple">View</a>
+                {% endif %}
+            </div>
+        </li>
+        {% empty %}
+            <li>No hotel bookings today</li>
+        {% endfor %}
     </ul>
 </div>
 {% endblock %}
-
 {% block extra_scripts %}
 <script src="{% static 'script.js' %}"></script>
 {% endblock %}

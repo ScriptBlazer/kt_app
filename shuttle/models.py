@@ -1,7 +1,10 @@
 from django.db import models
 import pytz
 from django.utils import timezone
-from common.utils import PAYMENT_TYPE_CHOICES
+from common.utils import PAYMENT_TYPE_CHOICES, calculate_cc_fee
+from people.models import Agent, Staff, Driver
+from decimal import Decimal
+from people.models import Driver
 
 class ShuttleConfig(models.Model):
     price_per_passenger = models.DecimalField(max_digits=10, decimal_places=2, default=60.00)
@@ -34,8 +37,18 @@ class Shuttle(models.Model):
     no_of_passengers = models.PositiveIntegerField()
     payment_type = models.CharField(max_length=10, choices=PAYMENT_TYPE_CHOICES, null=True, blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-    driver = models.CharField(max_length=255)
+    driver = models.ForeignKey(Driver, on_delete=models.PROTECT, null=True, blank=True)
     shuttle_notes = models.TextField(blank=True, null=True)
+    cc_fee = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+
+    # ForeignKey fields for paid_to
+    paid_to_agent = models.ForeignKey(Agent, on_delete=models.PROTECT, null=True, blank=True)
+    paid_to_driver = models.ForeignKey(Driver, on_delete=models.PROTECT, null=True, blank=True, related_name='shuttle_paid_to_driver')
+    paid_to_staff = models.ForeignKey(Staff, on_delete=models.PROTECT, null=True, blank=True)
+
+    is_confirmed = models.BooleanField(default=False)
+    is_completed = models.BooleanField(default=False)
+    is_paid = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
         # Set the timezone to Budapest
@@ -50,5 +63,10 @@ class Shuttle(models.Model):
 
         # Calculate price: €60 per passenger
         self.price = self.no_of_passengers * price_per_passenger
+
+        # Get the credit card fee percentage from PaymentSettings (assuming it's already migrated)
+        from common.models import PaymentSettings  # Import here to avoid circular import
+        payment_settings = PaymentSettings.objects.first()
+        cc_fee_percentage = payment_settings.cc_fee_percentage if payment_settings else Decimal('7.00')  # Fallback
 
         super(Shuttle, self).save(*args, **kwargs)

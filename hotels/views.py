@@ -1,7 +1,10 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from hotels.forms import HotelBookingForm
+from django.urls import reverse
 from hotels.models import HotelBooking, HotelBookingBedType, BedType
 from django.utils import timezone
+from django.core.paginator import Paginator
+from common.utils import assign_job_color
 from django.db.models import Sum
 from django.contrib.auth.decorators import login_required
 import logging
@@ -14,59 +17,76 @@ hungary_tz = pytz.timezone('Europe/Budapest')
 
 @login_required
 def hotels_home(request):
-    # Get all bookings
-    all_bookings = HotelBooking.objects.all()
-    
-    # Get today's date
-    today = timezone.now().date()
-    
-    # Group bookings by date
-    upcoming_bookings_grouped = []
-    past_bookings_grouped = []
-    
-    upcoming_bookings = all_bookings.filter(check_in__gte=today)
-    past_bookings = all_bookings.filter(check_in__lt=today)
+    budapest_tz = pytz.timezone('Europe/Budapest')
+    today = timezone.now().astimezone(budapest_tz).date()
 
+    # Fetch upcoming confirmed hotel bookings
+    upcoming_bookings = HotelBooking.objects.filter(check_in__gte=today, is_confirmed=True).order_by('check_in')
+
+    # Apply color assignment
     for booking in upcoming_bookings:
-        date_group = next((group for group in upcoming_bookings_grouped if group['date'] == booking.check_in.date()), None)
-        if not date_group:
-            date_group = {
-                'date': booking.check_in.date(),
-                'total_guests': 0,
-                'total_price': 0,
-                'bookings': []
-            }
-            upcoming_bookings_grouped.append(date_group)
-        
-        date_group['bookings'].append(booking)
-        date_group['total_guests'] += booking.no_of_people
-        date_group['total_price'] += booking.customer_pays
-    
-    for booking in past_bookings:
-        date_group = next((group for group in past_bookings_grouped if group['date'] == booking.check_in.date()), None)
-        if not date_group:
-            date_group = {
-                'date': booking.check_in.date(),
-                'total_guests': 0,
-                'total_price': 0,
-                'bookings': []
-            }
-            past_bookings_grouped.append(date_group)
-        
-        date_group['bookings'].append(booking)
-        date_group['total_guests'] += booking.no_of_people
-        date_group['total_price'] += booking.customer_pays
-    
+        booking.color = assign_job_color(booking, timezone.now().astimezone(budapest_tz))
+
+    # Paginate the results
+    paginator = Paginator(upcoming_bookings, 10) 
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     context = {
-        'upcoming_bookings_grouped': upcoming_bookings_grouped,
-        'past_bookings_grouped': past_bookings_grouped,
-        'total_guests': all_bookings.aggregate(Sum('no_of_people'))['no_of_people__sum'] or 0,
-        'total_price': all_bookings.aggregate(Sum('customer_pays'))['customer_pays__sum'] or 0,
+        'upcoming_bookings': page_obj,
         'total_guests_this_month': upcoming_bookings.filter(check_in__month=today.month).aggregate(Sum('no_of_people'))['no_of_people__sum'] or 0,
         'total_price_this_month': upcoming_bookings.filter(check_in__month=today.month).aggregate(Sum('customer_pays'))['customer_pays__sum'] or 0,
     }
-    
+
     return render(request, 'hotels/hotel_bookings.html', context)
+
+
+@login_required
+def hotel_enquiries(request):
+    budapest_tz = pytz.timezone('Europe/Budapest')
+    today = timezone.now().astimezone(budapest_tz).date()
+
+    # Fetch unconfirmed hotel bookings (enquiries)
+    unconfirmed_bookings = HotelBooking.objects.filter(is_confirmed=False).order_by('check_in')
+
+    # Apply color assignment
+    for booking in unconfirmed_bookings:
+        booking.color = assign_job_color(booking, timezone.now().astimezone(budapest_tz))
+
+    # Paginate the results
+    paginator = Paginator(unconfirmed_bookings, 10) 
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'unconfirmed_bookings': page_obj,
+    }
+
+    return render(request, 'hotels/enquiries.html', context)
+
+
+@login_required
+def past_bookings(request):
+    budapest_tz = pytz.timezone('Europe/Budapest')
+    today = timezone.now().astimezone(budapest_tz).date()
+
+    # Fetch past confirmed hotel bookings
+    past_bookings = HotelBooking.objects.filter(check_in__lt=today, is_confirmed=True).order_by('check_in')
+    
+    # Apply color assignment
+    for booking in past_bookings:
+        booking.color = assign_job_color(booking, timezone.now().astimezone(budapest_tz))
+    
+    # Paginate the results
+    paginator = Paginator(past_bookings, 10) 
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'past_bookings': page_obj,
+    }
+    
+    return render(request, 'hotels/past_bookings.html', context)
 
 
 @login_required
@@ -126,6 +146,15 @@ def view_guests(request, guest_id):
 def edit_guests(request, guest_id):
     guest = get_object_or_404(HotelBooking, pk=guest_id)
 
+    # Check if the booking is marked as completed
+    if guest.is_completed:
+        error_message = "This booking is marked as completed and cannot be edited."
+        logger.error(error_message)
+        return render(request, 'hotels/view_guests.html', {
+                'guest': guest,
+                'error_message': 'This booking is marked as completed and cannot be edited.'
+            }, status=400)
+
     if request.method == 'POST':
         form = HotelBookingForm(request.POST, instance=guest)
         if form.is_valid():
@@ -177,7 +206,7 @@ def delete_guests(request, guest_id):
 
     # Check if the user is a superuser
     if not request.user.is_superuser:
-         return render(request, '403.html', status=403)
+         return render(request, 'errors/403.html', status=403)
     
     if request.method == 'POST':
         try:
@@ -187,3 +216,41 @@ def delete_guests(request, guest_id):
             return render(request, 'hotels/delete_guests.html', {'guest': guest, 'error': str(e)})
     
     return render(request, 'hotels/delete_guests.html', {'guest': guest})
+
+
+@login_required
+def update_guest_status(request, guest_id):
+    guest = get_object_or_404(HotelBooking, pk=guest_id)
+
+    # Update guest status based on the request
+    guest.is_confirmed = 'is_confirmed' in request.POST
+    guest.is_paid = 'is_paid' in request.POST
+    guest.is_completed = 'is_completed' in request.POST
+
+    # If the guest booking is marked as completed, check for required fields
+    if guest.is_completed:
+        # Check if 'payment_type' is provided
+        if not guest.payment_type:
+            logger.error("Payment Type is required for completion.")
+            return render(request, 'hotels/view_guests.html', {
+                'guest': guest,
+                'error_message': 'Payment Type is required to mark the booking as completed.'
+            }, status=400)
+
+        # Check if 'paid_to' field is filled (Driver, Agent, or Staff)
+        if not (guest.paid_to_agent or guest.paid_to_staff):
+            logger.error("Paid to field is required for completion.")
+            return render(request, 'hotels/view_guests.html', {
+                'guest': guest,
+                'error_message': 'Paid to field (Agent, or Staff) is required to mark the booking as completed.'
+            }, status=400)
+
+    # Log the state of the guest booking before saving
+    logger.debug(f"Final guest state before saving: {guest}")
+
+    # Save the updated guest booking
+    guest.save()
+    logger.debug("Guest booking saved successfully.")
+
+    # Redirect to 'Past Bookings' if successful
+    return redirect(reverse('hotels:past_bookings'))
