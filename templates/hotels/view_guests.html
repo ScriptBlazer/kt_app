@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'base/base_services.html' %}
 {% load static %}
 {% load custom_filters %}
 {% load humanize %}
@@ -8,12 +8,15 @@
 {% block content %}
 <div class="view">
     <div class="buttons">
-        <a href="{% url 'hotels:hotel_bookings' %}" class="button">Back to Bookings</a>
-        <button onclick="copyGuestDetails()" class="button">Copy Guest Details</button>
-        
-        <!-- Success Message -->
-        <p id="copy-success" style="display: none; color: green;">Guest details copied to clipboard!</p>
+        <div class="left-buttons">
+            <a href="{% url 'hotels:hotel_bookings' %}" class="button button-purple">Back to Bookings</a>
+            <a href="{% url 'hotels:enquiries' %}" class="button button-purple">Back to Enquiries</a>
+            <a href="{% url 'hotels:hotel_bookings' %}" class="button button-purple">Back to Bookings</a>
+            <button onclick="copyGuestDetails()" class="button button-purple">Copy Guest Details</button>
+        </div>
     </div>
+    <!-- Success Message -->
+    <p id="copy-success" style="display: none; color: green;">Guest details copied to clipboard!</p>
     <h2>View Guest</h2>
     <p><strong>Guest Name:</strong> {{ guest.customer_name }}</p>
     <p><strong>Guest Number:</strong> {{ guest.customer_number }}</p>
@@ -61,9 +64,42 @@
     <p><strong>Agent Fee:</strong> {% if guest.agent_fee %}{{ guest.agent_fee }}%{% endif %}</p>
     <p><strong>Special Requests:</strong> {{ guest.special_requests|default:"No special requests" }}</p>
     <br>
+
+    <form method="POST" action="{% url 'hotels:update_guest_status' guest.id %}">
+        {% csrf_token %}
+
+        <p><strong>Confirm Booking:</strong> 
+            <input class="sbig" type="checkbox" id="is_confirmed" name="is_confirmed" {% if guest.is_confirmed %}checked{% endif %}>
+        </p>
+
+        <p><strong>Customer Paid:</strong> 
+            <input class="sbig" type="checkbox" id="is_paid" name="is_paid" {% if guest.is_paid %}checked{% endif %}>
+        </p>
+    
+        {% if user.is_superuser %}
+        <p><strong>Booking Completed (All Paid):</strong> 
+            <input class="sbig" type="checkbox" id="is_completed" name="is_completed" {% if guest.is_completed %}checked{% endif %}>
+        </p>
+        {% endif %}
+    
+        <button class="button-purple" type="submit" class="button">Update Status</button>
+    </form>
     <div class="button-group">
-        <a href="{% url 'hotels:edit_guests' guest.id %}" class="button">Edit</a>
+        <a href="{% url 'hotels:edit_guests' guest.id %}" class="button button-purple">Edit</a>
         <a href="{% url 'hotels:delete_guests' guest.id %}" class="button cancel-button">Delete</a>
+    </div>
+
+    <!-- Modal Trigger for Error -->
+    {% if error_message %}
+    <p id="modal-trigger" style="display:none;">{{ error_message }}</p>
+    {% endif %}
+</div>
+
+<!-- Modal Structure -->
+<div id="error-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close-button" onclick="closeModal()">&times;</span>
+        <p id="modal-message">{{ error_message }}</p>
     </div>
 </div>
 {% endblock %}
@@ -78,6 +114,7 @@
 *Check-out:* {{ guest.check_out|date:"l, d F Y" }} {{ guest.check_out|time:"H:i" }}
 *No of People:* {{ guest.no_of_people|default_if_none:"" }}
 *Rooms:* {{ guest.rooms|default_if_none:"" }}`;
+
 
         {% if guest.hotel_tier %}
             guestDetails += `\n*Hotel Tier:* {{ guest.get_hotel_tier_display|default_if_none:"" }}`;
@@ -109,4 +146,5 @@
         }, 2000);
     }
 </script>
+<script src="{% static 'script.js' %}"></script>
 {% endblock %}

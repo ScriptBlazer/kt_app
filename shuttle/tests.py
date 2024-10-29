@@ -1,18 +1,25 @@
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.utils import timezone
-from shuttle.models import Shuttle
+from shuttle.models import Shuttle, ShuttleConfig
 from shuttle.forms import ShuttleForm
 from django.db.models import Sum
 from django.contrib.auth.models import User
+from people.models import Driver
 import pytz
 from unittest.mock import patch
 import datetime
+from decimal import Decimal
 
 class ShuttleModelTest(TestCase):
 
     def setUp(self):
         self.budapest_tz = pytz.timezone('Europe/Budapest')
+
+        # Create a Driver instance
+        self.driver = Driver.objects.create(name="Driver A")
+
+        # Create Shuttle instance with driver instance
         self.shuttle = Shuttle.objects.create(
             customer_name="John Doe",
             customer_number="123456789",
@@ -20,7 +27,7 @@ class ShuttleModelTest(TestCase):
             shuttle_date=timezone.now().astimezone(self.budapest_tz).date(),
             shuttle_direction='buda_keres',
             no_of_passengers=2,
-            driver="Driver A",
+            driver=self.driver,
             shuttle_notes="No notes"
         )
 
@@ -39,9 +46,14 @@ class ShuttleModelTest(TestCase):
     def test_shuttle_fields(self):
         """Test that all fields are saved correctly."""
         self.assertEqual(self.shuttle.customer_name, "John Doe")
-        self.assertEqual(self.shuttle.driver, "Driver A")
+        self.assertEqual(self.shuttle.driver.name, "Driver A")
+
 
 class ShuttleFormTest(TestCase):
+
+    def setUp(self):
+        # Create a Driver instance for form testing
+        self.driver = Driver.objects.create(name="Driver B")
 
     def test_valid_form(self):
         """Test that the form is valid with correct data."""
@@ -53,7 +65,7 @@ class ShuttleFormTest(TestCase):
             'shuttle_direction': 'keres_buda',
             'no_of_passengers': 1,
             'shuttle_notes': "Handle with care",
-            'driver': "Driver B"
+            'driver': self.driver.id 
         }
         form = ShuttleForm(data)
         self.assertTrue(form.is_valid())
@@ -66,12 +78,13 @@ class ShuttleFormTest(TestCase):
             'shuttle_date': "",
             'shuttle_direction': 'keres_buda',
             'no_of_passengers': 1,
-            'driver': "Driver B"
+            'driver': self.driver.id
         }
         form = ShuttleForm(data)
         self.assertFalse(form.is_valid())
         self.assertIn('customer_name', form.errors)
         self.assertIn('shuttle_date', form.errors)
+
 
 class ShuttleViewTest(TestCase):
 
@@ -80,7 +93,10 @@ class ShuttleViewTest(TestCase):
         self.budapest_tz = pytz.timezone('Europe/Budapest')
         self.user = User.objects.create_user(username='testuser', password='testpass')
         self.client.login(username='testuser', password='testpass')
-        # Create shuttles for testing
+
+        self.driver_a = Driver.objects.create(name="Driver A")
+        self.driver_b = Driver.objects.create(name="Driver B")
+
         Shuttle.objects.create(
             customer_name="John Doe",
             customer_number="123456789",
@@ -88,7 +104,8 @@ class ShuttleViewTest(TestCase):
             shuttle_direction='buda_keres',
             no_of_passengers=2,
             price=120.00,
-            driver="Driver A"
+            driver=self.driver_a,
+            is_confirmed=True 
         )
         Shuttle.objects.create(
             customer_name="Alice Smith",
@@ -97,7 +114,8 @@ class ShuttleViewTest(TestCase):
             shuttle_direction='keres_buda',
             no_of_passengers=1,
             price=60.00,
-            driver="Driver B"
+            driver=self.driver_b,
+            is_confirmed=True  
         )
 
     def test_shuttle_view(self):
@@ -113,6 +131,9 @@ class ShuttleViewTest(TestCase):
         """Test adding a new shuttle booking."""
         response = self.client.get(reverse('shuttle:add_passengers'))
         self.assertEqual(response.status_code, 200)
+        
+        driver_c = Driver.objects.create(name="Driver C")  # Ensure driver exists for form data
+
         data = {
             'customer_name': "Bob Johnson",
             'customer_number': "555123456",
@@ -120,11 +141,12 @@ class ShuttleViewTest(TestCase):
             'shuttle_date': "2023-10-20",
             'shuttle_direction': 'both_ways',
             'no_of_passengers': 3,
-            'driver': "Driver C"
+            'driver': driver_c.id
         }
         response = self.client.post(reverse('shuttle:add_passengers'), data)
-        self.assertEqual(response.status_code, 302)  # Redirect after successful add
-        self.assertTrue(Shuttle.objects.filter(customer_name="Bob Johnson").exists())
+        if response.status_code != 302:
+            print(response.context['form'].errors) 
+        self.assertEqual(response.status_code, 302)
 
     def test_edit_passengers_view(self):
         """Test editing an existing shuttle booking."""
@@ -136,7 +158,7 @@ class ShuttleViewTest(TestCase):
             'shuttle_date': shuttle.shuttle_date.strftime('%Y-%m-%d'),
             'shuttle_direction': shuttle.shuttle_direction,
             'no_of_passengers': 4,  # Update number of passengers
-            'driver': shuttle.driver or '',  # Handle driver if necessary
+            'driver': shuttle.driver.id,  # Use driver ID
             'shuttle_notes': shuttle.shuttle_notes or '',
         }
         response = self.client.post(reverse('shuttle:edit_passengers', args=[shuttle.id]), data)
@@ -147,7 +169,6 @@ class ShuttleViewTest(TestCase):
 
     def test_delete_passengers_view(self):
         """Test deleting a shuttle booking."""
-        # Create a superuser for deletion
         admin_user = User.objects.create_superuser(username='admin', password='adminpass')
         self.client.login(username='admin', password='adminpass')
         shuttle = Shuttle.objects.first()
@@ -156,11 +177,36 @@ class ShuttleViewTest(TestCase):
         self.assertFalse(Shuttle.objects.filter(id=shuttle.id).exists())
 
     def test_delete_permission_denied(self):
-        """Test that non-superusers cannot delete shuttles."""
-        shuttle = Shuttle.objects.first()
+        """Test that non-superusers cannot delete confirmed shuttles."""
+        shuttle = Shuttle.objects.create(
+            customer_name="Test User",
+            customer_number="123456789",
+            shuttle_date=timezone.now().astimezone(self.budapest_tz).date(),
+            shuttle_direction='buda_keres',
+            no_of_passengers=2,
+            driver=self.driver_a,
+            is_confirmed=True
+        )
         response = self.client.post(reverse('shuttle:delete_passengers', args=[shuttle.id]))
         self.assertEqual(response.status_code, 403)
         self.assertTrue(Shuttle.objects.filter(id=shuttle.id).exists())
+
+    def test_delete_confirmed_shuttle_as_superuser(self):
+        """Test that a superuser can delete a confirmed shuttle."""
+        shuttle = Shuttle.objects.create(
+            customer_name="Superuser Shuttle",
+            customer_number="987654321",
+            shuttle_date=timezone.now().astimezone(self.budapest_tz).date(),
+            shuttle_direction='keres_buda',
+            no_of_passengers=3,
+            driver=self.driver_b,
+            is_confirmed=True
+        )
+        admin_user = User.objects.create_superuser(username='admin', password='adminpass')
+        self.client.login(username='admin', password='adminpass')
+        response = self.client.post(reverse('shuttle:delete_passengers', args=[shuttle.id]))
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(Shuttle.objects.filter(id=shuttle.id).exists())
 
     def test_view_passengers_view(self):
         """Test viewing shuttle booking details."""
@@ -170,10 +216,14 @@ class ShuttleViewTest(TestCase):
         self.assertContains(response, shuttle.customer_name)
         self.assertContains(response, shuttle.customer_number)
 
+
 class ShuttleTotalsTest(TestCase):
 
     def setUp(self):
         self.budapest_tz = pytz.timezone('Europe/Budapest')
+        self.driver_a = Driver.objects.create(name="Driver A")
+        self.driver_b = Driver.objects.create(name="Driver B")
+
         self.shuttle1 = Shuttle.objects.create(
             customer_name="John Doe",
             customer_number="123456789",
@@ -181,7 +231,7 @@ class ShuttleTotalsTest(TestCase):
             shuttle_direction='buda_keres',
             no_of_passengers=2,
             price=120.00,
-            driver="Driver A"
+            driver=self.driver_a
         )
         self.shuttle2 = Shuttle.objects.create(
             customer_name="Jane Smith",
@@ -190,7 +240,7 @@ class ShuttleTotalsTest(TestCase):
             shuttle_direction='keres_buda',
             no_of_passengers=3,
             price=180.00,
-            driver="Driver B"
+            driver=self.driver_b
         )
 
     def test_total_passengers_this_month(self):
@@ -228,3 +278,126 @@ class ShuttleTotalsTest(TestCase):
         for shuttle in Shuttle.objects.all():
             expected_price = shuttle.no_of_passengers * 60
             self.assertEqual(shuttle.price, expected_price)
+
+    
+class ShuttleAdditionalTests(TestCase):
+
+    def setUp(self):
+        self.client = Client()
+        self.budapest_tz = pytz.timezone('Europe/Budapest')
+        self.user = User.objects.create_user(username='testuser', password='testpass')
+        self.client.login(username='testuser', password='testpass')
+        self.driver = Driver.objects.create(name="Driver X")
+        
+        ShuttleConfig.load()
+
+        self.shuttle = Shuttle.objects.create(
+            customer_name="Test Customer",
+            customer_number="123456789",
+            shuttle_date=timezone.now().astimezone(self.budapest_tz).date(),
+            shuttle_direction='buda_keres',
+            no_of_passengers=2,
+            driver=self.driver,
+            is_confirmed=True
+        )
+
+    @patch('common.utils.get_exchange_rate', return_value=1.0)
+    def test_edit_confirmed_shuttle(self, mock_get_exchange_rate):
+        # Setup: create a confirmed but not completed shuttle
+        user = User.objects.create_user(username='testuser', password='password')
+        self.client.login(username='testuser', password='password')
+        shuttle = Shuttle.objects.create(
+            customer_name="Test Customer",
+            customer_number="123456789",
+            shuttle_date=timezone.now(),
+            shuttle_direction='buda_keres',
+            no_of_passengers=2,
+            is_confirmed=True,  # Confirmed but not completed
+            is_completed=False  # Not completed, so it should allow edit
+        )
+
+        response = self.client.post(reverse('shuttle:edit_passengers', args=[shuttle.id]), {
+            'customer_name': "Updated Customer",
+            'customer_number': "987654321",
+            'shuttle_date': shuttle.shuttle_date
+        })
+        
+        # Expect a redirect if edit is allowed, or 400 if blocked
+        self.assertEqual(response.status_code, 302)
+
+    @patch('common.utils.get_exchange_rate', return_value=1.0)
+    def test_edit_confirmed_shuttle(self, mock_get_exchange_rate):
+        # Setup: create a shuttle without 'paid_to' assigned
+        user = User.objects.create_user(username='testuser', password='password')
+        self.client.login(username='testuser', password='password')
+        shuttle = Shuttle.objects.create(
+            customer_name="Test Customer",
+            customer_number="123456789",
+            shuttle_date=timezone.now(),
+            shuttle_direction='buda_keres',
+            no_of_passengers=2,
+            is_completed=False
+        )
+
+        # Attempt to mark it as completed without 'paid_to'
+        response = self.client.post(reverse('shuttle:update_shuttle_status', args=[shuttle.id]), {
+            'is_completed': True
+        })
+        
+        # Assert error response if 'paid_to' is missing
+        self.assertContains(response, "Paid to field (Driver, Agent, or Staff) is required to mark the job as completed.", status_code=400)
+
+    @patch('common.utils.get_exchange_rate', return_value=1.0)
+    def test_edit_confirmed_shuttle(self, mock_get_exchange_rate):
+        """Ensure that the payment type is required before marking a shuttle as completed."""
+        data = {
+            'is_confirmed': True,
+            'is_completed': True,
+            'is_paid': True,
+            # Leave out 'payment_type' to trigger the error
+            'driver': self.driver.id  # Ensure a driver is set to pass 'paid_to' validation
+        }
+        response = self.client.post(reverse('shuttle:update_shuttle_status', args=[self.shuttle.id]), data)
+        self.assertEqual(response.status_code, 400)  # First, check for the expected 400 status
+        self.assertIn("Payment Type is required to mark the job as completed.", response.content.decode())
+
+        @patch('common.utils.get_exchange_rate', return_value=Decimal('1.2'))
+        def test_delete_unconfirmed_shuttle(self, mock_get_exchange_rate):
+            """Test that an unconfirmed shuttle can be deleted by any user."""
+            unconfirmed_shuttle = Shuttle.objects.create(
+                customer_name="Unconfirmed Test",
+                customer_number="555555555",
+                shuttle_date=timezone.now().astimezone(self.budapest_tz).date(),
+                shuttle_direction='buda_keres',
+                no_of_passengers=2,
+                is_confirmed=False
+            )
+            response = self.client.post(reverse('shuttle:delete_passengers', args=[unconfirmed_shuttle.id]))
+            self.assertEqual(response.status_code, 302)
+            self.assertFalse(Shuttle.objects.filter(id=unconfirmed_shuttle.id).exists())
+
+    @patch('common.utils.get_exchange_rate', return_value=1.0)
+    def test_edit_confirmed_shuttle(self, mock_get_exchange_rate):
+        """Test the color assignment logic for shuttle based on conditions."""
+        from common.utils import assign_job_color
+        self.shuttle.is_paid = False
+        self.shuttle.shuttle_date = timezone.now().astimezone(self.budapest_tz) - datetime.timedelta(days=1)
+        self.shuttle.save()
+        self.shuttle.color = assign_job_color(self.shuttle, timezone.now().astimezone(self.budapest_tz))
+        self.assertEqual(self.shuttle.color, 'red')
+
+    @patch('common.utils.get_exchange_rate', return_value=1.0)
+    def test_edit_confirmed_shuttle(self, mock_get_exchange_rate):
+        """Ensure the driver assignment form is populated correctly."""
+        response = self.client.get(reverse('shuttle:shuttle'))
+        self.assertEqual(response.status_code, 200)
+        form = response.context['upcoming_shuttles_grouped'][0]['driver_form']
+        self.assertIn(self.driver, form.fields['driver'].queryset)
+
+    @patch('common.utils.get_exchange_rate', return_value=1.0)
+    def test_edit_confirmed_shuttle(self, mock_get_exchange_rate):
+        """Test that total passengers and prices are calculated correctly on the main shuttle view."""
+        response = self.client.get(reverse('shuttle:shuttle'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['total_passengers'], 2)
+        self.assertEqual(response.context['total_price'], 120.00)

@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'base/base_admin.html' %}
 {% load custom_filters %}
 {% load humanize %}
 
@@ -15,9 +15,11 @@
         <div class="calc">
             <div class="container">
                 <div class="buttons">
+                    <div class="left-buttons">
                     <a href="{% url 'home' %}" class="button">Back to Home</a>
-                    <a href="{% url 'common:admin' %}" class="button">Back to Admin</a>
-                    <a href="{% url 'billing:all_totals' %}" class="button">View All Totals</a>
+                    <a href="{% url 'common:admin' %}" class="button button-orange">Back to Admin</a>
+                    <a href="{% url 'billing:all_totals' %}" class="button button-orange">View All Totals</a>
+                </div>
                 </div>
                 <h2>Totals for {{ now.year }}</h2>
                 
