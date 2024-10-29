@@ -1,5 +1,7 @@
 from unittest.mock import patch
 from django.test import TestCase
+from datetime import timedelta, datetime, time
+from common.utils import assign_job_color
 from django.urls import reverse
 from django.utils import timezone
 from django.contrib.auth.models import User
@@ -238,3 +240,126 @@ class HotelBookingTests(TestCase):
         # Check that the delete page is rendered
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, f"Are you sure you want to delete the booking for {self.booking.customer_name}")
+
+
+class HotelBookingAdditionalTests(TestCase):
+
+    @patch('hotels.models.get_exchange_rate', return_value=Decimal('1.2'))
+    def setUp(self, mock_get_exchange_rate):
+        # Initial setup with a mock exchange rate
+        self.agent = Agent.objects.create(name="Test Agent")
+        self.bed_type = BedType.objects.create(name="Single Bed")
+        
+        # Create a basic hotel booking for use in tests
+        self.booking = HotelBooking.objects.create(
+            customer_name="John Doe",
+            customer_number="123456789",
+            check_in=timezone.now() + timedelta(days=1),
+            check_out=timezone.now() + timedelta(days=2),
+            no_of_people=2,
+            rooms=1,
+            no_of_beds=1,
+            hotel_price=Decimal('100.00'),
+            hotel_price_currency='GBP',
+            customer_pays=Decimal('100.00'),
+            customer_pays_currency='GBP',
+            agent=self.agent,
+            agent_fee="10%",
+            payment_type="Card",
+            is_confirmed=True,
+            is_paid=True
+        )
+
+    @patch('hotels.models.get_exchange_rate', return_value=Decimal('1.2'))
+    def test_default_check_in_check_out_time(self, mock_get_exchange_rate):
+        """Test default check-in and check-out times are set if not provided."""
+        form = HotelBookingForm()
+        today = timezone.localtime().date()
+        default_check_in = timezone.make_aware(datetime.combine(today, time(15, 0)))
+        default_check_out = timezone.make_aware(datetime.combine(today, time(11, 0)))
+        
+        self.assertEqual(form.initial['check_in'], default_check_in.strftime('%Y-%m-%dT%H:%M'))
+        self.assertEqual(form.initial['check_out'], default_check_out.strftime('%Y-%m-%dT%H:%M'))
+
+    @patch('hotels.models.get_exchange_rate', return_value=Decimal('1.2'))
+    def test_invalid_check_out_before_check_in(self, mock_get_exchange_rate):
+        """Test form validation fails if check-out is before check-in."""
+        form_data = {
+            'customer_name': 'Jane Doe',
+            'check_in': timezone.now() + timedelta(days=2),
+            'check_out': timezone.now() + timedelta(days=1),  # Earlier than check-in
+            'no_of_people': 1,
+            'rooms': 1,
+            'hotel_price': '100',
+            'hotel_price_currency': 'EUR',
+            'customer_pays': '100',
+            'customer_pays_currency': 'EUR',
+        }
+        form = HotelBookingForm(data=form_data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('Check-out date must be after check-in date.', str(form.errors))
+
+    @patch('hotels.models.get_exchange_rate', return_value=Decimal('1.2'))
+    def test_assign_job_color_logic(self, mock_get_exchange_rate):
+        """Test that job color is assigned correctly based on booking status."""
+        # Ensuring all conditions for 'green' are met based on the logic for color assignment
+        self.booking.is_confirmed = True
+        self.booking.is_paid = True  # Ensure that other relevant fields are set as per color logic
+        self.booking.is_completed = True  # Add any other required statuses
+        self.booking.save()
+        
+        color = assign_job_color(self.booking, timezone.now())
+        self.assertEqual(color, 'green')  # Expected color for confirmed bookings
+
+    @patch('hotels.models.get_exchange_rate', return_value=Decimal('1.2'))
+    def test_form_paid_to_choices(self, mock_get_exchange_rate):
+        """Test paid_to choices include Agents and Staff."""
+        form = HotelBookingForm()
+        choices = form.fields['paid_to'].choices
+        
+        self.assertIn(('Agents', [(f'agent_{self.agent.id}', self.agent.name)]), choices)
+
+    @patch('hotels.models.get_exchange_rate', return_value=Decimal('1.2'))
+    def test_credit_card_fee_reset_on_payment_type_change(self, mock_get_exchange_rate):
+        """Ensure cc_fee is reset when payment type is changed from Card to Cash."""
+        self.booking.payment_type = "Card"
+        self.booking.save()
+        self.assertNotEqual(self.booking.cc_fee, Decimal('0.00'))
+
+        self.booking.payment_type = "Cash"
+        self.booking.save()
+        self.assertEqual(self.booking.cc_fee, Decimal('0.00'))
+
+    @patch('hotels.models.get_exchange_rate', return_value=Decimal('1.2'))
+    def test_pagination_of_unconfirmed_bookings(self, mock_get_exchange_rate):
+        """Test unconfirmed bookings are paginated correctly."""
+        # Ensure superuser exists
+        self.superuser = User.objects.create_superuser(username='admin', password='admin12345')
+        self.client.login(username='admin', password='admin12345')
+
+        check_in = timezone.now() + timedelta(days=1)
+        check_out = check_in + timedelta(days=1)
+
+        for i in range(12):
+            HotelBooking.objects.create(
+                customer_name=f"Guest {i}",
+                customer_number="123456789",
+                check_in=check_in,
+                check_out=check_out,
+                no_of_people=1,
+                rooms=1,
+                hotel_price_currency="GBP",
+                hotel_price=Decimal("100.00"),
+                customer_pays=Decimal("100.00"),
+                customer_pays_currency="GBP",
+                is_confirmed=False
+            )
+
+        response = self.client.get(reverse('hotels:enquiries'), {'page': 2})
+
+        # Check if there was a redirect and where it redirected
+        if response.status_code == 302:
+            print("Redirected to:", response['Location'])
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['unconfirmed_bookings'].has_previous())

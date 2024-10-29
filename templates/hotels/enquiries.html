@@ -1,0 +1,65 @@
+{% extends 'base/base_services.html' %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}Hotel Booking Enquiries{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="buttons">
+        <div class="left-buttons">
+            <a href="{% url 'home' %}" class="button">Back to Home</a>
+            <a href="{% url 'common:services' %}" class="button button-purple">Back to Services</a>
+            <a href="{% url 'hotels:hotel_bookings' %}" class="button button-purple">Back to Bookings</a>
+        </div>
+    </div>
+
+    <h2>Hotel Booking Enquiries (Unconfirmed)</h2>
+    {% if unconfirmed_bookings %}
+        <ul>
+            {% for booking in unconfirmed_bookings %}
+            <li class="job-container {% if booking.color == 'red' %}red-job{% elif booking.color == 'orange' %}orange-job{% elif booking.color == 'green' %}green-job{% else %}white-job{% endif %}">
+                <span class="customer-name">{{ booking.customer_name|truncate_words_chars }}</span>
+                <div class="job-info">
+                    <span>{{ booking.customer_name }}</span>
+                    <span>{{ booking.check_in|date:"d M Y" }}</span>
+                    <span>{{ booking.no_of_people }}</span>
+                    <span> {{ booking.customer_pays }} {{ booking.customer_pays_currency }}</span>
+                    <span> {{ booking.hotel_price }} {{ booking.hotel_price_currency }}</span>
+                </div>
+                <div class="button-group">
+                    <a href="{% url 'hotels:edit_guests' booking.id %}" class="button tablet button-purple">Edit</a>
+                    <a href="{% url 'hotels:view_guests' booking.id %}" class="button button-purple">View</a>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+
+        <!-- Pagination Controls -->
+        <div class="pagination">
+            <span class="step-links">
+                {% if unconfirmed_bookings.has_previous %}
+                    <a href="?page=1{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="pagination-btn button-purple">&laquo; First</a>
+                    <a href="?page={{ unconfirmed_bookings.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="pagination-btn button-purple">Previous</a>
+                {% else %}
+                    <span class="pagination-btn" disabled>&laquo; First</span>
+                    <span class="pagination-btn" disabled>Previous</span>
+                {% endif %}
+
+                <span class="current-page">
+                    Page {{ unconfirmed_bookings.number }} of {{ unconfirmed_bookings.paginator.num_pages }}.
+                </span>
+
+                {% if unconfirmed_bookings.has_next %}
+                    <a href="?page={{ unconfirmed_bookings.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="pagination-btn button-purple">Next</a>
+                    <a href="?page={{ unconfirmed_bookings.paginator.num_pages }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="pagination-btn button-purple">Last &raquo;</a>
+                {% else %}
+                    <span class="pagination-btn" disabled>Next</span>
+                    <span class="pagination-btn" disabled>Last &raquo;</span>
+                {% endif %}
+            </span>
+        </div>
+    {% else %}
+        <p>No unconfirmed hotel bookings.</p>
+    {% endif %}
+</div>
+{% endblock %}

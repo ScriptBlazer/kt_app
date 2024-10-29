@@ -1,14 +1,12 @@
-{% extends 'base.html' %}
+{% extends 'base/base.html' %}
 {% load static %}
 
-{% block title %}
-    Access Denied
-{% endblock %}
+{% block title %}Access Denied{% endblock %}
 
 {% block content %}
     <div class="error-container">
         <h1>Access Denied</h1>
-        <p>Sorry, you do not have permission to view this page.</p>
+        <p>Sorry, you do not have permission to delete.</p>
         <a href="{% url 'jobs:home' %}" class="button">Go Back to Home</a>
     </div>
 {% endblock %}

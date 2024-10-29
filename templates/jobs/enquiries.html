@@ -1,10 +1,12 @@
-{% extends 'base.html' %}
+{% extends 'base/base.html' %}
 {% load static %}
 {% load custom_filters %}
 {% block content %}
 <div class="container">
     <div class="buttons">
-        <a href="{% url 'home' %}" class="button">Back to Home</a>
+        <div class="left-buttons">
+            <a href="{% url 'home' %}" class="button">Back to Home</a>
+        </div>
     </div>
     <br>
     <h2>Enquiries (Unconfirmed Jobs)</h2>
@@ -19,7 +21,7 @@
                 <span class="phone">{{ job.pick_up_location|truncate_words_chars }}</span>
             </div>
             <div class="button-group">
-                <a href="{% url 'jobs:edit_job' job.id %}" class="button phone">Edit</a>
+                <a href="{% url 'jobs:edit_job' job.id %}" class="button tablet">Edit</a>
                 <a href="{% url 'jobs:view_job' job.id %}" class="button">View</a>
             </div>
         </li>

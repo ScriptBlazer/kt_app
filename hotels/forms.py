@@ -3,17 +3,43 @@ from hotels.models import HotelBooking, BedType, HotelBookingBedType
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from datetime import time, datetime
+from people.models import Agent, Staff
+from common.forms import PaidToMixin
+from common.utils import get_ordered_people
 
 class BedTypeForm(forms.Form):
     bed_type = forms.CharField(widget=forms.HiddenInput())  # Hidden field for bed type ID
     quantity = forms.IntegerField(min_value=0, initial=0)
 
-class HotelBookingForm(forms.ModelForm):
+class HotelBookingForm(PaidToMixin, forms.ModelForm):
     check_in = forms.DateTimeField(widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}))
     check_out = forms.DateTimeField(widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}))
 
+    class Meta:
+        model = HotelBooking
+        fields = [
+            'customer_name', 'customer_number', 'check_in', 'check_out', 'no_of_people', 'rooms', 'no_of_beds', 
+            'hotel_tier', 'special_requests', 'payment_type', 'hotel_price', 'hotel_price_currency', 'customer_pays',
+            'customer_pays_currency', 'agent', 'agent_fee', 'paid_to_agent', 'paid_to_staff'
+        ]
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.initialize_paid_to_field()
+        self.set_paid_to_initial(self.instance)
+
+        # Set ordered querysets for agents and staffs
+        agents, _, staffs = get_ordered_people()
+
+       # Assign the ordered queryset to form fields as expected
+        self.fields['agent'].queryset = agents
+
+        # Set up `paid_to` choices for only agents and staff
+        self.fields['paid_to'].choices = [
+            ('', 'Select an option'),
+            ('Agents', [(f'agent_{agent.id}', agent.name) for agent in agents]),
+            ('Staff', [(f'staff_{staff.id}', staff.name) for staff in staffs]),
+        ]
 
         # Set default values for check-in and check-out with timezone-awareness
         today = timezone.localtime().date()
@@ -48,10 +74,11 @@ class HotelBookingForm(forms.ModelForm):
                 widget=forms.NumberInput(attrs={'class': 'bed-type-quantity'})
             )
 
-    class Meta:
-        model = HotelBooking
-        fields = ['customer_name', 'customer_number', 'check_in', 'check_out', 'no_of_people', 'rooms', 'no_of_beds', 
-                  'hotel_tier', 'special_requests', 'payment_type', 'hotel_price', 'hotel_price_currency', 'customer_pays', 'customer_pays_currency', 'agent', 'agent_fee']
+    def set_paid_to_initial(self, instance):
+        if instance.paid_to_agent:
+            self.fields['paid_to'].initial = f'agent_{instance.paid_to_agent.id}'
+        elif instance.paid_to_staff:
+            self.fields['paid_to'].initial = f'staff_{instance.paid_to_staff.id}'
 
     def save(self, commit=True):
         # Save the HotelBooking object
@@ -75,6 +102,20 @@ class HotelBookingForm(forms.ModelForm):
         check_out = cleaned_data.get("check_out")
         agent = cleaned_data.get('agent')
         agent_fee = cleaned_data.get('agent_fee')
+        paid_to = cleaned_data.get('paid_to')
+
+        # Validate 'paid_to' selection
+        if paid_to:
+            if paid_to.startswith('agent_'):
+                agent_id = paid_to.split('_')[1]
+                cleaned_data['paid_to_agent'] = Agent.objects.get(id=agent_id)
+                cleaned_data['paid_to_staff'] = None
+            elif paid_to.startswith('staff_'):
+                staff_id = paid_to.split('_')[1]
+                cleaned_data['paid_to_staff'] = Staff.objects.get(id=staff_id)
+                cleaned_data['paid_to_agent'] = None
+            else:
+                self.add_error('paid_to', 'Please select a valid "Paid to" option.')
 
         # Check if check-out date is after check-in date
         if check_in and check_out and check_out <= check_in:

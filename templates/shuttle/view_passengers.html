@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'base/base_services.html' %}
 {% load static %}
 {% load humanize %}
 {% load custom_filters %}
@@ -8,24 +8,60 @@
 {% block content %}
 <div class="view">
     <div class="buttons">
-        <a href="{% url 'shuttle:shuttle' %}" class="button">Back to Shuttle List</a>
-        <button onclick="copyShuttleDetails()" class="button">Copy Passenger Details</button>
-
-        <!-- Success Message -->
-        <p id="copy-success" style="display: none; color: green;">Shuttle details copied to clipboard!</p>
+        <div class="left-buttons">
+            <a href="{% url 'shuttle:shuttle' %}" class="button button-purple">Back to Shuttle List</a>
+            <a href="{% url 'shuttle:enquiries' %}" class="button button-purple">Back to Enquiries</a>
+            <button onclick="copyShuttleDetails()" class="button button-purple">Copy Passenger Details</button>
+        </div>
     </div>
+    <!-- Success Message -->
+    <p id="copy-success" style="display: none; color: green;">Shuttle details copied to clipboard!</p>
     <br>
     <h2>View Passengers</h2>
     <p><strong>Customer Name:</strong> {{ shuttle.customer_name|default_if_none:"" }}</p>
     <p><strong>Customer Number:</strong> {{ shuttle.customer_number|default_if_none:"" }}</p>
     <p><strong>Customer Email:</strong> {{ shuttle.customer_email|default_if_none:"N/A" }}</p>
+    <p><strong>Driver:</strong> {{ shuttle.driver|default_if_none:"" }}</p>
     <p><strong>No. of Passengers:</strong> {{ shuttle.no_of_passengers|default_if_none:"" }}</p>
     <p><strong>Price:</strong> €{{ shuttle.price|intcomma|default_if_none:"" }}</p>
     <p><strong>Notes:</strong> {{ shuttle.shuttle_notes|default_if_none:"-" }}</p>
 
     <div class="button-group">
-        <a href="{% url 'shuttle:edit_passengers' shuttle.id %}" class="button">Edit</a>
+        <a href="{% url 'shuttle:edit_passengers' shuttle.id %}" class="button button-purple">Edit</a>
         <a href="{% url 'shuttle:delete_passengers' shuttle.id %}" class="button cancel-button">Delete</a>
+    </div>
+
+    <br>
+    <form method="POST" action="{% url 'shuttle:update_shuttle_status' shuttle.id %}">
+        {% csrf_token %}
+        <p><strong>Confirm Job:</strong>
+            <input class="sbig" type="checkbox" name="is_confirmed" {% if shuttle.is_confirmed %}checked{% endif %}>
+        </p>
+
+        <p><strong>Customer Paid:</strong>
+            <input class="sbig" type="checkbox" name="is_paid" {% if shuttle.is_paid %}checked{% endif %}>
+        </p>
+
+        {% if user.is_superuser %}
+        <p><strong>All Paid (Job Completed):</strong> 
+            <input class="sbig" type="checkbox" name="is_completed" {% if shuttle.is_completed %}checked{% endif %}>
+        </p>
+        {% endif %}
+        
+        <button class="button-purple" type="submit">Update Status</button>
+    </form>
+
+    <!-- Modal Trigger for Error -->
+    {% if error_message %}
+    <p id="modal-trigger" style="display:none;">{{ error_message }}</p>
+    {% endif %}
+</div>
+
+<!-- Modal Structure -->
+<div id="error-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close-button" onclick="closeModal()">&times;</span>
+        <p id="modal-message">{{ error_message }}</p>
     </div>
 </div>
 {% endblock %}

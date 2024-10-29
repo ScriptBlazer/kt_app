@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'base/base_services.html' %}
 {% load static %}
 {% load custom_filters %}
 
@@ -42,6 +42,10 @@
                 {{ form.no_of_passengers.label_tag }}*<br>
                 {{ form.no_of_passengers }}
             </div>
+            <div class="field-wrapper">
+                {{ form.paid_to.label_tag }}<br>
+                {{ form.paid_to }}
+            </div>
         </div>
         <div class="field-wrapper">
             {{ form.shuttle_notes.label_tag }}<br>
@@ -50,7 +54,7 @@
         <p class="nm">*Required fields</p>
 
         <div class="button-group">
-            <button type="submit" class="button">Add Passengers</button>
+            <button type="submit" class="button button-purple">Add Passengers</button>
             <a href="{% url 'shuttle:shuttle' %}" class="button cancel-button">Cancel</a>
         </div>
     </form>
@@ -59,10 +63,8 @@
         <div class="errors">
             <h2>Form Errors:</h2>
             <ul>
-                {% for field in form %}
-                    {% if field.errors %}
-                        <li>{{ field.label }}: {{ field.errors|striptags }}</li>
-                    {% endif %}
+                {% for field, errors in form.errors.items %}
+                    <li>{{ field }}: {{ errors|striptags }}</li>
                 {% endfor %}
             </ul>
         </div>

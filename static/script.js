@@ -151,6 +151,61 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
+  // Function to display the modal
+  function showModal(errorMessage) {
+    const modal = document.getElementById("error-modal");
+    const modalMessage = document.getElementById("modal-message");
+    modalMessage.textContent = errorMessage;
+    modal.style.display = "flex";
+  }
+
+  // Function to close the modal
+  function closeModal() {
+    const modal = document.getElementById("error-modal");
+    modal.style.display = "none";
+  }
+
+  // Attach event listener to the close button
+  const closeButton = document.querySelector(".close-button");
+  if (closeButton) {
+    closeButton.addEventListener("click", closeModal);
+  }
+
+  // Check if the error message exists and show the modal
+  const modalTrigger = document.getElementById("modal-trigger");
+  if (modalTrigger) {
+    const errorMessage = modalTrigger.textContent.trim();
+    if (errorMessage) {
+      showModal(errorMessage);
+    }
+  }
+
+  // Example function for job-related form validation
+  function validateJobCompletion() {
+    const isCompletedChecked = document.getElementById("is_completed").checked;
+    const paidTo = document.getElementById("paid_to").value;
+    const paymentType = document.querySelector(
+      'select[name="payment_type"]'
+    ).value;
+
+    if (isCompletedChecked && (paidTo === "Select an option" || !paymentType)) {
+      alert(
+        'Please set "Paid to" and "Payment Type" before completing the job.'
+      );
+      return false; // Prevent form submission
+    }
+    return true; // Allow form submission
+  }
+
+  // Attach form validation for job forms
+  document.querySelectorAll("form.job-form").forEach((form) => {
+    form.addEventListener("submit", function (event) {
+      if (!validateJobCompletion()) {
+        event.preventDefault(); // Prevent form submission if validation fails
+      }
+    });
+  });
+
   // Initialize chart data for pie charts (monthly and yearly)
   if (window.chartData) {
     console.log("Checking for chartData...");

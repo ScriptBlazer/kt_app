@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'base/base_admin.html' %}
 {% load static %}
 {% load humanize %}
 {% load custom_filters %}
@@ -8,8 +8,10 @@
 {% block content %}
 <div class="view">
     <div class="buttons">
-        <a href="{% url 'home' %}" class="button">Back to Home</a>
-        <a href="{% url 'expenses:expenses' %}" class="button">Back to Expenses</a>
+        <div class="left-buttons">
+            <a href="{% url 'common:admin' %}" class="button button-orange">Back to Admin</a>
+            <a href="{% url 'expenses:expenses' %}" class="button button-orange">Back to Expenses</a>
+        </div>
     </div>
     <br>
     <h2>View Expense</h2>
@@ -26,7 +28,7 @@
     <p><strong>Notes:</strong> {{ expense.expense_notes|default_if_none:"-" }}</p>
 
     <div class="button-group">
-        <a href="{% url 'expenses:edit_expense' expense.id %}" class="button">Edit</a>
+        <a href="{% url 'expenses:edit_expense' expense.id %}" class="button button-orange">Edit</a>
         <a href="{% url 'expenses:delete_expense' expense.id %}" class="button cancel-button">Delete</a>
     </div>
 </div>

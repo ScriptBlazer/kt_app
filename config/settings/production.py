@@ -14,6 +14,7 @@ DATABASES = {
 }
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
+LOG_FILE_PATH = os.path.join(BASE_DIR, 'django_logs.log')
 
 LOGGING = {
     'version': 1,

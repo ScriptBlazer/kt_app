@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'base/base.html' %}
 {% load static %}
 {% load custom_filters %}
 
@@ -6,9 +6,10 @@
 
 {% block content %}
 <div class="container">
+    <div class="left-buttons">
+        <a href="{% url 'home' %}" class="button">Back to Home</a>
+    </div>
     <br>
-    <a href="{% url 'home' %}" class="button">Back to Home</a>
-    <br><br><br>
     <form method="GET" action="{% url 'jobs:past_jobs' %}">
         {% csrf_token %}
         <input type="text" name="q" placeholder="Search customer name, number, description or pick-up location" value="{{ request.GET.q }}">
@@ -37,6 +38,31 @@
             <li>No past jobs.</li>
         {% endfor %}
     </ul>
+
+    <!-- Pagination Controls -->
+    <div class="pagination">
+        <span class="step-links">
+            {% if past_jobs.has_previous %}
+                <a href="?page=1{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="pagination-btn">&laquo; First</a>
+                <a href="?page={{ past_jobs.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="pagination-btn">Previous</a>
+            {% else %}
+                <span class="pagination-btn" disabled>&laquo; First</span>
+                <span class="pagination-btn" disabled>Previous</span>
+            {% endif %}
+
+            <span class="current-page">
+                Page {{ past_jobs.number }} of {{ past_jobs.paginator.num_pages }}.
+            </span>
+
+            {% if past_jobs.has_next %}
+                <a href="?page={{ past_jobs.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="pagination-btn">Next</a>
+                <a href="?page={{ past_jobs.paginator.num_pages }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="pagination-btn">Last &raquo;</a>
+            {% else %}
+                <span class="pagination-btn" disabled>Next</span>
+                <span class="pagination-btn" disabled>Last &raquo;</span>
+            {% endif %}
+        </span>
+    </div>
 </div>
 {% endblock %}
 

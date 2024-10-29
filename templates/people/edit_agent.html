@@ -1,17 +1,21 @@
-{% extends 'base.html' %}
+{% extends 'base/base_admin.html' %}
 {% load static %}
 
 {% block title %}Edit Agent{% endblock %}
 
 {% block content %}
 <div class="container">
-    <a href="{% url 'people:manage' %}" class="button">Back to Manage</a>
-    <br><br>
+    <div class="left-buttons">
+        <a href="{% url 'people:manage' %}" class="button button-orange">Back to Manage</a>
+    </div>
     <h2>Edit Agent</h2>
     <form method="post">
         {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit" class="button">Save Changes</button>
+        <div class="form-group">
+            <label for="id_name">Name:</label>
+            <input type="text" name="name" id="id_name" value="{{ form.name.value }}">
+        </div>
+        <button type="submit" class="button button-orange">Save Changes</button>
     </form>
     {% if form.errors %}
         <div class="errors">

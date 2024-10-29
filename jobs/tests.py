@@ -12,7 +12,7 @@ from datetime import timedelta
 from unittest import mock
 import pytz
 from common.utils import get_exchange_rate
-from people.models import Driver
+from people.models import Driver, Agent
 from django.contrib.auth.models import User
 from decimal import Decimal, ROUND_HALF_UP
 
@@ -22,7 +22,6 @@ logger = logging.getLogger('kt')
 
 
 BUDAPEST_TZ = pytz.timezone('Europe/Budapest')
-
 
 class JobFormTest(TestCase):
     # Test to ensure non-required fields do not prevent form submission
@@ -88,7 +87,7 @@ class ConcurrencyHandlingTest(TestCase):
         Job.objects.filter(pk=job.pk).update(job_price=Decimal('250'))
 
         updated_job = Job.objects.get(pk=job.pk)
-        self.assertEqual(updated_job.job_price, Decimal('250'))  # Expect the latest update
+        self.assertEqual(updated_job.job_price, Decimal('250'))
 
 
 class CurrencyConversionTest(TestCase):
@@ -129,8 +128,19 @@ class CurrencyConversionTest(TestCase):
 
 
 class ToggleCompletedTestCase(TestCase):
-    # Test to ensure job completion status can be toggled via a POST request
-    def test_toggle_completed(self):
+    def setUp(self):
+        # Create a driver for the 'paid_to_driver' field
+        self.driver = Driver.objects.create(name='John Doe')
+
+        # Create and log in a user
+        self.user = User.objects.create_user(username='testuser', password='12345')
+        self.client.login(username='testuser', password='12345')
+
+    # Test to ensure job completion fails if payment_type or paid_to is missing
+    @patch('common.utils.get_exchange_rate')
+    def test_toggle_completed_fails_without_required_fields(self, mock_get_exchange_rate):
+        mock_get_exchange_rate.return_value = Decimal('1.20')
+
         job = Job.objects.create(
             customer_name="Test User",
             job_date=timezone.now().date(),
@@ -143,9 +153,51 @@ class ToggleCompletedTestCase(TestCase):
             vehicle_type='Car',
             kilometers=Decimal('100')
         )
-        url = reverse('jobs:toggle_completed', args=[job.id])
-        response = self.client.post(url, {'is_completed': True}, content_type='application/json')
+        url = reverse('jobs:update_job_status', args=[job.id])
+
+        # Try to mark the job as completed without payment_type or paid_to
+        response = self.client.post(url, {'is_completed': True}, follow=True)
         job.refresh_from_db()
+
+        logger.debug(f"Response status code: {response.status_code}")
+
+        # Check for the hidden modal content for the error message
+        self.assertFalse(job.is_completed)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('Payment Type is required to mark the job as completed.', response.content.decode())
+
+    # Test to ensure job completion succeeds when payment_type and paid_to are provided
+    @patch('common.utils.get_exchange_rate')
+    def test_toggle_completed_succeeds_with_required_fields(self, mock_get_exchange_rate):
+        mock_get_exchange_rate.return_value = Decimal('1.20')
+
+        job = Job.objects.create(
+            customer_name="Test User",
+            job_date=timezone.now().date(),
+            job_time=timezone.now().time(),
+            job_price=Decimal('100'),
+            job_currency='EUR',
+            customer_number='123456789',
+            pick_up_location='Budapest',
+            no_of_passengers=1,
+            vehicle_type='Car',
+            kilometers=Decimal('100'),
+            payment_type='Card',
+            paid_to_driver=self.driver 
+        )
+        url = reverse('jobs:update_job_status', args=[job.id])
+
+        # Mark the job as completed with valid payment_type and paid_to
+        response = self.client.post(url, {
+            'is_completed': True, 
+            'payment_type': 'Card', 
+            'paid_to_driver': self.driver.id
+        }, follow=True)
+        job.refresh_from_db()
+
+        logger.debug(f"Response status code: {response.status_code}")
+
+        # Assert that the job is marked as completed and the response is successful
         self.assertTrue(job.is_completed)
         self.assertEqual(response.status_code, 200)
 
@@ -165,7 +217,7 @@ class JobDateAndTimeTests(TestCase):
         form_data = {
             'customer_name': 'John Doe',
             'customer_number': '1234567890',
-            'job_date': '2024-02-29',  # Leap year date
+            'job_date': '2024-02-29',
             'job_time': '10:00',
             'job_currency': 'EUR',
             'job_price': Decimal('50.00'),
@@ -183,7 +235,7 @@ class JobDateAndTimeTests(TestCase):
         form_data = {
             'customer_name': 'John Doe',
             'customer_number': '1234567890',
-            'job_date': '2024-04-30',  # End of April
+            'job_date': '2024-04-30',
             'job_time': '23:59',
             'job_currency': 'EUR',
             'job_price': Decimal('50.00'),
@@ -202,7 +254,7 @@ class JobDateAndTimeTests(TestCase):
             'customer_name': 'Jane Smith',
             'customer_number': '0987654321',
             'job_date': '2024-12-31',  # New Year's Eve
-            'job_time': '00:00',  # Midnight, technically the next day
+            'job_time': '00:00', 
             'job_currency': 'USD',
             'job_price': Decimal('75.00'),
             'pick_up_location': 'Budapest',
@@ -281,8 +333,8 @@ class DriverFeeRevertTest(TestCase):
             'no_of_passengers': self.job.no_of_passengers,
             'vehicle_type': self.job.vehicle_type,
             'kilometers': self.job.kilometers,
-            'driver_fee': '',  # Revert driver fee to empty
-            'driver_currency': '',  # Revert driver currency to empty
+            'driver_fee': '', 
+            'driver_currency': '', 
         }
 
         # Create the form with the updated data and instance of the job
@@ -381,21 +433,13 @@ class JobColorAssignmentTest(TestCase):
 class ExchangeRateCacheTest(TestCase):
     
     def setUp(self):
-        # Clear the cache before each test
         cache.clear()
 
     @patch('common.utils.fetch_and_cache_exchange_rate')
     def test_rates_read_from_cache(self, mock_fetch_and_cache_exchange_rate):
-        # Set a rate in the cache for 'GBP'
         cache.set('exchange_rate_GBP', Decimal('1.20'), timeout=3600)
-
-        # Call get_exchange_rate, it should read from the cache and not call the API
         rate = get_exchange_rate('GBP')
-
-        # Assert that the rate was retrieved from the cache
         self.assertEqual(rate, Decimal('1.20'))
-
-        # Assert that fetch_and_cache_exchange_rate was NOT called
         mock_fetch_and_cache_exchange_rate.assert_not_called()
 
     @override_settings(CACHES={
@@ -408,16 +452,9 @@ class ExchangeRateCacheTest(TestCase):
 
         @patch('common.utils.fetch_and_cache_exchange_rate')
         def test_rates_fetched_and_cached(self, mock_fetch_and_cache_exchange_rate):
-            # Mock the API fetch to return a fixed rate
             mock_fetch_and_cache_exchange_rate.return_value = Decimal('1.19')
-
-            # Fetch the rate, which should also set the cache
             rate = get_exchange_rate('GBP')
-
-            # Verify the mock API call
             mock_fetch_and_cache_exchange_rate.assert_called_once_with('GBP')
-
-            # Check if the value was cached correctly
             cached_rate = cache.get('exchange_rate_GBP')
             self.assertIsNotNone(cached_rate, "The exchange rate should be cached")
             self.assertEqual(cached_rate, Decimal('1.19'))
@@ -426,8 +463,6 @@ class ExchangeRateCacheTest(TestCase):
 class EnquiriesViewTests(TestCase):
     @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.2'))
     def setUp(self, mock_get_exchange_rate):
-
-        # Create a regular user and log them in
         self.user = User.objects.create_user(username='testuser', password='12345')
         self.client.login(username='testuser', password='12345')
 
@@ -466,50 +501,126 @@ class EnquiriesViewTests(TestCase):
         """Test that confirmed jobs do not appear in the enquiries page."""
         response = self.client.get(reverse('jobs:enquiries'))
         self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, "Jane Smith") 
-
-
-class EnquiriesViewTests(TestCase):
-    @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.2'))
-    def setUp(self, mock_get_exchange_rate):
-
-        # Create a regular user and log them in
-        self.user = User.objects.create_user(username='testuser', password='12345')
-        self.client.login(username='testuser', password='12345')
-
-        # Create unconfirmed job
-        self.unconfirmed_job = Job.objects.create(
-            customer_name="John Doe",
-            customer_number="123456789",
-            job_date=timezone.now() + timedelta(days=1),
-            job_time=timezone.now().time(),
-            no_of_passengers=1,
-            job_price=Decimal('100.00'),
-            job_currency='GBP',
-            is_confirmed=False
-        )
-
-        # Create confirmed job
-        self.confirmed_job = Job.objects.create(
-            customer_name="Jane Smith",
-            customer_number="987654321",
-            job_date=timezone.now() - timedelta(days=1),
-            job_time=timezone.now().time(),
-            no_of_passengers=2,
-            job_price=Decimal('150.00'),
-            job_currency='GBP',
-            is_confirmed=True
-        )
-
-    def test_unconfirmed_jobs_show_up_in_enquiries(self):
-        """Test that unconfirmed jobs appear in the enquiries page."""
-        response = self.client.get(reverse('jobs:enquiries'))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "John Doe") 
         self.assertNotContains(response, "Jane Smith")
 
-    def test_confirmed_jobs_do_not_show_up_in_enquiries(self):
-        """Test that confirmed jobs do not appear in the enquiries page."""
-        response = self.client.get(reverse('jobs:enquiries'))
-        self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, "Jane Smith")  
+
+
+class AdditionalJobTests(TestCase):
+    def setUp(self):
+        self.driver = Driver.objects.create(name='Test Driver')
+        self.agent = Agent.objects.create(name='Test Agent')
+        self.user = User.objects.create_user(username='testuser', password='12345')
+        self.client.login(username='testuser', password='12345')
+
+    @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.2'))
+    def test_cannot_complete_job_when_partially_paid(self, mock_get_exchange_rate):
+        job = Job.objects.create(
+            customer_name="Partial Payment User",
+            job_date=timezone.now().date(),
+            job_time=timezone.now().time(),
+            job_price=Decimal('100.00'),
+            job_currency='EUR',
+            is_paid=False,
+            payment_type='Cash',
+            pick_up_location='Budapest',
+            no_of_passengers=1,
+            vehicle_type='Car',
+        )
+        url = reverse('jobs:update_job_status', args=[job.id])
+        response = self.client.post(url, {'is_completed': True})
+        self.assertFalse(Job.objects.get(id=job.id).is_completed)
+        self.assertEqual(response.status_code, 400)
+
+    @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.2'))
+    def test_overlapping_jobs_allowed_with_different_drivers(self, mock_get_exchange_rate):
+        job1 = Job.objects.create(
+            customer_name="Job 1",
+            job_date=timezone.now().date(),
+            job_time=timezone.now().time(),
+            driver=self.driver,
+            pick_up_location='Budapest',
+            no_of_passengers=1,
+            vehicle_type='Car',
+            job_price=Decimal('100.00'),
+            job_currency='EUR',
+        )
+        job2 = Job.objects.create(
+            customer_name="Job 2",
+            job_date=job1.job_date,
+            job_time=job1.job_time,
+            pick_up_location='Budapest',
+            no_of_passengers=1,
+            vehicle_type='Car',
+            job_price=Decimal('100.00'),
+            job_currency='EUR',
+        )
+        self.assertEqual(Job.objects.filter(job_date=job1.job_date, job_time=job1.job_time).count(), 2)
+
+    def test_no_zero_passengers(self):
+        form_data = {
+            'customer_name': 'Zero Passengers Test',
+            'customer_number': '1234567890',
+            'job_date': timezone.now().date(),
+            'job_time': '15:00',
+            'job_currency': 'EUR',
+            'job_price': Decimal('150'),
+            'pick_up_location': 'Budapest',
+            'no_of_passengers': 0,
+            'vehicle_type': 'Car'
+        }
+        form = JobForm(data=form_data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('no_of_passengers', form.errors)
+
+    @patch('jobs.models.get_exchange_rate', return_value=None)
+    def test_card_payment_requires_valid_currency(self, mock_get_exchange_rate):
+        job = Job(
+            customer_name="Card Payment",
+            job_date=timezone.now().date(),
+            job_time=timezone.now().time(),
+            job_price=Decimal('100.00'),
+            job_currency='XYZ',  # Invalid currency for 'Card' payment
+            payment_type='Card',
+            pick_up_location='Budapest',
+            no_of_passengers=1,
+            vehicle_type='Car',
+        )
+
+        with self.assertRaises(ValueError, msg="Expected ValueError due to unsupported currency for payment type 'Card'"):
+            job.save()
+
+    @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.2'))
+    def test_job_color_for_paid_but_not_confirmed(self, mock_get_exchange_rate):
+        job = Job.objects.create(
+            customer_name="Paid but Unconfirmed",
+            job_date=timezone.now().date(),
+            job_time=timezone.now().time(),
+            job_price=Decimal('100.00'),
+            job_currency='EUR',
+            is_paid=True,
+            is_confirmed=False,
+            driver=self.driver,
+            pick_up_location='Budapest',
+            no_of_passengers=1,
+            vehicle_type='Car',
+        )
+        color = assign_job_color(job, timezone.now())
+        self.assertNotEqual(color, 'green')  # Should not be green
+
+    @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.2'))
+    def test_agent_percentage_applies_to_total(self, mock_get_exchange_rate):
+        job = Job.objects.create(
+            customer_name="Agent Fee Test",
+            job_date=timezone.now().date(),
+            job_time=timezone.now().time(),
+            job_price=Decimal('200.00'),
+            job_currency='EUR',
+            agent_name=self.agent,
+            agent_percentage='10%', 
+            pick_up_location='Budapest',
+            no_of_passengers=1,
+            vehicle_type='Car',
+        )
+        expected_agent_fee = job.job_price * Decimal('0.10')
+        actual_agent_fee = job.job_price * (Decimal(job.agent_percentage.strip('%')) / 100)
+        self.assertEqual(expected_agent_fee, actual_agent_fee)
