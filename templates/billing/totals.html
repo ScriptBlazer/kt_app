@@ -1,4 +1,5 @@
 {% extends 'base/base_admin.html' %}
+{% load static %}
 {% load custom_filters %}
 {% load humanize %}
 
@@ -7,6 +8,10 @@
 {% block content %}
     <!-- Mobile Warning Section -->
     <div id="mobile-warning" style="display: none;">
+        <div class="mobile-buttons">
+            <a href="{% url 'home' %}" class="button">Back to Home</a>
+            <a href="{% url 'common:admin' %}" class="button button-orange">Back to Admin</a>
+        </div>
         <p class="mobile-message">Please switch to desktop view to see this page.</p>
     </div>
 
@@ -133,65 +138,24 @@
 {% endblock %}
 
 {% block extra_scripts %}
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- <script>
-        window.chartData = {
-            monthly_fuel_cost: {{ monthly_fuel_cost|default:0 }},
-            monthly_wages_cost: {{ monthly_wages_cost|default:0 }},
-            monthly_total_agent_fees: {{ monthly_total_agent_fees|default:0 }},
-            monthly_total_driver_fees: {{ monthly_total_driver_fees|default:0 }},
-            monthly_total_profit: {{ monthly_total_profit|default:0 }},
-            monthly_repair_cost: {{ monthly_repair_cost|default:0 }},
-            monthly_total_job_profit: {{ total_job_profit|default:0 }},
-            yearly_fuel_cost: {{ yearly_fuel_cost|default:0 }},
-            yearly_wages_cost: {{ yearly_wages_cost|default:0 }},
-            yearly_total_agent_fees: {{ yearly_total_agent_fees|default:0 }},
-            yearly_total_driver_fees: {{ yearly_total_driver_fees|default:0 }},
-            yearly_total_profit: {{ yearly_total_profit|default:0 }},
-            yearly_repair_cost: {{ yearly_repair_cost|default:0 }},
-            yearly_total_job_profit: {{ yearly_total_profit|default:0 }},
-            overall_fuel_cost: {{ overall_fuel_cost|default:0 }},
-            overall_wages_cost: {{ overall_wages_cost|default:0 }},
-            overall_total_agent_fees: {{ overall_total_agent_fees|default:0 }},
-            overall_total_driver_fees: {{ overall_total_driver_fees|default:0 }},
-            overall_total_profit: {{ overall_total_profit|default:0 }},
-            overall_repair_cost: {{ overall_repair_cost|default:0 }},
-            overall_total_job_profit: {{ overall_total_job_profit|default:0 }}
-        };
-        console.log("Chart data loaded:", window.chartData);
-    </script> -->
-
-    <!-- Mobile View Detection Script -->
+    <script src="{% static 'script.js' %}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            var totalsContent = document.getElementById('totals-content');
-            var mobileWarning = document.getElementById('mobile-warning');
-            
-            // Detect if it's a mobile view and hide the totals content
-            if (window.innerWidth < 600) {  // Mobile view threshold
-                totalsContent.style.display = 'none';
-                mobileWarning.style.display = 'block';
-            }
-
-            // Handle window resizing
-            window.addEventListener('resize', function () {
-                if (window.innerWidth < 600) {
-                    totalsContent.style.display = 'none';
-                    mobileWarning.style.display = 'block';
-                } else {
-                    totalsContent.style.display = 'block';
-                    mobileWarning.style.display = 'none';
-                }
-            });
+            checkMobileView('totals-content');
         });
     </script>
-
-    <!-- Styling for the mobile message -->
+    
     <style>
         .mobile-message {
             text-align: center;
             font-size: 1.5em;
             color: red;
+        }
+        .mobile-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1em;
+            margin-top: 1em;
         }
     </style>
 {% endblock %}
