@@ -1,3 +1,27 @@
+// Define and export checkMobileView globally
+function checkMobileView(containerId) {
+  const contentContainer = document.getElementById(containerId);
+  const mobileWarning = document.getElementById("mobile-warning");
+
+  function toggleMobileWarning() {
+    if (window.innerWidth < 600) {
+      // Mobile view threshold
+      contentContainer.style.display = "none";
+      mobileWarning.style.display = "block";
+    } else {
+      contentContainer.style.display = "block";
+      mobileWarning.style.display = "none";
+    }
+  }
+
+  // Initial check on load and resize event
+  toggleMobileWarning();
+  window.addEventListener("resize", toggleMobileWarning);
+}
+
+// Expose checkMobileView function for HTML files
+window.checkMobileView = checkMobileView;
+
 document.addEventListener("DOMContentLoaded", () => {
   console.log("Page fully loaded");
   console.log("Donut");
@@ -205,124 +229,4 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   });
-
-  // Initialize chart data for pie charts (monthly and yearly)
-  if (window.chartData) {
-    console.log("Checking for chartData...");
-    console.log(window.chartData);
-
-    // Monthly Chart
-    if (window.chartData.monthly_fuel_cost !== undefined) {
-      renderPieChart(
-        "monthlyChart",
-        "Monthly Totals",
-        parseFloat(window.chartData.monthly_fuel_cost),
-        parseFloat(window.chartData.monthly_wages_cost),
-        parseFloat(window.chartData.monthly_total_job_profit),
-        parseFloat(window.chartData.monthly_total_profit), // Ensure total profit is passed
-        parseFloat(window.chartData.monthly_repair_cost),
-        parseFloat(window.chartData.monthly_total_agent_fees),
-        parseFloat(window.chartData.monthly_total_driver_fees)
-      );
-    }
-
-    // Yearly Chart
-    if (window.chartData.yearly_fuel_cost !== undefined) {
-      renderPieChart(
-        "yearlyChart",
-        "Yearly Totals",
-        parseFloat(window.chartData.yearly_fuel_cost),
-        parseFloat(window.chartData.yearly_wages_cost),
-        parseFloat(window.chartData.yearly_total_job_profit),
-        parseFloat(window.chartData.yearly_total_profit), // Ensure total profit is passed
-        parseFloat(window.chartData.yearly_repair_cost),
-        parseFloat(window.chartData.yearly_total_agent_fees),
-        parseFloat(window.chartData.yearly_total_driver_fees)
-      );
-    }
-  }
 });
-
-function renderPieChart(
-  chartId,
-  title,
-  fuelCost,
-  wages,
-  jobProfit,
-  totalProfit, // Ensure total profit is a parameter
-  repairs,
-  agentFees,
-  driverFees
-) {
-  const ctx = document.getElementById(chartId);
-  if (!ctx) {
-    console.error(`Canvas element with id "${chartId}" not found.`);
-    return;
-  }
-  console.log(`Rendering chart ${chartId} with data:`, {
-    title,
-    fuelCost,
-    wages,
-    jobProfit,
-    totalProfit, // Log total profit value to ensure it's passed
-    repairs,
-    agentFees,
-    driverFees,
-  });
-  new Chart(ctx.getContext("2d"), {
-    type: "pie",
-    data: {
-      labels: [
-        "Fuel Cost",
-        "Wages",
-        "Job Profit",
-        "Total Profit", // Ensure total profit is displayed in the pie
-        "Repairs",
-        "Agent Fees",
-        "Driver Fees",
-      ],
-      datasets: [
-        {
-          label: title,
-          data: [
-            fuelCost,
-            wages,
-            jobProfit,
-            totalProfit, // Ensure total profit is included in the dataset
-            repairs,
-            agentFees,
-            driverFees,
-          ],
-          backgroundColor: [
-            "rgba(255, 99, 132, 0.8)", // Fuel Cost
-            "rgba(54, 162, 235, 0.8)", // Wages
-            "rgba(255, 206, 86, 0.8)", // Job Profit
-            "rgba(75, 192, 192, 0.8)", // Total Profit
-            "rgba(153, 102, 255, 0.8)", // Repairs
-            "rgba(255, 159, 64, 0.8)", // Agent Fees
-            "rgba(255, 20, 147, 0.8)", // Driver Fees
-          ],
-          borderColor: [
-            "rgba(255, 99, 132, 1)",
-            "rgba(54, 162, 235, 1)",
-            "rgba(255, 206, 86, 1)",
-            "rgba(75, 192, 192, 1)",
-            "rgba(153, 102, 255, 1)",
-            "rgba(255, 159, 64, 1)",
-            "rgba(255, 20, 147, 1)",
-          ],
-          borderWidth: 1,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: "top",
-        },
-      },
-    },
-  });
-}
