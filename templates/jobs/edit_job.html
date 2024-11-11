@@ -6,7 +6,7 @@
 {% block content %}
 <div class="container">
     <h2>Edit Job</h2>
-    <form method="post">
+    <form method="post" id="job-form">
         {% csrf_token %}
         <!-- Job Form Fields -->
         <div class="form-group">
@@ -63,16 +63,12 @@
         </div>
 
         <!-- Pricing and Payment Fields -->
-        <div class="form-group-inline">
+        <!-- <div class="form-group-inline">
             <div class="field-wrapper">
                 {{ job_form.payment_type.label_tag }}<br>
                 {{ job_form.payment_type }}
             </div>
-            <div class="field-wrapper">
-                {{ job_form.paid_to.label_tag }}<br>
-                {{ job_form.paid_to }}
-            </div>
-        </div>
+        </div> -->
         <div class="form-group-inline">
             <div class="field-wrapper">
                 {{ job_form.job_price.label_tag }}*<br>
@@ -80,7 +76,7 @@
             </div>
             <div class="field-wrapper">
                 {{ job_form.job_currency.label_tag }}*<br>
-                {{ job_form.job_currency }}
+                {{ job_form.job_currency }} 
             </div>
         </div>
         <div class="form-group-inline">
@@ -93,6 +89,44 @@
                 {{ job_form.driver_currency }}
             </div>
         </div>
+
+        <div id="payment-section">
+            <h3>Payments</h3>
+            {{ payment_formset.management_form }}
+            {% for payment_form in payment_formset %}
+                <div class="payment-entry payment-container {% if forloop.counter > payments.count %}hidden{% endif %}" data-payment-number="{{ forloop.counter }}">
+                    {% if forloop.counter > 1 %}
+                        <h4>Payment {{ forloop.counter }}</h4>
+                    {% endif %}
+                    <div class="form-group-inline">
+                        <div class="field-wrapper">
+                            <label>Amount</label><br>
+                            {{ payment_form.payment_amount }}
+                        </div>
+                        <div class="field-wrapper">
+                            <label>Currency</label><br>
+                            {{ payment_form.payment_currency }}
+                        </div>
+                    </div>
+                    <div class="form-group-inline">
+                        <div class="field-wrapper">
+                            <label>Payment Type</label><br>
+                            {{ payment_form.payment_type }}
+                        </div>
+                        <div class="field-wrapper">
+                            <label>Paid To</label><br>
+                            {{ payment_form.paid_to }}
+                        </div>
+                    </div>
+                    {{ payment_form.DELETE }}
+                    {{ payment_form.id }}
+                    <button type="button" class="remove-payment">Remove Payment</button>
+                </div>
+            {% endfor %}
+            <button type="button" id="add-payment">Add Payment</button>
+        </div>
+        <input type="hidden" name="payment-TOTAL_FORMS" value="{{ payment_formset.total_form_count }}">
+        <br><br>
 
         <!-- Driver Info -->
         <div class="form-group-inline">
@@ -118,28 +152,75 @@
             </div>
         </div>
         <p class="nm">*Required fields</p>
-        
+
         <div class="button-group">
             <button type="submit" id="save-button">Save Job</button>
             <a href="{% url 'home' %}" class="button cancel-button">Cancel</a>
         </div>
     </form>
 
-    {% if job_form.errors %}
-        <div class="errors">
-            <h2>Form Errors:</h2>
+    <!-- Modal Structure -->
+    <div id="error-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal()">&times;</span>
+            <p id="modal-message">{{ error_message }}</p>
+        </div>
+    </div>
+
+    <!-- Display Job Form Errors -->
+    <div class="errors">
+        {% if job_form.errors %}
+            <h3>Job Form Errors:</h3>
             <ul>
                 {% for field in job_form %}
                     {% if field.errors %}
-                        <li>{{ field.label }}: {{ field.errors|striptags }}</li>
+                        <li>{{ field.label }}: {{ field.errors|join:", " }}</li>
                     {% endif %}
                 {% endfor %}
             </ul>
-        </div>
-    {% endif %}
+        {% endif %}
+
+        <!-- Display Payment Formset Errors -->
+        {% if payment_formset.non_form_errors %}
+            <h3>Payment Formset Errors:</h3>
+            <ul>
+                {% for error in payment_formset.non_form_errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        {% for form in payment_formset %}
+            {% if form.errors %}
+                <h3>Errors in Payment {{ forloop.counter }}:</h3>
+                <ul>
+                    {% for error in form.non_field_errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                    {% for field in form.visible_fields %}
+                        {% if field.errors %}
+                            <li>{{ field.label }}: {{ field.errors|join:", " }}</li>
+                        {% endif %}
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endfor %}
+    </div>
 </div>
 {% endblock %}
 
 {% block extra_scripts %}
 <script src="{% static 'script.js' %}"></script>
+<script src="{% static 'edit_payment.js' %}"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        function closeModal() {
+            const modal = document.getElementById("error-modal");
+            if (modal) {
+                modal.style.display = "none";
+            }
+        }
+        window.closeModal = closeModal;
+    });
+</script>
 {% endblock %}

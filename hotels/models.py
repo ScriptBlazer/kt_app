@@ -3,7 +3,7 @@ from django.core.validators import MinValueValidator
 from decimal import Decimal
 from people.models import Agent, Staff
 from common.utils import get_exchange_rate, CURRENCY_CHOICES, AGENT_FEE_CHOICES, PAYMENT_TYPE_CHOICES, calculate_cc_fee
-from common.models import PaymentSettings
+from common.payment_settings import PaymentSettings
 
 
 class HotelBooking(models.Model):

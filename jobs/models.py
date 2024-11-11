@@ -1,8 +1,8 @@
 from django.db import models
 from decimal import Decimal
 from common.utils import get_exchange_rate, CURRENCY_CHOICES, AGENT_FEE_CHOICES, PAYMENT_TYPE_CHOICES, calculate_cc_fee
-from common.models import PaymentSettings
-from people.models import Agent, Driver, Staff
+from common.payment_settings import PaymentSettings
+from people.models import Agent, Driver
 import logging
 
 logger = logging.getLogger('kt')
@@ -27,11 +27,6 @@ class Job(models.Model):
     job_price_in_euros = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     job_currency = models.CharField(max_length=10, choices=CURRENCY_CHOICES)
     cc_fee = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
-
-    # Paid to Fields with unique related names
-    paid_to_agent = models.ForeignKey(Agent, on_delete=models.PROTECT, null=True, blank=True, related_name='job_paid_to_agent')
-    paid_to_driver = models.ForeignKey(Driver, on_delete=models.PROTECT, null=True, blank=True, related_name='job_paid_to_driver')
-    paid_to_staff = models.ForeignKey(Staff, on_delete=models.PROTECT, null=True, blank=True, related_name='job_paid_to_staff')
 
     # Driver Fee Information
     driver_fee = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)

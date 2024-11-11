@@ -464,6 +464,13 @@ table tbody tr:hover {
     background-color: #555;
 }
 
+.payment-container {
+    border: 1.5px solid #d5d5d5;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+}
+
 .wrapper {
     flex: 1;
     display: flex;
@@ -604,6 +611,14 @@ table tbody tr:hover {
     font-size: 18px;
     color: #333;
     margin: 0;
+}
+
+input[type="checkbox"][name$="-DELETE"] {
+    display: none;
+}
+
+.payment-entry.hidden {
+    display: none;
 }
 
 .pagination {
