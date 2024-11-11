@@ -35,9 +35,8 @@ class JobForm(PaidToMixin, forms.ModelForm):
             'customer_name', 'customer_number', 'job_date', 'job_time',
             'job_description', 'no_of_passengers', 'vehicle_type', 'kilometers',
             'pick_up_location', 'drop_off_location', 'flight_number', 'payment_type',
-            'job_price', 'driver_fee', 'driver',
-            'number_plate', 'agent_name', 'agent_percentage', 'job_currency', 'driver_currency',
-            'paid_to_agent', 'paid_to_driver', 'paid_to_staff'
+            'job_price', 'driver_fee', 
+            'number_plate', 'agent_name', 'agent_percentage', 'job_currency', 'driver_currency', 'driver'
         ]
         error_messages = {
             'customer_name': {'required': 'Please enter the customer name.'},
@@ -53,25 +52,15 @@ class JobForm(PaidToMixin, forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(JobForm, self).__init__(*args, **kwargs)
-        self.initialize_paid_to_field()
-        self.set_paid_to_initial(self.instance)
         agents, drivers, staffs = get_ordered_people()
 
+        # Ensure driver field is available
         self.fields['driver'].queryset = drivers
         self.fields['agent_name'].queryset = agents
-
-    def set_paid_to_initial(self, instance):
-        if instance.paid_to_agent:
-            self.fields['paid_to'].initial = f'agent_{instance.paid_to_agent.id}'
-        elif instance.paid_to_driver:
-            self.fields['paid_to'].initial = f'driver_{instance.paid_to_driver.id}'
-        elif instance.paid_to_staff:
-            self.fields['paid_to'].initial = f'staff_{instance.paid_to_staff.id}'
 
     def clean(self):
         cleaned_data = super().clean()
 
-        # Validate other fields first
         job_currency = cleaned_data.get('job_currency')
         job_price = cleaned_data.get('job_price')
         no_of_passengers = cleaned_data.get('no_of_passengers')

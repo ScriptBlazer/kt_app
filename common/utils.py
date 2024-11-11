@@ -168,3 +168,13 @@ def get_ordered_people():
     drivers = Driver.objects.all().order_by(Lower('name'))
     staffs = Staff.objects.all().order_by(Lower('name'))
     return agents, drivers, staffs
+
+
+def get_currency_symbol(currency_code):
+    currency_symbols = {
+        'USD': '$',
+        'EUR': '€',
+        'GBP': '£',
+        'HUF': 'Ft',
+    }
+    return currency_symbols.get(currency_code, currency_code)  # Fallback to code if symbol not found

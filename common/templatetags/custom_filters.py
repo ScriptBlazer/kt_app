@@ -1,6 +1,7 @@
 from django import template
 from datetime import datetime
 import locale
+from common.utils import get_currency_symbol
 
 register = template.Library()
 
@@ -43,3 +44,7 @@ def custom_comma_format(value):
         return formatted_value
     except (ValueError, TypeError):
         return value
+    
+@register.filter
+def currency_symbol(currency_code):
+    return get_currency_symbol(currency_code)

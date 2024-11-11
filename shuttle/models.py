@@ -65,7 +65,7 @@ class Shuttle(models.Model):
         self.price = self.no_of_passengers * price_per_passenger
 
         # Get the credit card fee percentage from PaymentSettings (assuming it's already migrated)
-        from common.models import PaymentSettings  # Import here to avoid circular import
+        from common.payment_settings import PaymentSettings  # Import here to avoid circular import
         payment_settings = PaymentSettings.objects.first()
         cc_fee_percentage = payment_settings.cc_fee_percentage if payment_settings else Decimal('7.00')  # Fallback
 

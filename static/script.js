@@ -39,15 +39,19 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Disable scroll on number inputs
-  document.querySelectorAll('input[type="number"]').forEach((input) => {
-    input.addEventListener("focus", () =>
-      input.addEventListener("wheel", preventScroll)
-    );
-    input.addEventListener("blur", () =>
-      input.removeEventListener("wheel", preventScroll)
-    );
-  });
+  // Disable scroll on all number inputs globally
+  document
+    .querySelectorAll(
+      'input[type="number"], #payment-section input[name$="payment_amount"]'
+    )
+    .forEach((input) => {
+      input.addEventListener("focus", () =>
+        input.addEventListener("wheel", preventScroll)
+      );
+      input.addEventListener("blur", () =>
+        input.removeEventListener("wheel", preventScroll)
+      );
+    });
 
   function preventScroll(event) {
     event.preventDefault();
@@ -62,17 +66,25 @@ document.addEventListener("DOMContentLoaded", () => {
     '[name="kilometers"], [name="no_of_passengers"]'
   );
 
-  // Helper function to set the cursor position
+  // Helper function to set the cursor position, only for supported input types
   function setCaretPosition(elem, pos) {
-    if (elem.setSelectionRange) {
-      elem.focus();
-      elem.setSelectionRange(pos, pos);
-    } else if (elem.createTextRange) {
-      var range = elem.createTextRange();
-      range.collapse(true);
-      range.moveEnd("character", pos);
-      range.moveStart("character", pos);
-      range.select();
+    if (
+      elem.type === "text" ||
+      elem.type === "search" ||
+      elem.type === "url" ||
+      elem.type === "tel" ||
+      elem.type === "password"
+    ) {
+      if (elem.setSelectionRange) {
+        elem.focus();
+        elem.setSelectionRange(pos, pos);
+      } else if (elem.createTextRange) {
+        var range = elem.createTextRange();
+        range.collapse(true);
+        range.moveEnd("character", pos);
+        range.moveStart("character", pos);
+        range.select();
+      }
     }
   }
 
@@ -183,11 +195,14 @@ document.addEventListener("DOMContentLoaded", () => {
     modal.style.display = "flex";
   }
 
-  // Function to close the modal
+  // Function to close the modal, now attached to the global window object
   function closeModal() {
     const modal = document.getElementById("error-modal");
-    modal.style.display = "none";
+    if (modal) {
+      modal.style.display = "none";
+    }
   }
+  window.closeModal = closeModal; // Attach to window for global access
 
   // Attach event listener to the close button
   const closeButton = document.querySelector(".close-button");

@@ -1,6 +1,7 @@
 from django.test import TestCase, override_settings
 from jobs.forms import JobForm
-from jobs.models import Job, PaymentSettings
+from jobs.models import Job
+from common.payments import Payment
 from decimal import Decimal
 from pytz import timezone as tz
 from django.utils import timezone
@@ -12,6 +13,7 @@ from datetime import timedelta
 from unittest import mock
 import pytz
 from common.utils import get_exchange_rate
+from django.contrib.auth import get_user_model
 from people.models import Driver, Agent
 from django.contrib.auth.models import User
 from decimal import Decimal, ROUND_HALF_UP
@@ -127,79 +129,89 @@ class CurrencyConversionTest(TestCase):
             job.save()
 
 
-class ToggleCompletedTestCase(TestCase):
+class UpdateJobStatusTests(TestCase):
+
     def setUp(self):
-        # Create a driver for the 'paid_to_driver' field
-        self.driver = Driver.objects.create(name='John Doe')
+        # Set up a user and log in
+        self.user = get_user_model().objects.create_user(username='testuser', password='password')
+        self.client.login(username='testuser', password='password')
 
-        # Create and log in a user
-        self.user = User.objects.create_user(username='testuser', password='12345')
-        self.client.login(username='testuser', password='12345')
+        # Create a driver for assigning to the payment
+        self.driver = Driver.objects.create(name="Test Driver")
 
-    # Test to ensure job completion fails if payment_type or paid_to is missing
-    @patch('common.utils.get_exchange_rate')
-    def test_toggle_completed_fails_without_required_fields(self, mock_get_exchange_rate):
-        mock_get_exchange_rate.return_value = Decimal('1.20')
-
-        job = Job.objects.create(
-            customer_name="Test User",
+        # Create a job and URL
+        self.job = Job.objects.create(
+            customer_name="Test Customer",
+            customer_number="1234567890",
             job_date=timezone.now().date(),
             job_time=timezone.now().time(),
-            job_price=Decimal('100'),
-            job_currency='EUR',
-            customer_number='123456789',
-            pick_up_location='Budapest',
-            no_of_passengers=1,
-            vehicle_type='Car',
-            kilometers=Decimal('100')
+            job_price=Decimal('100.00'),
+            job_currency='USD',
+            pick_up_location='Location A',
+            no_of_passengers=2,
+            vehicle_type='Car'
         )
-        url = reverse('jobs:update_job_status', args=[job.id])
+        self.url = reverse('jobs:update_job_status', args=[self.job.id])
 
-        # Try to mark the job as completed without payment_type or paid_to
-        response = self.client.post(url, {'is_completed': True}, follow=True)
-        job.refresh_from_db()
-
-        logger.debug(f"Response status code: {response.status_code}")
-
-        # Check for the hidden modal content for the error message
-        self.assertFalse(job.is_completed)
+    def test_mark_as_paid_without_confirmation(self):
+        response = self.client.post(self.url, {'is_paid': True})
         self.assertEqual(response.status_code, 400)
-        self.assertIn('Payment Type is required to mark the job as completed.', response.content.decode())
+        self.assertContains(response, 'Job must be confirmed before it can be marked as paid.', status_code=400)
 
-    # Test to ensure job completion succeeds when payment_type and paid_to are provided
-    @patch('common.utils.get_exchange_rate')
-    def test_toggle_completed_succeeds_with_required_fields(self, mock_get_exchange_rate):
-        mock_get_exchange_rate.return_value = Decimal('1.20')
+    def test_mark_as_completed_without_confirmation(self):
+        response = self.client.post(self.url, {'is_completed': True})
+        self.assertEqual(response.status_code, 400)
+        self.assertContains(response, 'Job must be confirmed before it can be marked as completed.', status_code=400)
 
-        job = Job.objects.create(
-            customer_name="Test User",
-            job_date=timezone.now().date(),
-            job_time=timezone.now().time(),
-            job_price=Decimal('100'),
-            job_currency='EUR',
-            customer_number='123456789',
-            pick_up_location='Budapest',
-            no_of_passengers=1,
-            vehicle_type='Car',
-            kilometers=Decimal('100'),
-            payment_type='Card',
-            paid_to_driver=self.driver 
+    def test_mark_as_completed_without_payment(self):
+        response = self.client.post(self.url, {'is_confirmed': True, 'is_completed': True})
+        self.assertEqual(response.status_code, 400)
+        self.assertContains(response, 'Job must be paid before it can be marked as completed.', status_code=400)
+
+    @patch('common.utils.get_exchange_rate', return_value=Decimal('1.0'))
+    def test_mark_as_paid_with_complete_payment(self, mock_get_exchange_rate):
+        # Create a fully completed payment entry with a Driver instance
+        Payment.objects.create(
+            job=self.job,
+            payment_amount=Decimal('100'),
+            payment_currency='USD',
+            payment_type='Cash',
+            paid_to_driver=self.driver
         )
-        url = reverse('jobs:update_job_status', args=[job.id])
 
-        # Mark the job as completed with valid payment_type and paid_to
-        response = self.client.post(url, {
-            'is_completed': True, 
-            'payment_type': 'Card', 
-            'paid_to_driver': self.driver.id
-        }, follow=True)
-        job.refresh_from_db()
+        response = self.client.post(self.url, {'is_confirmed': True, 'is_paid': True})
+        self.job.refresh_from_db()
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(self.job.is_paid)
 
-        logger.debug(f"Response status code: {response.status_code}")
+    @patch('common.utils.get_exchange_rate', return_value=Decimal('1.0'))
+    def test_mark_as_completed_with_complete_payment(self, mock_get_exchange_rate):
+        # Create a fully completed payment entry with a Driver instance
+        Payment.objects.create(
+            job=self.job,
+            payment_amount=Decimal('100'),
+            payment_currency='USD',
+            payment_type='Cash',
+            paid_to_driver=self.driver
+        )
 
-        # Assert that the job is marked as completed and the response is successful
-        self.assertTrue(job.is_completed)
-        self.assertEqual(response.status_code, 200)
+        response = self.client.post(self.url, {'is_confirmed': True, 'is_paid': True, 'is_completed': True})
+        self.job.refresh_from_db()
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(self.job.is_completed)
+
+    def test_redirects_on_successful_update(self):
+        # Create a complete payment entry with a Driver instance for validation
+        Payment.objects.create(
+            job=self.job,
+            payment_amount=Decimal('100'),
+            payment_currency='USD',
+            payment_type='Cash',
+            paid_to_driver=self.driver
+        )
+
+        response = self.client.post(self.url, {'is_confirmed': True, 'is_paid': True, 'is_completed': True})
+        self.assertRedirects(response, reverse('jobs:past_jobs'))
 
 
 class TimeZoneTests(TestCase):
@@ -624,3 +636,80 @@ class AdditionalJobTests(TestCase):
         expected_agent_fee = job.job_price * Decimal('0.10')
         actual_agent_fee = job.job_price * (Decimal(job.agent_percentage.strip('%')) / 100)
         self.assertEqual(expected_agent_fee, actual_agent_fee)
+
+
+class AddJobWithPaymentsTest(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username='testuser', password='password'
+        )
+        self.client.login(username='testuser', password='password')
+
+        # Create valid instances for 'paid_to' selections
+        self.driver = Driver.objects.create(name='Valid Driver')
+        self.agent = Agent.objects.create(name='Valid Agent')
+
+    @patch('common.utils.get_exchange_rate', return_value=Decimal('1.2'))
+    def test_add_and_remove_payments(self, mock_get_exchange_rate):
+        job_data = {
+            'customer_name': 'Test Customer',
+            'customer_number': '1234567890',
+            'job_date': '2024-11-07',
+            'job_time': '14:00',
+            'pick_up_location': 'Location A',
+            'drop_off_location': 'Location B',
+            'flight_number': 'FL1234',
+            'kilometers': 15,
+            'job_description': 'Test job description',
+            'no_of_passengers': 2,
+            'vehicle_type': 'Car',
+            'payment_type': 'Cash',
+            'job_price': 100,
+            'job_currency': 'USD',
+            'driver_fee': 50,
+            'driver_currency': 'USD',
+        }
+
+        # Initial payment data with two payments
+        payment_data = {
+            'form-TOTAL_FORMS': '3',  # Initial count of payment forms including one to be removed
+            'form-INITIAL_FORMS': '0',
+            'form-0-payment_amount': '30',
+            'form-0-payment_currency': 'USD',
+            'form-0-payment_type': 'Card',
+            'form-0-paid_to': f'driver_{self.driver.id}',
+            'form-1-payment_amount': '20',
+            'form-1-payment_currency': 'USD',
+            'form-1-payment_type': 'Cash',
+            'form-1-paid_to': f'agent_{self.agent.id}',
+            'form-2-payment_amount': '10',  # Adding a third payment to test removal
+            'form-2-payment_currency': 'USD',
+            'form-2-payment_type': 'Transfer',
+            'form-2-paid_to': f'driver_{self.driver.id}',
+            'form-2-DELETE': 'on',  # Mark the third payment for deletion
+        }
+
+        # Combine job and payment data for the POST request
+        data = {**job_data, **payment_data}
+
+        # Send POST request to add the job with payments
+        response = self.client.post(reverse('jobs:add_job'), data)
+        self.assertEqual(response.status_code, 302, "Expected redirect after job creation")
+
+        # Verify that the job is created
+        job = Job.objects.get(customer_name='Test Customer')
+
+        # Verify only two payments are saved (third one marked for deletion)
+        payments = Payment.objects.filter(job=job)
+        self.assertEqual(payments.count(), 2, "Expected two payments after marking one for deletion")
+
+        # Check that each payment is associated with the correct recipient and amount
+        payment1 = payments.get(payment_amount=30)
+        self.assertEqual(payment1.paid_to_driver, self.driver)
+        self.assertEqual(payment1.payment_currency, 'USD')
+        self.assertEqual(payment1.payment_type, 'Card')
+
+        payment2 = payments.get(payment_amount=20)
+        self.assertEqual(payment2.paid_to_agent, self.agent)
+        self.assertEqual(payment2.payment_currency, 'USD')
+        self.assertEqual(payment2.payment_type, 'Cash')
