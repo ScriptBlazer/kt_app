@@ -1,14 +1,18 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from django.db.models import Q
+from django.db import transaction
 from jobs.models import Job
+from common.payments import Payment
 from jobs.forms import JobForm
+from common.forms import PaymentForm
 from datetime import timedelta
 from django.core.paginator import Paginator
-from django.db import IntegrityError
+from django.forms import modelformset_factory
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
+from django.http import HttpResponseForbidden
 from decimal import Decimal
 import logging
 import pytz
@@ -70,78 +74,6 @@ def enquiries(request):
     return render(request, 'jobs/enquiries.html', {'enquiries_jobs': enquiries_jobs})
 
 @login_required
-def add_job(request):
-    logger.debug("Entered add_job view") 
-
-    if request.method == 'POST':
-        job_form = JobForm(request.POST)
-
-        if job_form.is_valid():
-            logger.debug("JobForm is valid")
-
-            job = job_form.save(commit=False)
-
-            try:
-                job.save()
-                logger.info(f"Job {job.id} saved successfully.")
-                return redirect('jobs:view_job', job_id=job.id)
-            except IntegrityError as e:
-                logger.error(f"IntegrityError when saving job: {e}")
-                return render(request, 'jobs/add_job.html', {
-                    'job_form': job_form,
-                    'error_message': 'Database error occurred while saving the job.'
-                })
-            except Exception as e:
-                logger.error(f"Unexpected error saving job: {e}")
-                return render(request, 'jobs/add_job.html', {
-                    'job_form': job_form,
-                    'error_message': 'Unexpected error occurred while saving the job.'
-                })
-        else:
-            logger.error(f"JobForm validation failed: {job_form.errors}")
-            return render(request, 'jobs/add_job.html', {
-                'job_form': job_form,
-                'error_message': 'There was an error with the form. Please check the details.'
-            })
-
-    job_form = JobForm()
-    return render(request, 'jobs/add_job.html', {'job_form': job_form})
-    
-@login_required
-def edit_job(request, job_id):
-    logger.info(f"Edit job view accessed for job ID: {job_id} by user: {request.user}")
-    job = get_object_or_404(Job, pk=job_id)
-
-    # Check if the job is marked as completed
-    if job.is_completed:
-        error_message = "This job is marked as completed and cannot be edited."
-        logger.error("Payment Type is required for completion.")
-        return render(request, 'jobs/view_job.html', {
-            'job': job,
-            'error_message': 'This job is marked as completed and cannot be edited.'
-        }, status=400)
-    
-    if request.method == 'POST':
-        job_form = JobForm(request.POST, instance=job)
-
-        if job_form.is_valid():
-            job = job_form.save(commit=False)
-
-            job.save()
-
-            logger.info(f"Job {job.id} updated successfully.")
-            return redirect('jobs:view_job', job_id=job.id)
-        else:
-            # Log validation errors for debugging
-            logger.error(f"Job form errors: {job_form.errors}")
-
-    else:
-        job_form = JobForm(instance=job)
-
-    return render(request, 'jobs/edit_job.html', {'job_form': job_form})
-
-
-@login_required
 def past_jobs(request):
     now = timezone.now()
     query = request.GET.get('q', '') 
@@ -184,20 +116,101 @@ def past_jobs(request):
     })
 
 @login_required
+def add_job(request):
+    PaymentFormSet = modelformset_factory(Payment, form=PaymentForm, extra=1, can_delete=True)
+    
+    if request.method == 'POST':
+        job_form = JobForm(request.POST)
+        payment_formset = PaymentFormSet(request.POST, queryset=Payment.objects.none())
+
+        if job_form.is_valid() and payment_formset.is_valid():
+            with transaction.atomic():
+                job = job_form.save()
+                for form in payment_formset:
+                    if form.cleaned_data and not form.cleaned_data.get('DELETE'):
+                        payment = form.save(commit=False)
+                        payment.job = job
+                        payment.save()
+
+                return redirect('jobs:view_job', job_id=job.id)
+        else:
+            logger.warning("Job form or payment formset has errors")
+            logger.debug(f"Job form errors: {job_form.errors}")
+            logger.debug(f"Payment formset errors: {payment_formset.errors}")
+    else:
+        job_form = JobForm()
+        payment_formset = PaymentFormSet(queryset=Payment.objects.none())
+
+    return render(request, 'jobs/add_job.html', {
+        'job_form': job_form,
+        'payment_formset': payment_formset,
+    })
+
+
+@login_required
+def edit_job(request, job_id):
+    job = get_object_or_404(Job, id=job_id)
+    PaymentFormSet = modelformset_factory(Payment, form=PaymentForm, extra=1, can_delete=True)
+    payments = Payment.objects.filter(job=job)
+
+    if request.method == 'POST':
+        job_form = JobForm(request.POST, instance=job)
+        payment_formset = PaymentFormSet(request.POST, queryset=payments)
+
+        if job_form.is_valid() and payment_formset.is_valid():
+            try:
+                with transaction.atomic():
+                    job_form.save()
+
+                    for form in payment_formset:
+                        # Check if form contains data to prevent saving empty forms
+                        if form.cleaned_data and not form.cleaned_data.get('DELETE'):
+                            payment = form.save(commit=False)
+                            payment.job = job
+                            payment.save()
+                        elif form.cleaned_data.get('DELETE') and form.instance.pk:
+                            # Delete if marked for deletion and exists in DB
+                            form.instance.delete()
+
+                    return redirect('jobs:view_job', job_id=job.id)
+            except Exception as e:
+                logger.error(f"Error saving job or payments: {e}")
+        else:
+            logger.warning("JobForm or PaymentFormSet validation error")
+            logger.debug(f"JobForm errors: {job_form.errors}")
+            for form in payment_formset:
+                logger.debug(f"PaymentForm errors for form: {form.errors}")
+
+    else:
+        job_form = JobForm(instance=job)
+        payment_formset = PaymentFormSet(queryset=payments)
+
+    return render(request, 'jobs/edit_job.html', {
+        'job_form': job_form,
+        'payment_formset': payment_formset,
+    })
+
+
+@login_required
 def view_job(request, job_id):
     # Retrieve the job
     job = get_object_or_404(Job, pk=job_id)
-    logger.debug(f"Viewing Job ID: {job.id}, CC Fee: {job.cc_fee}")
+    # logger.debug(f"Viewing Job ID: {job.id}, CC Fee: {job.cc_fee}")
 
-    # Handle 'paid_to' logic
-    if job.paid_to_driver:
-        paid_to_name = job.paid_to_driver.name
-    elif job.paid_to_agent:
-        paid_to_name = job.paid_to_agent.name
-    elif job.paid_to_staff:
-        paid_to_name = job.paid_to_staff.name
-    else:
-        paid_to_name = "Not set"
+    # Retrieve associated payments for the job
+    payments = job.payments.all()  # Updated to use the correct related name
+
+    # Handle 'paid_to' logic from Payments
+    paid_to_names = []
+    for payment in payments:
+        if payment.paid_to_driver:
+            paid_to_names.append(payment.paid_to_driver.name)
+        elif payment.paid_to_agent:
+            paid_to_names.append(payment.paid_to_agent.name)
+        elif payment.paid_to_staff:
+            paid_to_names.append(payment.paid_to_staff.name)
+
+    paid_to_name = ', '.join(paid_to_names) if paid_to_names else "Not set"
 
     # Set default values for fields
     driver_fee_in_euros = job.driver_fee_in_euros or Decimal('0.00')
@@ -246,36 +259,66 @@ def delete_job(request, job_id):
 @require_POST
 def update_job_status(request, job_id):
     job = get_object_or_404(Job, pk=job_id)
+    error_message = None
 
-    # Update job status based on the request
-    job.is_confirmed = 'is_confirmed' in request.POST
-    job.is_paid = 'is_paid' in request.POST
-    job.is_completed = 'is_completed' in request.POST
+    # Retrieve the intended new statuses from the POST request
+    new_is_confirmed = 'is_confirmed' in request.POST
+    new_is_paid = 'is_paid' in request.POST
+    new_is_completed = 'is_completed' in request.POST
 
-    # If the job is marked as completed, check for required fields
-    if job.is_completed:
-        # Check if 'payment_type' is provided
-        if not job.payment_type:
-            logger.error("Payment Type is required for completion.")
-            return render(request, 'jobs/view_job.html', {
-                'job': job,
-                'error_message': 'Payment Type is required to mark the job as completed.'
-            }, status=400)
-        
-        # Check if 'paid_to' field is filled (at least one of the paid_to fields)
-        if not (job.paid_to_driver or job.paid_to_agent or job.paid_to_staff):
-            logger.error("Paid to field is required for completion.")
-            return render(request, 'jobs/view_job.html', {
-                'job': job,
-                'error_message': 'Paid to field (Driver, Agent, or Staff) is required to mark the job as completed.'
-            }, status=400)
+    # Enforce dependencies between statuses
+    if new_is_paid and not new_is_confirmed:
+        error_message = 'Job must be confirmed before it can be marked as paid.'
+    elif new_is_completed and not new_is_confirmed:
+        error_message = 'Job must be confirmed before it can be marked as completed.'
+    elif new_is_completed and not new_is_paid:
+        error_message = 'Job must be paid before it can be marked as completed.'
+    else:
+        # Check for a complete payment entry when marking as paid
+        if new_is_paid and not job.is_paid:
+            complete_payment_exists = Payment.objects.filter(
+                job=job,
+                payment_amount__isnull=False,
+                payment_currency__isnull=False,
+                payment_type__isnull=False,
+            ).exclude(
+                paid_to_driver=None,
+                paid_to_agent=None,
+                paid_to_staff=None
+            ).exists()
 
-    # Log the state of the job before saving
-    logger.debug(f"Final job state before saving: {job}")
+            if not complete_payment_exists:
+                error_message = (
+                    'To mark the job as paid, there must be at least one fully completed payment entry '
+                    '(amount, currency, payment type, and recipient).'
+                )
 
-    # Save the updated job
-    job.save()
-    logger.debug("Job saved successfully.")
+        # Check for a complete payment entry when marking as completed
+        elif new_is_completed and not job.is_completed:
+            complete_payment_exists = Payment.objects.filter(
+                job=job,
+                payment_amount__isnull=False,
+                payment_currency__isnull=False,
+                payment_type__isnull=False,
+            ).exclude(
+                paid_to_driver=None,
+                paid_to_agent=None,
+                paid_to_staff=None
+            ).exists()
 
-    # Redirect to 'Past Jobs' if successful
-    return redirect('jobs:past_jobs')
+            if not complete_payment_exists:
+                error_message = (
+                    'To mark the job as completed, there must be at least one fully completed payment entry '
+                    '(amount, currency, payment type, and recipient).'
+                )
+
+    # If no errors, update the job statuses
+    if error_message is None:
+        job.is_confirmed = new_is_confirmed
+        job.is_paid = new_is_paid
+        job.is_completed = new_is_completed
+        job.save()
+        return redirect('jobs:past_jobs')
+
+    # Return error message if any validation failed
+    return render(request, 'jobs/view_job.html', {'job': job, 'error_message': error_message}, status=400)
