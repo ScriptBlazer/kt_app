@@ -153,17 +153,20 @@ class UpdateJobStatusTests(TestCase):
         )
         self.url = reverse('jobs:update_job_status', args=[self.job.id])
 
-    def test_mark_as_paid_without_confirmation(self):
+    @patch('common.utils.get_exchange_rate', return_value=Decimal('1.0'))
+    def test_mark_as_paid_without_confirmation(self, mock_get_exchange_rate):
         response = self.client.post(self.url, {'is_paid': True})
         self.assertEqual(response.status_code, 400)
         self.assertContains(response, 'Job must be confirmed before it can be marked as paid.', status_code=400)
 
-    def test_mark_as_completed_without_confirmation(self):
+    @patch('common.utils.get_exchange_rate', return_value=Decimal('1.0'))
+    def test_mark_as_completed_without_confirmation(self, mock_get_exchange_rate):
         response = self.client.post(self.url, {'is_completed': True})
         self.assertEqual(response.status_code, 400)
         self.assertContains(response, 'Job must be confirmed before it can be marked as completed.', status_code=400)
 
-    def test_mark_as_completed_without_payment(self):
+    @patch('common.utils.get_exchange_rate', return_value=Decimal('1.0'))
+    def test_mark_as_completed_without_payment(self, mock_get_exchange_rate):
         response = self.client.post(self.url, {'is_confirmed': True, 'is_completed': True})
         self.assertEqual(response.status_code, 400)
         self.assertContains(response, 'Job must be paid before it can be marked as completed.', status_code=400)
@@ -200,7 +203,8 @@ class UpdateJobStatusTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertTrue(self.job.is_completed)
 
-    def test_redirects_on_successful_update(self):
+    @patch('common.utils.get_exchange_rate', return_value=Decimal('1.0'))
+    def test_redirects_on_successful_update(self, mock_get_exchange_rate):
         # Create a complete payment entry with a Driver instance for validation
         Payment.objects.create(
             job=self.job,
@@ -639,6 +643,7 @@ class AdditionalJobTests(TestCase):
 
 
 class AddJobWithPaymentsTest(TestCase):
+
     def setUp(self):
         self.user = get_user_model().objects.create_user(
             username='testuser', password='password'
