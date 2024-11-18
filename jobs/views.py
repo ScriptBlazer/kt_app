@@ -3,7 +3,7 @@ from django.utils import timezone
 from django.db.models import Q
 from django.db import transaction
 from jobs.models import Job
-from common.payments import Payment
+from common.models import Payment
 from jobs.forms import JobForm
 from common.forms import PaymentForm
 from datetime import timedelta
@@ -150,6 +150,12 @@ def add_job(request):
 @login_required
 def edit_job(request, job_id):
     job = get_object_or_404(Job, id=job_id)
+
+    # Check if the job is completed and prevent editing
+    if job.is_completed:
+        error_message = 'You cannot edit a completed job.'
+        return render(request, 'jobs/view_job.html', {'job': job, 'error_message': error_message}, status=403)
+    
     PaymentFormSet = modelformset_factory(Payment, form=PaymentForm, extra=1, can_delete=True)
     payments = Payment.objects.filter(job=job)
 
@@ -198,7 +204,7 @@ def view_job(request, job_id):
     # logger.debug(f"Viewing Job ID: {job.id}, CC Fee: {job.cc_fee}")
 
     # Retrieve associated payments for the job
-    payments = job.payments.all()  # Updated to use the correct related name
+    payments = job.payments.all()
 
     # Handle 'paid_to' logic from Payments
     paid_to_names = []
@@ -262,61 +268,79 @@ def update_job_status(request, job_id):
     error_message = None
 
     # Retrieve the intended new statuses from the POST request
-    new_is_confirmed = 'is_confirmed' in request.POST
-    new_is_paid = 'is_paid' in request.POST
-    new_is_completed = 'is_completed' in request.POST
+    is_confirmed = 'is_confirmed' in request.POST
+    is_paid = 'is_paid' in request.POST
+    is_completed = 'is_completed' in request.POST
 
     # Enforce dependencies between statuses
-    if new_is_paid and not new_is_confirmed:
+    if is_paid and not is_confirmed:
         error_message = 'Job must be confirmed before it can be marked as paid.'
-    elif new_is_completed and not new_is_confirmed:
+    elif is_completed and not is_confirmed:
         error_message = 'Job must be confirmed before it can be marked as completed.'
-    elif new_is_completed and not new_is_paid:
+    elif is_completed and not is_paid:
         error_message = 'Job must be paid before it can be marked as completed.'
-    else:
-        # Check for a complete payment entry when marking as paid
-        if new_is_paid and not job.is_paid:
-            complete_payment_exists = Payment.objects.filter(
-                job=job,
-                payment_amount__isnull=False,
-                payment_currency__isnull=False,
-                payment_type__isnull=False,
-            ).exclude(
-                paid_to_driver=None,
-                paid_to_agent=None,
-                paid_to_staff=None
-            ).exists()
+    
+    # Additional rule: prevent unconfirming if certain conditions are met
+    elif not is_confirmed:
+        if job.is_paid:
+            error_message = 'Job cannot be unconfirmed because it is marked as paid.'
+        elif job.driver:
+            error_message = 'Job cannot be unconfirmed because a driver is assigned.'
+        elif Payment.objects.filter(
+            job=job,
+            payment_amount__isnull=False,
+            payment_currency__isnull=False,
+            payment_type__isnull=False,
+        ).exclude(
+            paid_to_driver=None,
+            paid_to_agent=None,
+            paid_to_staff=None
+        ).exists():
+            error_message = 'Job cannot be unconfirmed because there is a completed payment entry.'
 
-            if not complete_payment_exists:
-                error_message = (
-                    'To mark the job as paid, there must be at least one fully completed payment entry '
-                    '(amount, currency, payment type, and recipient).'
-                )
+    # Check for a complete payment entry when marking as paid
+    if error_message is None and is_paid and not job.is_paid:
+        complete_payment_exists = Payment.objects.filter(
+            job=job,
+            payment_amount__isnull=False,
+            payment_currency__isnull=False,
+            payment_type__isnull=False,
+        ).exclude(
+            paid_to_driver=None,
+            paid_to_agent=None,
+            paid_to_staff=None
+        ).exists()
 
-        # Check for a complete payment entry when marking as completed
-        elif new_is_completed and not job.is_completed:
-            complete_payment_exists = Payment.objects.filter(
-                job=job,
-                payment_amount__isnull=False,
-                payment_currency__isnull=False,
-                payment_type__isnull=False,
-            ).exclude(
-                paid_to_driver=None,
-                paid_to_agent=None,
-                paid_to_staff=None
-            ).exists()
+        if not complete_payment_exists:
+            error_message = (
+                'To mark the job as paid, there must be at least one fully completed payment entry '
+                '(amount, currency, payment type, and recipient).'
+            )
 
-            if not complete_payment_exists:
-                error_message = (
-                    'To mark the job as completed, there must be at least one fully completed payment entry '
-                    '(amount, currency, payment type, and recipient).'
-                )
+    # Check for a complete payment entry when marking as completed
+    elif error_message is None and is_completed and not job.is_completed:
+        complete_payment_exists = Payment.objects.filter(
+            job=job,
+            payment_amount__isnull=False,
+            payment_currency__isnull=False,
+            payment_type__isnull=False,
+        ).exclude(
+            paid_to_driver=None,
+            paid_to_agent=None,
+            paid_to_staff=None
+        ).exists()
+
+        if not complete_payment_exists:
+            error_message = (
+                'To mark the job as completed, there must be at least one fully completed payment entry '
+                '(amount, currency, payment type, and recipient).'
+            )
 
     # If no errors, update the job statuses
     if error_message is None:
-        job.is_confirmed = new_is_confirmed
-        job.is_paid = new_is_paid
-        job.is_completed = new_is_completed
+        job.is_confirmed = is_confirmed
+        job.is_paid = is_paid
+        job.is_completed = is_completed
         job.save()
         return redirect('jobs:past_jobs')
 

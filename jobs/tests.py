@@ -1,7 +1,7 @@
 from django.test import TestCase, override_settings
 from jobs.forms import JobForm
 from jobs.models import Job
-from common.payments import Payment
+from common.models import Payment
 from decimal import Decimal
 from pytz import timezone as tz
 from django.utils import timezone

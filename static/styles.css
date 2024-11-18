@@ -617,6 +617,37 @@ input[type="checkbox"][name$="-DELETE"] {
     display: none;
 }
 
+.toggle-header {
+    cursor: pointer;
+}
+
+.mobile-message {
+    text-align: center;
+    font-size: 1.5em;
+    color: red;
+}
+.mobile-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1em;
+    margin-top: 1em;
+}
+.badge {
+    display: inline-block;
+    padding: 0.3em 0.5em;
+    border-radius: 5px;
+    font-size: 0.8em;
+    margin-left: 0.5em;
+}
+.badge-red {
+    background-color: #ffdddd;
+    color: #ff0000;
+}
+.badge-green {
+    background-color: #ddffdd;
+    color: #008000;
+}
+
 .payment-entry.hidden {
     display: none;
 }
