@@ -10,6 +10,7 @@ from unittest.mock import patch, ANY
 from django.core.cache import cache
 from common.utils import assign_job_color
 from datetime import timedelta
+from django.utils.timezone import now, timedelta
 from unittest import mock
 
 import pytz
@@ -723,3 +724,33 @@ class AddJobWithPaymentsTest(TestCase):
         self.assertEqual(payment2.paid_to_agent, self.agent)
         self.assertEqual(payment2.payment_currency, 'USD')
         self.assertEqual(payment2.payment_type, 'Cash')
+
+
+class CurrencyExchangeRenewalBudapestTest(TestCase):
+    BUDAPEST_TZ = pytz.timezone('Europe/Budapest')
+
+    def setUp(self):
+        cache.clear()  # Clear cache before the test
+
+    @patch('common.utils.fetch_and_cache_exchange_rate')
+    def test_exchange_rate_refresh_after_midnight_budapest_time(self, mock_fetch_and_cache_exchange_rate):
+        # Mock the API response for the exchange rate
+        mock_fetch_and_cache_exchange_rate.return_value = Decimal('1.2')
+
+        # Simulate fetching and caching the exchange rate at 10:00 PM Budapest time
+        first_pull_time = now().astimezone(self.BUDAPEST_TZ).replace(
+            hour=22, minute=0, second=0, microsecond=0
+        )
+        with patch('django.utils.timezone.now', return_value=first_pull_time):
+            rate = get_exchange_rate('USD')
+            self.assertEqual(rate, Decimal('1.2'))
+            mock_fetch_and_cache_exchange_rate.assert_called_once_with('USD')
+
+        # Simulate time passing to 1:00 AM the next day Budapest time
+        midnight_pull_time = first_pull_time + timedelta(hours=3)
+        mock_fetch_and_cache_exchange_rate.reset_mock()  # Reset the mock for the second API call
+
+        with patch('django.utils.timezone.now', return_value=midnight_pull_time):
+            rate = get_exchange_rate('USD')  # Should trigger a new API call after midnight
+            self.assertEqual(rate, Decimal('1.2'))
+            mock_fetch_and_cache_exchange_rate.assert_called_once_with('USD')  # Confirm a new API call
