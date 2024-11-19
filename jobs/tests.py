@@ -1,7 +1,7 @@
 from django.test import TestCase, override_settings
 from jobs.forms import JobForm
 from jobs.models import Job
-from common.payments import Payment
+from common.models import Payment
 from decimal import Decimal
 from pytz import timezone as tz
 from django.utils import timezone
@@ -10,7 +10,9 @@ from unittest.mock import patch, ANY
 from django.core.cache import cache
 from common.utils import assign_job_color
 from datetime import timedelta
+from django.utils.timezone import now, timedelta
 from unittest import mock
+
 import pytz
 from common.utils import get_exchange_rate
 from django.contrib.auth import get_user_model
@@ -94,9 +96,10 @@ class ConcurrencyHandlingTest(TestCase):
 
 class CurrencyConversionTest(TestCase):
     # Test to ensure currency conversion to Euros works as expected
-    @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.2'))
-    def test_currency_conversion(self, mock_get_exchange_rate):
-        job = Job(
+    @patch('common.utils.fetch_and_cache_exchange_rate')
+    def test_currency_conversion(self, mock_fetch_and_cache_exchange_rate):
+        mock_fetch_and_cache_exchange_rate.return_value = Decimal('1.2')
+        job = Job.objects.create(
             job_price=Decimal('100'),
             job_currency='USD',
             job_date=timezone.now().date(),
@@ -108,14 +111,16 @@ class CurrencyConversionTest(TestCase):
             vehicle_type='Car',
             kilometers=Decimal('100')
         )
-        job.save()
         self.assertEqual(job.job_price_in_euros, Decimal('120.00'))
 
     # Test to check if saving a job with an unsupported currency raises an error
-    def test_missing_exchange_rate(self):
+    @patch('common.utils.fetch_and_cache_exchange_rate')
+    def test_missing_exchange_rate(self, mock_fetch_and_cache_exchange_rate):
+        mock_fetch_and_cache_exchange_rate.side_effect = ValueError("Error fetching exchange rate for XYZ")
+
         job = Job(
             job_price=Decimal('100'),
-            job_currency='XYZ',  
+            job_currency='XYZ',
             job_date=timezone.now().date(),
             job_time=timezone.now().time(),
             customer_name='John Doe',
@@ -167,8 +172,9 @@ class UpdateJobStatusTests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertContains(response, 'Job must be paid before it can be marked as completed.', status_code=400)
 
-    @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.0'))
-    def test_mark_as_paid_with_complete_payment(self, mock_get_exchange_rate):
+    @patch('common.utils.fetch_and_cache_exchange_rate')
+    def test_mark_as_paid_with_complete_payment(self, mock_fetch_and_cache_exchange_rate):
+        mock_fetch_and_cache_exchange_rate.return_value = Decimal('1.0')
         Payment.objects.create(
             job=self.job,
             payment_amount=Decimal('100'),
@@ -181,31 +187,39 @@ class UpdateJobStatusTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertTrue(self.job.is_paid)
 
-    @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.0'))
-    def test_mark_as_completed_with_complete_payment(self, mock_get_exchange_rate):
+    @patch('common.utils.fetch_and_cache_exchange_rate')
+    def test_mark_as_completed_with_complete_payment(self, mock_fetch_and_cache_exchange_rate):
+        mock_fetch_and_cache_exchange_rate.return_value = Decimal('1.0')  # Mock the exchange rate API
+
         Payment.objects.create(
             job=self.job,
             payment_amount=Decimal('100'),
             payment_currency='USD',
             payment_type='Cash',
-            paid_to_driver=self.driver
+            paid_to_driver=self.driver,
         )
         response = self.client.post(self.url, {'is_confirmed': True, 'is_paid': True, 'is_completed': True})
         self.job.refresh_from_db()
         self.assertEqual(response.status_code, 302)
         self.assertTrue(self.job.is_completed)
 
-    @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.0'))
-    def test_redirects_on_successful_update(self, mock_get_exchange_rate):
+    @patch('common.utils.fetch_and_cache_exchange_rate')
+    def test_redirects_on_successful_update(self, mock_fetch_and_cache_exchange_rate):
+        mock_fetch_and_cache_exchange_rate.return_value = Decimal('1.2')  # Mock the exchange rate API
+
         Payment.objects.create(
             job=self.job,
             payment_amount=Decimal('100'),
             payment_currency='USD',
             payment_type='Cash',
-            paid_to_driver=self.driver
+            paid_to_driver=self.driver,
         )
         response = self.client.post(self.url, {'is_confirmed': True, 'is_paid': True, 'is_completed': True})
         self.assertRedirects(response, reverse('jobs:past_jobs'))
+        self.job.refresh_from_db()
+        self.assertTrue(self.job.is_confirmed)
+        self.assertTrue(self.job.is_paid)
+        self.assertTrue(self.job.is_completed)
 
 
 class TimeZoneTests(TestCase):
@@ -645,8 +659,9 @@ class AddJobWithPaymentsTest(TestCase):
         self.driver = Driver.objects.create(name='Valid Driver')
         self.agent = Agent.objects.create(name='Valid Agent')
 
-    @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.2'))
-    def test_add_and_remove_payments(self, mock_get_exchange_rate):
+    @patch('common.utils.fetch_and_cache_exchange_rate')
+    def test_add_and_remove_payments(self, mock_fetch_and_cache_exchange_rate):
+        mock_fetch_and_cache_exchange_rate.return_value = Decimal('1.2')
         job_data = {
             'customer_name': 'Test Customer',
             'customer_number': '1234567890',
@@ -709,3 +724,33 @@ class AddJobWithPaymentsTest(TestCase):
         self.assertEqual(payment2.paid_to_agent, self.agent)
         self.assertEqual(payment2.payment_currency, 'USD')
         self.assertEqual(payment2.payment_type, 'Cash')
+
+
+class CurrencyExchangeRenewalBudapestTest(TestCase):
+    BUDAPEST_TZ = pytz.timezone('Europe/Budapest')
+
+    def setUp(self):
+        cache.clear()  # Clear cache before the test
+
+    @patch('common.utils.fetch_and_cache_exchange_rate')
+    def test_exchange_rate_refresh_after_midnight_budapest_time(self, mock_fetch_and_cache_exchange_rate):
+        # Mock the API response for the exchange rate
+        mock_fetch_and_cache_exchange_rate.return_value = Decimal('1.2')
+
+        # Simulate fetching and caching the exchange rate at 10:00 PM Budapest time
+        first_pull_time = now().astimezone(self.BUDAPEST_TZ).replace(
+            hour=22, minute=0, second=0, microsecond=0
+        )
+        with patch('django.utils.timezone.now', return_value=first_pull_time):
+            rate = get_exchange_rate('USD')
+            self.assertEqual(rate, Decimal('1.2'))
+            mock_fetch_and_cache_exchange_rate.assert_called_once_with('USD')
+
+        # Simulate time passing to 1:00 AM the next day Budapest time
+        midnight_pull_time = first_pull_time + timedelta(hours=3)
+        mock_fetch_and_cache_exchange_rate.reset_mock()  # Reset the mock for the second API call
+
+        with patch('django.utils.timezone.now', return_value=midnight_pull_time):
+            rate = get_exchange_rate('USD')  # Should trigger a new API call after midnight
+            self.assertEqual(rate, Decimal('1.2'))
+            mock_fetch_and_cache_exchange_rate.assert_called_once_with('USD')  # Confirm a new API call

@@ -1,0 +1,142 @@
+{% extends 'base/base_admin.html' %}
+{% load static %}
+{% load custom_filters %}
+{% load humanize %}
+
+{% block title %}Balances{% endblock %}
+
+{% block content %}
+    {% if not show_balances %}
+    <div class="container">
+        <div class="buttons">
+            <div class="left-buttons">
+                <a href="{% url 'home' %}" class="button">Back to Home</a>
+                <a href="{% url 'common:admin' %}" class="button button-orange">Back to Admin</a>
+            </div>
+        </div>
+        <div id="work-in-progress">
+            <h1>Currently Working on This Page</h1>
+            <p>Check back soon to see if it's done!</p>
+        </div>
+    </div>
+    {% else %}
+
+    <!-- Mobile Warning Section -->
+    <div id="mobile-warning" style="display: none;">
+        <div class="mobile-buttons">
+            <a href="{% url 'home' %}" class="button">Back to Home</a>
+            <a href="{% url 'common:admin' %}" class="button button-orange">Back to Admin</a>
+        </div>
+        <p class="mobile-message">Please switch to desktop view to see this page.</p>
+    </div>
+
+    <!-- Balances Content -->
+    <div id="balances-content">
+        <div class="calc">
+            <div class="container">
+                <div class="buttons">
+                    <div class="left-buttons">
+                        <a href="{% url 'home' %}" class="button">Back to Home</a>
+                        <a href="{% url 'common:admin' %}" class="button button-orange">Back to Admin</a>
+                    </div>
+                </div>
+                <h1>Balances</h1>
+                <br>
+                {% for category, individuals in categories.items %}
+                <div>
+                    <h2>{{ category }}</h2>
+                    <div>
+                        {% for name, data in individuals.items %}
+                            <h4 class="toggle-header" data-section-id="{{ name|slugify }}-{{ forloop.counter }}-section">
+                                {{ name }}
+                                {% if data.owes_kt > 0 %}
+                                    <span class="badge badge-red">Owes KT</span>
+                                {% elif data.kt_owes > 0 %}
+                                    <span class="badge badge-green">KT Owes</span>
+                                {% endif %}
+                                <span id="{{ name|slugify }}-{{ forloop.counter }}-section-arrow">▼</span>
+                            </h4>
+                            <div id="{{ name|slugify }}-{{ forloop.counter }}-section" style="display: none;">
+                                <div>
+                                    <p><strong>Currency Totals:</strong></p>
+                                    {% for currency, amount in data.currency_totals.items %}
+                                        <p>{{ currency }}: {{ amount|floatformat:2|intcomma }}</p>
+                                    {% endfor %}
+                                    <p>
+                                        {% if data.kt_owes > 0 %}
+                                            <span style="color: green;">KT Owes: {{ data.kt_owes|floatformat:2|intcomma }}</span>
+                                        {% elif data.owes_kt > 0 %}
+                                            <span style="color: red;">Owes KT: {{ data.owes_kt|floatformat:2|intcomma }}</span>
+                                        {% else %}
+                                            <span>Balanced</span>
+                                        {% endif %}
+                                    </p>
+                                    <button class="button button-orange" style="margin-bottom: 10px;">Settle</button>
+                                </div>
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Job Date</th>
+                                            <th>Customer Name</th>
+                                            <th>Job Type</th>
+                                            <th>Payment Amount</th>
+                                            <th>Payment Currency</th>
+                                            <th>Payment Type</th>
+                                            <th>Agent Fee</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for record in data.records %}
+                                            <tr>
+                                                <td>{{ record.job_date|default:"N/A" }}</td>
+                                                <td>{{ record.customer_name|default:"N/A" }}</td>
+                                                <td>
+                                                    {% if record.job_type == 'job' %}
+                                                        Driving Jobs
+                                                    {% elif record.job_type == 'shuttle' %}
+                                                        Shuttle
+                                                    {% else %}
+                                                        {{ record.job_type|default:"N/A" }}
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {% if record.payment_amount %}
+                                                        {{ record.payment_currency }} {{ record.payment_amount|floatformat:2|intcomma }}
+                                                    {% else %}
+                                                        N/A
+                                                    {% endif %}
+                                                </td>
+                                                <td>{{ record.payment_currency|default:"N/A" }}</td>
+                                                <td>{{ record.payment_type|default:"N/A" }}</td>
+                                                <td>
+                                                    {% if record.agent_fee %}
+                                                        €{{ record.agent_fee|floatformat:2|intcomma }}
+                                                    {% else %}
+                                                        N/A
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <br>
+                </div>
+                <br>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+    <script src="{% static 'script.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            checkMobileView('balances-content');
+        });
+    </script>
+{% endblock %}

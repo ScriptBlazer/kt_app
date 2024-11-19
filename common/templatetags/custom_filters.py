@@ -48,3 +48,9 @@ def custom_comma_format(value):
 @register.filter
 def currency_symbol(currency_code):
     return get_currency_symbol(currency_code)
+
+
+@register.filter
+def get_item(dictionary, key):
+    """Retrieve a value from a dictionary using a key."""
+    return dictionary.get(key, "")
