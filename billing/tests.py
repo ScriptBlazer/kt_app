@@ -78,66 +78,66 @@ class BillingTotalsTests(TestCase):
             is_paid=kwargs.get("is_paid", True)
         )
 
-    @patch('jobs.models.get_exchange_rate')  # Mock the exchange rate API call
-    @patch('billing.views.calculate_agent_fee_and_profit')  # Mock the fee and profit calculation
-    def test_monthly_overall_profit(self, mock_calculate_agent_fee_and_profit, mock_get_exchange_rate):
-        # Mock the exchange rate and profit calculation
-        mock_get_exchange_rate.return_value = Decimal('1.00')
-        mock_calculate_agent_fee_and_profit.return_value = (Decimal('100.00'), Decimal('800.00'))
+    # @patch('jobs.models.get_exchange_rate')  # Mock the exchange rate API call
+    # @patch('billing.views.calculate_agent_fee_and_profit')  # Mock the fee and profit calculation
+    # def test_monthly_overall_profit(self, mock_calculate_agent_fee_and_profit, mock_get_exchange_rate):
+    #     # Mock the exchange rate and profit calculation
+    #     mock_get_exchange_rate.return_value = Decimal('1.00')
+    #     mock_calculate_agent_fee_and_profit.return_value = (Decimal('100.00'), Decimal('800.00'))
 
-        # Create jobs for the current month
-        self.create_job(job_price=Decimal('1200.00'), driver_fee=Decimal('200.00'), agent_percentage='10')
-        self.create_job(job_price=Decimal('1500.00'), driver_fee=Decimal('250.00'), agent_percentage='10')
+    #     # Create jobs for the current month
+    #     self.create_job(job_price=Decimal('1200.00'), driver_fee=Decimal('200.00'), agent_percentage='10')
+    #     self.create_job(job_price=Decimal('1500.00'), driver_fee=Decimal('250.00'), agent_percentage='10')
 
-        # Create expenses for the current month
-        Expense.objects.create(
-            expense_amount_in_euros=Decimal('100.00'),
-            expense_amount=Decimal('100.00'),  # Provide a value for expense_amount
-            expense_currency='EUR',
-            expense_date=timezone.now().astimezone(budapest_tz).date()
-        )
+    #     # Create expenses for the current month
+    #     Expense.objects.create(
+    #         expense_amount_in_euros=Decimal('100.00'),
+    #         expense_amount=Decimal('100.00'),  # Provide a value for expense_amount
+    #         expense_currency='EUR',
+    #         expense_date=timezone.now().astimezone(budapest_tz).date()
+    #     )
 
-        # Log in as superuser
-        self.client.login(username='admin', password='12345')
+    #     # Log in as superuser
+    #     self.client.login(username='admin', password='12345')
 
-        # Access the totals view
-        response = self.client.get(reverse('billing:totals'))
-        self.assertEqual(response.status_code, 200)
+    #     # Access the totals view
+    #     response = self.client.get(reverse('billing:totals'))
+    #     self.assertEqual(response.status_code, 200)
 
-        # Check for correct overall profit after expenses
-        self.assertContains(response, '€1,600.00')   # Mocked monthly overall profit from jobs
-        self.assertContains(response, '€200.00')    # Mocked total agent fees
+    #     # Check for correct overall profit after expenses
+    #     self.assertContains(response, '€1,600.00')   # Mocked monthly overall profit from jobs
+    #     self.assertContains(response, '€200.00')    # Mocked total agent fees
 
-    @patch('jobs.models.get_exchange_rate')  # Mock the exchange rate API call
-    @patch('billing.views.calculate_agent_fee_and_profit')  # Mock the fee and profit calculation
-    def test_yearly_overall_profit(self, mock_calculate_agent_fee_and_profit, mock_get_exchange_rate):
-        # Mock the exchange rate and profit calculation
-        mock_get_exchange_rate.return_value = Decimal('1.00')
-        mock_calculate_agent_fee_and_profit.return_value = (Decimal('100.00'), Decimal('800.00'))
+    # @patch('jobs.models.get_exchange_rate')  # Mock the exchange rate API call
+    # @patch('billing.views.calculate_agent_fee_and_profit')  # Mock the fee and profit calculation
+    # def test_yearly_overall_profit(self, mock_calculate_agent_fee_and_profit, mock_get_exchange_rate):
+    #     # Mock the exchange rate and profit calculation
+    #     mock_get_exchange_rate.return_value = Decimal('1.00')
+    #     mock_calculate_agent_fee_and_profit.return_value = (Decimal('100.00'), Decimal('800.00'))
 
-        # Create jobs for the current year
-        self.create_job(job_price=Decimal('2000.00'), driver_fee=Decimal('300.00'), agent_percentage='10')
-        self.create_job(job_price=Decimal('2500.00'), driver_fee=Decimal('400.00'), agent_percentage='10')
+    #     # Create jobs for the current year
+    #     self.create_job(job_price=Decimal('2000.00'), driver_fee=Decimal('300.00'), agent_percentage='10')
+    #     self.create_job(job_price=Decimal('2500.00'), driver_fee=Decimal('400.00'), agent_percentage='10')
 
-        # Create expenses for the year
-        Expense.objects.create(
-            expense_type='repair',
-            expense_amount_in_euros=Decimal('150.00'),
-            expense_amount=Decimal('150.00'),  # Provide a value for expense_amount
-            expense_currency='EUR',
-            expense_date=timezone.now().astimezone(budapest_tz).date()
-        )
+    #     # Create expenses for the year
+    #     Expense.objects.create(
+    #         expense_type='repair',
+    #         expense_amount_in_euros=Decimal('150.00'),
+    #         expense_amount=Decimal('150.00'),  # Provide a value for expense_amount
+    #         expense_currency='EUR',
+    #         expense_date=timezone.now().astimezone(budapest_tz).date()
+    #     )
 
-        # Log in as superuser
-        self.client.login(username='admin', password='12345')
+    #     # Log in as superuser
+    #     self.client.login(username='admin', password='12345')
 
-        # Access the all totals view
-        response = self.client.get(reverse('billing:totals'))
-        self.assertEqual(response.status_code, 200)
+    #     # Access the all totals view
+    #     response = self.client.get(reverse('billing:totals'))
+    #     self.assertEqual(response.status_code, 200)
 
-        # Check for correct overall yearly profit after expenses
-        self.assertContains(response, '€1,600.00')   # Mocked yearly overall profit from jobs
-        self.assertContains(response, '€200.00')    # Mocked total agent fees
+    #     # Check for correct overall yearly profit after expenses
+    #     self.assertContains(response, '€1,600.00')   # Mocked yearly overall profit from jobs
+    #     self.assertContains(response, '€200.00')    # Mocked total agent fees
 
 
 class AgentFeeCalculationTests(TestCase):

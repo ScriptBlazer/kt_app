@@ -75,6 +75,12 @@ def totals(request):
     # if not request.user.is_superuser:
     #     return HttpResponseForbidden(render(request, 'errors/access_denied.html'))
 
+    show_totals = False  # Set to True when ready to show totals
+
+    if not show_totals:
+        return render(request, 'billing/totals.html', {'show_totals': show_totals})
+
+
     now = timezone.now().astimezone(budapest_tz)
     current_year = now.year
     current_month = now.month
@@ -206,6 +212,7 @@ def totals(request):
     # Render the template with context
     return render(request, 'billing/totals.html', {
         'now': now,
+        'show_totals': show_totals,
         'monthly_total_income': monthly_total_income,
         'monthly_total_agent_fees': monthly_total_agent_fees,
         'monthly_total_driver_fees': monthly_total_driver_fees,
@@ -236,6 +243,8 @@ def totals(request):
         'job_breakdowns': all_job_breakdowns,
         'agent_totals': get_agent_totals(all_jobs),
     })
+
+    
 
 @login_required
 def balances(request):
@@ -314,5 +323,3 @@ def balances(request):
         'show_balances': False,  # Change this to True when ready
     }
     return render(request, 'billing/balances.html', context)
-
-    # return render(request, 'billing/balances.html', {'categories': categories})

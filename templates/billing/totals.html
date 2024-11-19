@@ -6,260 +6,275 @@
 {% block title %}Totals{% endblock %}
 
 {% block content %}
-    <!-- Mobile Warning Section -->
-    <div id="mobile-warning" style="display: none;">
-        <div class="mobile-buttons">
-            <a href="{% url 'home' %}" class="button">Back to Home</a>
-            <a href="{% url 'common:admin' %}" class="button button-orange">Back to Admin</a>
-        </div>
-        <p class="mobile-message">Please switch to desktop view to see this page.</p>
-    </div>
-
-    <!-- Totals Content -->
-    <div id="totals-content">
-        <div class="calc">
-            <div class="container">
-                <div class="buttons">
-                    <div class="left-buttons">
-                        <a href="{% url 'home' %}" class="button">Back to Home</a>
-                        <a href="{% url 'common:admin' %}" class="button button-orange">Back to Admin</a>
-                    </div>
-                <a href="#agent-totals" class="button button-orange">Agent Totals</a>
+    {% if not show_totals %}
+        <div class="container">
+            <div class="buttons">
+                <div class="left-buttons">
+                    <a href="{% url 'home' %}" class="button">Back to Home</a>
+                    <a href="{% url 'common:admin' %}" class="button button-orange">Back to Admin</a>
                 </div>
-                <h1>Totals</h1>
-                <div class="row">
-                    <div class="column total-box">
-                        <h2>{{ now|date:"F" }} Totals</h2>
-                        <div class="totals-text">
-                            <p>Total Income: <strong>€{{ monthly_total_income|floatformat:2|intcomma }}</strong></p>
-                            <p>Total Unpaid Jobs: <strong>€{{ monthly_unpaid_total|floatformat:2|intcomma }}</strong></p>
-                            <br>
-                            <p>Total Driving Jobs Income: <strong>€{{ monthly_total_job_income|floatformat:2|intcomma }}</strong></p>
-                            <p>Total Shuttle Income: <strong>€{{ monthly_shuttle_income|floatformat:2|intcomma }}</strong></p>
-                            <p>Total Hotels Income: <strong>€</strong></p>
-                            <br>
-                            <p>Total Expenses: <strong>€{{ monthly_total_expenses|floatformat:2|intcomma }}</strong></p>
-                            <p>Total Agent Fees: <strong>€{{ monthly_total_agent_fees|floatformat:2|intcomma }}</strong></p>
-                            <p>Total Driver Fees: <strong>€{{ monthly_total_driver_fees|floatformat:2|intcomma }}</strong></p>
-
-                            <br>
-                            <p>Total Profit from All Jobs: <strong>€{{ monthly_total_profit|floatformat:2|intcomma }}</strong></p>
-                            <p>Overall Profit (After Expenses): <strong>€{{ monthly_overall_profit|floatformat:2|intcomma }}</strong></p>
-                        </div>
-                    </div>
-
-                    <div class="column total-box">
-                        <h2>{{now.year}} Totals</h2>
-                        <div class="totals-text">
-                            <p>Total Income: <strong>€{{ yearly_total_income|floatformat:2|intcomma }}</strong></p>
-                            <p>Total Unpaid Jobs: <strong>€{{ yearly_unpaid_total|floatformat:2|intcomma }}</strong></p>
-                            <br>
-                            <p>Total Driving Jobs Income: <strong>€{{ yearly_total_job_income|floatformat:2|intcomma }}</strong></p>
-                            <p>Total Shuttle Income: <strong>€{{ yearly_shuttle_income|floatformat:2|intcomma }}</strong></p>
-                            <p>Total Hotels Income: <strong>€</strong></p>
-                            <br>
-                            <p>Total Expenses: <strong>€{{ yearly_total_expenses|floatformat:2|intcomma }}</strong></p>
-                            <p>Total Agent Fees: <strong>€{{ yearly_total_agent_fees|floatformat:2|intcomma }}</strong></p>
-                            <p>Total Driver Fees: <strong>€{{ yearly_total_driver_fees|floatformat:2|intcomma }}</strong></p>
-                            <br>
-                            <p>Total Profit from Jobs: <strong>€{{ yearly_total_profit|floatformat:2|intcomma }}</strong></p>
-                            <p>Overall Profit (After Expenses): <strong>€{{ yearly_overall_profit|floatformat:2|intcomma }}</strong></p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="column total-box">
-                    <h2>All-Time Totals</h2>
-                    <div class="totals-text">
-                        <p>Total Income: <strong>€{{ overall_total_income|floatformat:2|intcomma }}</strong></p>
-                        <p>Total Unpaid Jobs: <strong>€{{ overall_unpaid_total|floatformat:2|intcomma }}</strong></p>
-                        <br>
-                        <p>Total Driving Jobs Income: <strong>€{{ overall_total_job_income|floatformat:2|intcomma }}</strong></p>
-                        <p>Total Shuttle Income: <strong>€{{ overall_shuttle_income|floatformat:2|intcomma }}</strong></p>
-                        <p>Total Expenses: <strong>€{{ overall_expenses_total|floatformat:2|intcomma }}</strong></p>
-                        <p>Total Agent Fees: <strong>€{{ overall_total_agent_fees|floatformat:2|intcomma }}</strong></p>
-                        <p>Total Driver Fees: <strong>€{{ overall_total_driver_fees|floatformat:2|intcomma }}</strong></p>
-                        <br>
-                        <p>Total Profit: <strong>€{{ overall_total_job_profit|floatformat:2|intcomma }}</strong></p>
-                        <p>Overall Profit (After Expenses): <strong>€{{ overall_total_profit|floatformat:2|intcomma }}</strong></p>
-                    </div>
-                </div>
-                <br>
-
-                <h2>Unpaid Driving Jobs Breakdown (Total = €{{ monthly_unpaid_total|floatformat:2|intcomma }})</h2>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Customer Name</th>
-                            <th>Job Date</th>
-                            <th>Job Price</th>
-                            <th class="tablet">Driver Fee</th>
-                            <th>Agent Name</th>
-                            <th class="tablet">Agent Fee</th>
-                            <th class="tablet">Agent Fee Amount</th>
-                            <th>Profit</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for job in unpaid_job_breakdowns %}
-                            <tr>
-                                <td>{{ job.customer_name|truncate_words_chars }}</td>
-                                <td>{{ job.job_date }}</td>
-                                <td>€{{ job.job_price|floatformat:2|intcomma }}</td>
-                                <td class="tablet">
-                                    {% if job.driver_fee %}
-                                        €{{ job.driver_fee|floatformat:2|intcomma }}
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if job.agent_name %}
-                                        {{ job.agent_name }}
-                                    {% endif %}
-                                </td>
-                                <td class="tablet">
-                                    {% if job.agent_fee and job.agent_fee != "0" %}
-                                        {{ job.agent_fee }}%
-                                    {% endif %}
-                                </td>
-                                <td class="tablet">
-                                    {% if job.agent_fee_amount %}
-                                        €{{ job.agent_fee_amount|floatformat:2|intcomma }}
-                                    {% endif %}
-                                </td>
-                                <td>€{{ job.profit|floatformat:2|intcomma }}</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-
-
-                <br>
-                <h2>Breakdown of Driving Jobs in {{ now|date:"F" }} (Total = €{{ monthly_total_job_income|floatformat:2|intcomma }})</h2>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Customer Name</th>
-                            <th>Job Date</th>
-                            <th>Job Price</th>
-                            <th class="tablet">Driver Fee</th>
-                            <th>Agent Name</th>
-                            <th class="tablet">Agent Fee</th>
-                            <th class="tablet">Agent Fee Amount</th>
-                            <th>Profit</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for job in monthly_job_breakdowns %}
-                            <tr>
-                                <td>{{ job.customer_name|truncate_words_chars }}</td>
-                                <td>{{ job.job_date }}</td>
-                                <td>€{{ job.job_price|floatformat:2|intcomma }}</td>
-                                <td class="tablet">
-                                    {% if job.driver_fee %}
-                                        €{{ job.driver_fee|floatformat:2|intcomma }}
-                                    {% else %}
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if job.agent_name %}
-                                        {{ job.agent_name }}
-                                    {% else %}
-                                    {% endif %}
-                                </td>
-                                <td class="tablet">
-                                    {% if job.agent_fee and job.agent_fee != "0" %}
-                                        {{ job.agent_fee }}%
-                                    {% endif %}
-                                </td>
-                                <td class="tablet">
-                                    {% if job.agent_fee_amount %}
-                                        €{{ job.agent_fee_amount|floatformat:2|intcomma }}
-                                    {% else %}
-                                    {% endif %}
-                                </td>
-                                <td>€{{ job.profit|floatformat:2|intcomma }}</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-
-
-                <br>
-                <h2>Breakdown of All Driving Jobs (Total = €{{ yearly_total_job_income|floatformat:2|intcomma }})</h2>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Customer Name</th>
-                            <th>Job Date</th>
-                            <th>Job Price</th>
-                            <th class="tablet">Driver Fee</th>
-                            <th>Agent Name</th>
-                            <th class="tablet">Agent Fee</th>
-                            <th class="tablet">Agent Fee Amount</th>
-                            <th>Profit</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for job in job_breakdowns %}
-                            <tr>
-                                <td>{{ job.customer_name|truncate_words_chars }}</td>
-                                <td>{{ job.job_date }}</td>
-                                <td>€{{ job.job_price|floatformat:2|intcomma }}</td>
-                                <td class="tablet">
-                                    {% if job.driver_fee %}
-                                        €{{ job.driver_fee|floatformat:2|intcomma }}
-                                    {% else %}
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if job.agent_name %}
-                                        {{ job.agent_name }}
-                                    {% else %}
-                                    {% endif %}
-                                </td>
-                                <td class="tablet">
-                                    {% if job.agent_fee and job.agent_fee != "0" %}
-                                        {{ job.agent_fee }}%
-                                    {% endif %}
-                                </td>
-                                <td class="tablet">
-                                    {% if job.agent_fee_amount %}
-                                        €{{ job.agent_fee_amount|floatformat:2|intcomma }}
-                                    {% else %}
-                                    {% endif %}
-                                </td>
-                                <td>€{{ job.profit|floatformat:2|intcomma }}</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                <br>
-                <h2 id="agent-totals">Agent Totals (Total = €{{ overall_total_agent_fees|floatformat:2|intcomma }})</h2>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Agent Name</th>
-                            <th>Monthly Total</th>
-                            <th>Yearly Total</th>
-                            <th>Overall Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for agent, totals in agent_totals.items %}
-                            {% if agent and agent != "None" %}
-                                <tr>
-                                    <td>{{ agent }}</td>
-                                    <td>€{{ totals.monthly.agent_fees|floatformat:2|intcomma }}</td>
-                                    <td>€{{ totals.yearly.agent_fees|floatformat:2|intcomma }}</td>
-                                    <td>€{{ totals.overall.agent_fees|floatformat:2|intcomma }}</td>
-                                </tr>
-                            {% endif %}
-                        {% endfor %}
-                    </tbody>
-                </table>
+            </div>
+            <div id="work-in-progress">
+                <h1>Currently Working on This Page</h1>
+                <p>Check back soon to see if it's done!</p>
             </div>
         </div>
-    </div>
+        {% else %}
+        <!-- Mobile Warning Section -->
+        <div id="mobile-warning" style="display: none;">
+            <div class="mobile-buttons">
+                <a href="{% url 'home' %}" class="button">Back to Home</a>
+                <a href="{% url 'common:admin' %}" class="button button-orange">Back to Admin</a>
+            </div>
+            <p class="mobile-message">Please switch to desktop view to see this page.</p>
+        </div>
+
+        <!-- Totals Content -->
+        <div id="totals-content">
+            <div class="calc">
+                <div class="container">
+                    <div class="buttons">
+                        <div class="left-buttons">
+                            <a href="{% url 'home' %}" class="button">Back to Home</a>
+                            <a href="{% url 'common:admin' %}" class="button button-orange">Back to Admin</a>
+                        </div>
+                    <a href="#agent-totals" class="button button-orange">Agent Totals</a>
+                    </div>
+                    <h1>Totals</h1>
+                    <div class="row">
+                        <div class="column total-box">
+                            <h2>{{ now|date:"F" }} Totals</h2>
+                            <div class="totals-text">
+                                <p>Total Income: <strong>€{{ monthly_total_income|floatformat:2|intcomma }}</strong></p>
+                                <p>Total Unpaid Jobs: <strong>€{{ monthly_unpaid_total|floatformat:2|intcomma }}</strong></p>
+                                <br>
+                                <p>Total Driving Jobs Income: <strong>€{{ monthly_total_job_income|floatformat:2|intcomma }}</strong></p>
+                                <p>Total Shuttle Income: <strong>€{{ monthly_shuttle_income|floatformat:2|intcomma }}</strong></p>
+                                <p>Total Hotels Income: <strong>€</strong></p>
+                                <br>
+                                <p>Total Expenses: <strong>€{{ monthly_total_expenses|floatformat:2|intcomma }}</strong></p>
+                                <p>Total Agent Fees: <strong>€{{ monthly_total_agent_fees|floatformat:2|intcomma }}</strong></p>
+                                <p>Total Driver Fees: <strong>€{{ monthly_total_driver_fees|floatformat:2|intcomma }}</strong></p>
+
+                                <br>
+                                <p>Total Profit from All Jobs: <strong>€{{ monthly_total_profit|floatformat:2|intcomma }}</strong></p>
+                                <p>Overall Profit (After Expenses): <strong>€{{ monthly_overall_profit|floatformat:2|intcomma }}</strong></p>
+                            </div>
+                        </div>
+
+                        <div class="column total-box">
+                            <h2>{{now.year}} Totals</h2>
+                            <div class="totals-text">
+                                <p>Total Income: <strong>€{{ yearly_total_income|floatformat:2|intcomma }}</strong></p>
+                                <p>Total Unpaid Jobs: <strong>€{{ yearly_unpaid_total|floatformat:2|intcomma }}</strong></p>
+                                <br>
+                                <p>Total Driving Jobs Income: <strong>€{{ yearly_total_job_income|floatformat:2|intcomma }}</strong></p>
+                                <p>Total Shuttle Income: <strong>€{{ yearly_shuttle_income|floatformat:2|intcomma }}</strong></p>
+                                <p>Total Hotels Income: <strong>€</strong></p>
+                                <br>
+                                <p>Total Expenses: <strong>€{{ yearly_total_expenses|floatformat:2|intcomma }}</strong></p>
+                                <p>Total Agent Fees: <strong>€{{ yearly_total_agent_fees|floatformat:2|intcomma }}</strong></p>
+                                <p>Total Driver Fees: <strong>€{{ yearly_total_driver_fees|floatformat:2|intcomma }}</strong></p>
+                                <br>
+                                <p>Total Profit from Jobs: <strong>€{{ yearly_total_profit|floatformat:2|intcomma }}</strong></p>
+                                <p>Overall Profit (After Expenses): <strong>€{{ yearly_overall_profit|floatformat:2|intcomma }}</strong></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="column total-box">
+                        <h2>All-Time Totals</h2>
+                        <div class="totals-text">
+                            <p>Total Income: <strong>€{{ overall_total_income|floatformat:2|intcomma }}</strong></p>
+                            <p>Total Unpaid Jobs: <strong>€{{ overall_unpaid_total|floatformat:2|intcomma }}</strong></p>
+                            <br>
+                            <p>Total Driving Jobs Income: <strong>€{{ overall_total_job_income|floatformat:2|intcomma }}</strong></p>
+                            <p>Total Shuttle Income: <strong>€{{ overall_shuttle_income|floatformat:2|intcomma }}</strong></p>
+                            <p>Total Expenses: <strong>€{{ overall_expenses_total|floatformat:2|intcomma }}</strong></p>
+                            <p>Total Agent Fees: <strong>€{{ overall_total_agent_fees|floatformat:2|intcomma }}</strong></p>
+                            <p>Total Driver Fees: <strong>€{{ overall_total_driver_fees|floatformat:2|intcomma }}</strong></p>
+                            <br>
+                            <p>Total Profit: <strong>€{{ overall_total_job_profit|floatformat:2|intcomma }}</strong></p>
+                            <p>Overall Profit (After Expenses): <strong>€{{ overall_total_profit|floatformat:2|intcomma }}</strong></p>
+                        </div>
+                    </div>
+                    <br>
+
+                    <h2>Unpaid Driving Jobs Breakdown (Total = €{{ monthly_unpaid_total|floatformat:2|intcomma }})</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Customer Name</th>
+                                <th>Job Date</th>
+                                <th>Job Price</th>
+                                <th class="tablet">Driver Fee</th>
+                                <th>Agent Name</th>
+                                <th class="tablet">Agent Fee</th>
+                                <th class="tablet">Agent Fee Amount</th>
+                                <th>Profit</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for job in unpaid_job_breakdowns %}
+                                <tr>
+                                    <td>{{ job.customer_name|truncate_words_chars }}</td>
+                                    <td>{{ job.job_date }}</td>
+                                    <td>€{{ job.job_price|floatformat:2|intcomma }}</td>
+                                    <td class="tablet">
+                                        {% if job.driver_fee %}
+                                            €{{ job.driver_fee|floatformat:2|intcomma }}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if job.agent_name %}
+                                            {{ job.agent_name }}
+                                        {% endif %}
+                                    </td>
+                                    <td class="tablet">
+                                        {% if job.agent_fee and job.agent_fee != "0" %}
+                                            {{ job.agent_fee }}%
+                                        {% endif %}
+                                    </td>
+                                    <td class="tablet">
+                                        {% if job.agent_fee_amount %}
+                                            €{{ job.agent_fee_amount|floatformat:2|intcomma }}
+                                        {% endif %}
+                                    </td>
+                                    <td>€{{ job.profit|floatformat:2|intcomma }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
+
+                    <br>
+                    <h2>Breakdown of Driving Jobs in {{ now|date:"F" }} (Total = €{{ monthly_total_job_income|floatformat:2|intcomma }})</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Customer Name</th>
+                                <th>Job Date</th>
+                                <th>Job Price</th>
+                                <th class="tablet">Driver Fee</th>
+                                <th>Agent Name</th>
+                                <th class="tablet">Agent Fee</th>
+                                <th class="tablet">Agent Fee Amount</th>
+                                <th>Profit</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for job in monthly_job_breakdowns %}
+                                <tr>
+                                    <td>{{ job.customer_name|truncate_words_chars }}</td>
+                                    <td>{{ job.job_date }}</td>
+                                    <td>€{{ job.job_price|floatformat:2|intcomma }}</td>
+                                    <td class="tablet">
+                                        {% if job.driver_fee %}
+                                            €{{ job.driver_fee|floatformat:2|intcomma }}
+                                        {% else %}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if job.agent_name %}
+                                            {{ job.agent_name }}
+                                        {% else %}
+                                        {% endif %}
+                                    </td>
+                                    <td class="tablet">
+                                        {% if job.agent_fee and job.agent_fee != "0" %}
+                                            {{ job.agent_fee }}%
+                                        {% endif %}
+                                    </td>
+                                    <td class="tablet">
+                                        {% if job.agent_fee_amount %}
+                                            €{{ job.agent_fee_amount|floatformat:2|intcomma }}
+                                        {% else %}
+                                        {% endif %}
+                                    </td>
+                                    <td>€{{ job.profit|floatformat:2|intcomma }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
+
+                    <br>
+                    <h2>Breakdown of All Driving Jobs (Total = €{{ yearly_total_job_income|floatformat:2|intcomma }})</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Customer Name</th>
+                                <th>Job Date</th>
+                                <th>Job Price</th>
+                                <th class="tablet">Driver Fee</th>
+                                <th>Agent Name</th>
+                                <th class="tablet">Agent Fee</th>
+                                <th class="tablet">Agent Fee Amount</th>
+                                <th>Profit</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for job in job_breakdowns %}
+                                <tr>
+                                    <td>{{ job.customer_name|truncate_words_chars }}</td>
+                                    <td>{{ job.job_date }}</td>
+                                    <td>€{{ job.job_price|floatformat:2|intcomma }}</td>
+                                    <td class="tablet">
+                                        {% if job.driver_fee %}
+                                            €{{ job.driver_fee|floatformat:2|intcomma }}
+                                        {% else %}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if job.agent_name %}
+                                            {{ job.agent_name }}
+                                        {% else %}
+                                        {% endif %}
+                                    </td>
+                                    <td class="tablet">
+                                        {% if job.agent_fee and job.agent_fee != "0" %}
+                                            {{ job.agent_fee }}%
+                                        {% endif %}
+                                    </td>
+                                    <td class="tablet">
+                                        {% if job.agent_fee_amount %}
+                                            €{{ job.agent_fee_amount|floatformat:2|intcomma }}
+                                        {% else %}
+                                        {% endif %}
+                                    </td>
+                                    <td>€{{ job.profit|floatformat:2|intcomma }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    <br>
+                    <h2 id="agent-totals">Agent Totals (Total = €{{ overall_total_agent_fees|floatformat:2|intcomma }})</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Agent Name</th>
+                                <th>Monthly Total</th>
+                                <th>Yearly Total</th>
+                                <th>Overall Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for agent, totals in agent_totals.items %}
+                                {% if agent and agent != "None" %}
+                                    <tr>
+                                        <td>{{ agent }}</td>
+                                        <td>€{{ totals.monthly.agent_fees|floatformat:2|intcomma }}</td>
+                                        <td>€{{ totals.yearly.agent_fees|floatformat:2|intcomma }}</td>
+                                        <td>€{{ totals.overall.agent_fees|floatformat:2|intcomma }}</td>
+                                    </tr>
+                                {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% endif %}
 {% endblock %}
 
 {% block extra_scripts %}
