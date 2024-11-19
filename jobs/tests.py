@@ -11,6 +11,7 @@ from django.core.cache import cache
 from common.utils import assign_job_color
 from datetime import timedelta
 from unittest import mock
+
 import pytz
 from common.utils import get_exchange_rate
 from django.contrib.auth import get_user_model
@@ -94,9 +95,10 @@ class ConcurrencyHandlingTest(TestCase):
 
 class CurrencyConversionTest(TestCase):
     # Test to ensure currency conversion to Euros works as expected
-    @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.2'))
-    def test_currency_conversion(self, mock_get_exchange_rate):
-        job = Job(
+    @patch('common.utils.fetch_and_cache_exchange_rate')
+    def test_currency_conversion(self, mock_fetch_and_cache_exchange_rate):
+        mock_fetch_and_cache_exchange_rate.return_value = Decimal('1.2')
+        job = Job.objects.create(
             job_price=Decimal('100'),
             job_currency='USD',
             job_date=timezone.now().date(),
@@ -108,15 +110,16 @@ class CurrencyConversionTest(TestCase):
             vehicle_type='Car',
             kilometers=Decimal('100')
         )
-        job.save()
         self.assertEqual(job.job_price_in_euros, Decimal('120.00'))
 
     # Test to check if saving a job with an unsupported currency raises an error
-    @patch('common.utils.get_exchange_rate', return_value=None)
-    def test_missing_exchange_rate(self, mock_get_exchange_rate):
+    @patch('common.utils.fetch_and_cache_exchange_rate')
+    def test_missing_exchange_rate(self, mock_fetch_and_cache_exchange_rate):
+        mock_fetch_and_cache_exchange_rate.side_effect = ValueError("Error fetching exchange rate for XYZ")
+
         job = Job(
             job_price=Decimal('100'),
-            job_currency='XYZ',  # Unsupported currency
+            job_currency='XYZ',
             job_date=timezone.now().date(),
             job_time=timezone.now().time(),
             customer_name='John Doe',
@@ -168,8 +171,9 @@ class UpdateJobStatusTests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertContains(response, 'Job must be paid before it can be marked as completed.', status_code=400)
 
-    @patch('common.utils.get_exchange_rate', return_value=Decimal('1.2'))
-    def test_mark_as_paid_with_complete_payment(self, mock_get_exchange_rate):
+    @patch('common.utils.fetch_and_cache_exchange_rate')
+    def test_mark_as_paid_with_complete_payment(self, mock_fetch_and_cache_exchange_rate):
+        mock_fetch_and_cache_exchange_rate.return_value = Decimal('1.0')
         Payment.objects.create(
             job=self.job,
             payment_amount=Decimal('100'),
@@ -182,31 +186,39 @@ class UpdateJobStatusTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertTrue(self.job.is_paid)
 
-    @patch('common.utils.get_exchange_rate', return_value=Decimal('1.2'))
-    def test_mark_as_completed_with_complete_payment(self, mock_get_exchange_rate):
+    @patch('common.utils.fetch_and_cache_exchange_rate')
+    def test_mark_as_completed_with_complete_payment(self, mock_fetch_and_cache_exchange_rate):
+        mock_fetch_and_cache_exchange_rate.return_value = Decimal('1.0')  # Mock the exchange rate API
+
         Payment.objects.create(
             job=self.job,
             payment_amount=Decimal('100'),
             payment_currency='USD',
             payment_type='Cash',
-            paid_to_driver=self.driver
+            paid_to_driver=self.driver,
         )
         response = self.client.post(self.url, {'is_confirmed': True, 'is_paid': True, 'is_completed': True})
         self.job.refresh_from_db()
         self.assertEqual(response.status_code, 302)
         self.assertTrue(self.job.is_completed)
 
-    @patch('common.utils.get_exchange_rate', return_value=Decimal('1.2'))
-    def test_redirects_on_successful_update(self, mock_get_exchange_rate):
+    @patch('common.utils.fetch_and_cache_exchange_rate')
+    def test_redirects_on_successful_update(self, mock_fetch_and_cache_exchange_rate):
+        mock_fetch_and_cache_exchange_rate.return_value = Decimal('1.2')  # Mock the exchange rate API
+
         Payment.objects.create(
             job=self.job,
             payment_amount=Decimal('100'),
             payment_currency='USD',
             payment_type='Cash',
-            paid_to_driver=self.driver
+            paid_to_driver=self.driver,
         )
         response = self.client.post(self.url, {'is_confirmed': True, 'is_paid': True, 'is_completed': True})
         self.assertRedirects(response, reverse('jobs:past_jobs'))
+        self.job.refresh_from_db()
+        self.assertTrue(self.job.is_confirmed)
+        self.assertTrue(self.job.is_paid)
+        self.assertTrue(self.job.is_completed)
 
 
 class TimeZoneTests(TestCase):
@@ -646,8 +658,9 @@ class AddJobWithPaymentsTest(TestCase):
         self.driver = Driver.objects.create(name='Valid Driver')
         self.agent = Agent.objects.create(name='Valid Agent')
 
-    @patch('common.utils.get_exchange_rate', return_value=Decimal('1.2'))
-    def test_add_and_remove_payments(self, mock_get_exchange_rate):
+    @patch('common.utils.fetch_and_cache_exchange_rate')
+    def test_add_and_remove_payments(self, mock_fetch_and_cache_exchange_rate):
+        mock_fetch_and_cache_exchange_rate.return_value = Decimal('1.2')
         job_data = {
             'customer_name': 'Test Customer',
             'customer_number': '1234567890',
@@ -667,8 +680,9 @@ class AddJobWithPaymentsTest(TestCase):
             'driver_currency': 'USD',
         }
 
+        # Initial payment data with two payments
         payment_data = {
-            'form-TOTAL_FORMS': '3',
+            'form-TOTAL_FORMS': '3',  # Initial count of payment forms including one to be removed
             'form-INITIAL_FORMS': '0',
             'form-0-payment_amount': '30',
             'form-0-payment_currency': 'USD',
@@ -678,22 +692,34 @@ class AddJobWithPaymentsTest(TestCase):
             'form-1-payment_currency': 'USD',
             'form-1-payment_type': 'Cash',
             'form-1-paid_to': f'agent_{self.agent.id}',
-            'form-2-payment_amount': '10',
+            'form-2-payment_amount': '10',  # Adding a third payment to test removal
             'form-2-payment_currency': 'USD',
             'form-2-payment_type': 'Transfer',
             'form-2-paid_to': f'driver_{self.driver.id}',
-            'form-2-DELETE': 'on',
+            'form-2-DELETE': 'on',  # Mark the third payment for deletion
         }
 
+        # Combine job and payment data for the POST request
         data = {**job_data, **payment_data}
 
+        # Send POST request to add the job with payments
         response = self.client.post(reverse('jobs:add_job'), data)
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 302, "Expected redirect after job creation")
 
+        # Verify that the job is created
         job = Job.objects.get(customer_name='Test Customer')
+
+        # Verify only two payments are saved (third one marked for deletion)
         payments = Payment.objects.filter(job=job)
-        self.assertEqual(payments.count(), 2)
+        self.assertEqual(payments.count(), 2, "Expected two payments after marking one for deletion")
+
+        # Check that each payment is associated with the correct recipient and amount
         payment1 = payments.get(payment_amount=30)
         self.assertEqual(payment1.paid_to_driver, self.driver)
+        self.assertEqual(payment1.payment_currency, 'USD')
+        self.assertEqual(payment1.payment_type, 'Card')
+
         payment2 = payments.get(payment_amount=20)
         self.assertEqual(payment2.paid_to_agent, self.agent)
+        self.assertEqual(payment2.payment_currency, 'USD')
+        self.assertEqual(payment2.payment_type, 'Cash')
