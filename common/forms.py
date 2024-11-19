@@ -1,7 +1,7 @@
 from django import forms
 from people.models import Agent, Driver, Staff
 from django.db.models.functions import Lower
-from common.payments import Payment
+from common.models import Payment
 from django.apps import apps
 from django.forms import modelformset_factory
 from django.core.exceptions import ValidationError
@@ -35,7 +35,7 @@ class PaidToMixin(forms.Form):
 
     def clean(self):
         cleaned_data = super().clean()
-        logger.debug(f"Cleaned data: {cleaned_data}")
+        # logger.debug(f"Cleaned data: {cleaned_data}")
         paid_to = cleaned_data.get('paid_to')
 
         # Ensure that the correct 'paid_to' fields are set

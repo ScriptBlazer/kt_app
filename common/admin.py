@@ -3,6 +3,7 @@ from django.contrib.admin import AdminSite
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.http import HttpResponseRedirect
+# from common.models import ExchangeRate
 from django.contrib import admin
 
 class MyAdminSite(AdminSite):
@@ -13,3 +14,9 @@ class MyAdminSite(AdminSite):
         return super().has_permission(request)
 
 admin_site = MyAdminSite(name='myadmin')
+
+
+# @admin.register(ExchangeRate)
+# class ExchangeRateAdmin(admin.ModelAdmin):
+#     list_display = ('currency', 'rate', 'last_updated')
+#     search_fields = ('currency',)

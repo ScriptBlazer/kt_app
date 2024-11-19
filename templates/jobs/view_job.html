@@ -107,6 +107,12 @@
                         {{ payment.payment_currency|currency_symbol }}{{ payment.total_with_cc_fee|intcomma }}
                     {% endif %}
                 {% endif %}
+                | <strong>Amount in Euros:</strong> 
+                {% if payment.payment_amount_in_euros %}
+                    €{{ payment.payment_amount_in_euros|intcomma }}
+                {% else %}
+                    Not available
+                {% endif %}
             </p>
         {% endfor %}
     </div>
