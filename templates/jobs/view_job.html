@@ -64,7 +64,15 @@
             {% endif %}
         {% endif %}
     </p>
-    <p><strong>Driver Name:</strong> {{ job.driver|default_if_none:"" }}</p>
+    <p><strong>Driver Name:</strong> 
+        {% if job.driver %}
+            {{ job.driver.name }}
+        {% elif job.freelancer %}
+            {{ job.freelancer.name }}
+        {% else %}
+            Not assigned
+        {% endif %}
+    </p>
     <p><strong>Number Plate:</strong> {{ job.number_plate|default_if_none:"" }}</p>
     <p><strong>Agent Name:</strong> {{ job.agent_name.name|default_if_none:"" }}</p>
     <p><strong>Agent Fee:</strong> {% if job.agent_percentage %}{{ job.agent_percentage }}%{% endif %}</p>
@@ -89,6 +97,10 @@
                     Driver: {{ payment.paid_to_driver.name }}
                 {% elif payment.paid_to_staff %}
                     Staff: {{ payment.paid_to_staff.name }}
+                {% elif payment.paid_to_freelancer %}
+                    Freelancer: {{ payment.paid_to_freelancer.name }}
+                {% elif payment.paid_to_freelancer_agent %}
+                    Freelancer Agent: {{ payment.paid_to_freelancer_agent.name }}
                 {% else %}
                     Not specified
                 {% endif %}
@@ -133,11 +145,11 @@
             <input class="sbig" type="checkbox" id="is_paid" name="is_paid" {% if job.is_paid %}checked{% endif %}>
         </p>
     
-        {% if user.is_superuser %}
+        <!-- {% if user.is_superuser %}
         <p><strong>All Paid (Job Completed):</strong> 
             <input class="sbig" type="checkbox" id="is_completed" name="is_completed" {% if job.is_completed %}checked{% endif %}>
         </p>
-        {% endif %}
+        {% endif %} -->
     
         <button type="submit" class="button">Update Status</button>
     </form>

@@ -2,7 +2,7 @@ from django.db import models
 import pytz
 from django.utils import timezone
 from common.utils import PAYMENT_TYPE_CHOICES, calculate_cc_fee
-from people.models import Agent, Staff, Driver
+from people.models import Staff, Driver
 from decimal import Decimal
 from people.models import Driver
 
@@ -42,8 +42,6 @@ class Shuttle(models.Model):
     cc_fee = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
 
     # ForeignKey fields for paid_to
-    paid_to_agent = models.ForeignKey(Agent, on_delete=models.PROTECT, null=True, blank=True)
-    paid_to_driver = models.ForeignKey(Driver, on_delete=models.PROTECT, null=True, blank=True, related_name='shuttle_paid_to_driver')
     paid_to_staff = models.ForeignKey(Staff, on_delete=models.PROTECT, null=True, blank=True)
 
     is_confirmed = models.BooleanField(default=False)

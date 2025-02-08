@@ -61,7 +61,7 @@
         {% endif %}
     </p>
     <p><strong>Agent:</strong> {{ guest.agent }}</p>
-    <p><strong>Agent Fee:</strong> {% if guest.agent_fee %}{{ guest.agent_fee }}%{% endif %}</p>
+    <p><strong>Agent Fee:</strong> {% if guest.agent_percentage %}{{ guest.agent_percentage }}%{% endif %}</p>
     <p><strong>Special Requests:</strong> {{ guest.special_requests|default:"No special requests" }}</p>
     <br>
 
@@ -76,11 +76,11 @@
             <input class="sbig" type="checkbox" id="is_paid" name="is_paid" {% if guest.is_paid %}checked{% endif %}>
         </p>
     
-        {% if user.is_superuser %}
+        <!-- {% if user.is_superuser %}
         <p><strong>Booking Completed (All Paid):</strong> 
             <input class="sbig" type="checkbox" id="is_completed" name="is_completed" {% if guest.is_completed %}checked{% endif %}>
         </p>
-        {% endif %}
+        {% endif %} -->
     
         <button class="button-purple" type="submit" class="button">Update Status</button>
     </form>

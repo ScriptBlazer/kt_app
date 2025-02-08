@@ -5,7 +5,7 @@ import requests
 from common.exchange_rate_models import ExchangeRate
 from django.utils import timezone
 from datetime import timedelta
-from people.models import Agent, Driver, Staff
+from people.models import Agent, Driver, Freelancer, Staff
 from django.db.models.functions import Lower
 import pytz
 import datetime
@@ -174,8 +174,9 @@ def calculate_cc_fee(job_price, payment_type, cc_fee_percentage):
 def get_ordered_people():
     agents = Agent.objects.all().order_by(Lower('name'))
     drivers = Driver.objects.all().order_by(Lower('name'))
+    freelancers = Freelancer.objects.all().order_by(Lower('name'))
     staffs = Staff.objects.all().order_by(Lower('name'))
-    return agents, drivers, staffs
+    return agents, drivers, freelancers, staffs
 
 
 def get_currency_symbol(currency_code):

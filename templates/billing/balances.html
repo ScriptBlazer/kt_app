@@ -50,9 +50,11 @@
                             <h4 class="toggle-header" data-section-id="{{ name|slugify }}-{{ forloop.counter }}-section">
                                 {{ name }}
                                 {% if data.owes_kt > 0 %}
-                                    <span class="badge badge-red">Owes KT</span>
+                                    <span class="badge badge-orange">Owes KT</span>
                                 {% elif data.kt_owes > 0 %}
-                                    <span class="badge badge-green">KT Owes</span>
+                                    <span class="badge badge-red">KT Owes</span>
+                                {% else %}
+                                    <span class="badge badge-green">Balanced</span>
                                 {% endif %}
                                 <span id="{{ name|slugify }}-{{ forloop.counter }}-section-arrow">▼</span>
                             </h4>
@@ -64,15 +66,17 @@
                                     {% endfor %}
                                     <p>
                                         {% if data.kt_owes > 0 %}
-                                            <span style="color: green;">KT Owes: {{ data.kt_owes|floatformat:2|intcomma }}</span>
+                                            <span style="color: red;">KT Owes: {{ data.kt_owes|floatformat:2|intcomma }}</span>
                                         {% elif data.owes_kt > 0 %}
-                                            <span style="color: red;">Owes KT: {{ data.owes_kt|floatformat:2|intcomma }}</span>
+                                            <span style="color: rgb(217, 145, 11);">Owes KT: {{ data.owes_kt|floatformat:2|intcomma }}</span>
                                         {% else %}
-                                            <span>Balanced</span>
+                                            <span style="color: green;">Balanced</span>
                                         {% endif %}
                                     </p>
                                     <button class="button button-orange" style="margin-bottom: 10px;">Settle</button>
                                 </div>
+                                
+                                <!-- Table for listing jobs and payments -->
                                 <table class="table">
                                     <thead>
                                         <tr>
@@ -80,37 +84,45 @@
                                             <th>Customer Name</th>
                                             <th>Job Type</th>
                                             <th>Payment Amount</th>
-                                            <th>Payment Currency</th>
                                             <th>Payment Type</th>
                                             <th>Agent Fee</th>
+                                            <th>Owes</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {% for record in data.records %}
                                             <tr>
-                                                <td>{{ record.job_date|default:"N/A" }}</td>
+                                                <td>{{ record.job_date|date:"Y-m-d" }}</td>
                                                 <td>{{ record.customer_name|default:"N/A" }}</td>
                                                 <td>
                                                     {% if record.job_type == 'job' %}
-                                                        Driving Jobs
+                                                        Driving
                                                     {% elif record.job_type == 'shuttle' %}
                                                         Shuttle
+                                                    {% elif record.job_type == 'payment' %}
+                                                        Payment
                                                     {% else %}
                                                         {{ record.job_type|default:"N/A" }}
                                                     {% endif %}
                                                 </td>
                                                 <td>
                                                     {% if record.payment_amount %}
-                                                        {{ record.payment_currency }} {{ record.payment_amount|floatformat:2|intcomma }}
+                                                        {{ record.payment_amount|floatformat:2|intcomma }}
                                                     {% else %}
                                                         N/A
                                                     {% endif %}
                                                 </td>
-                                                <td>{{ record.payment_currency|default:"N/A" }}</td>
                                                 <td>{{ record.payment_type|default:"N/A" }}</td>
                                                 <td>
                                                     {% if record.agent_fee %}
                                                         €{{ record.agent_fee|floatformat:2|intcomma }}
+                                                    {% else %}
+                                                        N/A
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {% if record.owes %}
+                                                        {{ record.owes|floatformat:2|intcomma }}
                                                     {% else %}
                                                         N/A
                                                     {% endif %}
@@ -130,13 +142,4 @@
         </div>
     </div>
     {% endif %}
-{% endblock %}
-
-{% block extra_scripts %}
-    <script src="{% static 'script.js' %}"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            checkMobileView('balances-content');
-        });
-    </script>
 {% endblock %}
