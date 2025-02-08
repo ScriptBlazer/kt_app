@@ -2,7 +2,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.test import Client
 from django.contrib.auth.models import User
-from people.models import Agent, Driver
+from people.models import Agent, Driver, Freelancer
 from people.forms import AgentForm
 from unittest.mock import patch
 

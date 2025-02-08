@@ -66,6 +66,64 @@
             {% endfor %}
         </ul>
     </div>
+
+    <br><hr><br>
+
+    <h2>Manage Freelancers</h2>
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="id_name">Name:</label>
+            <input type="text" name="name" value="{{ freelancer_form.name.value|default_if_none:'' }}" id="id_name">
+        </div>
+        <button type="submit" name="freelancer_form" class="button button-orange">Add Freelancer</button>
+    </form>
+
+    <!-- Toggle for Existing Freelancers -->
+    <h3 class="toggle-header" data-section-id="freelancers-section" style="cursor: pointer;">
+        Existing Freelancers <span id="freelancers-section-arrow">▼</span>
+    </h3>
+    <div id="freelancers-section" style="display: none;">
+        <ul>
+            {% for freelancer in freelancers %}
+                <li>
+                    {{ freelancer.name }}
+                    <span class="button-group">
+                        <a href="{% url 'people:edit_freelancer' freelancer.id %}" class="button button-orange">Edit</a>
+                    </span>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <br><hr><br>
+
+    <h2>Manage Agent Freelancer</h2>
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="id_name">Name:</label>
+            <input type="text" name="name" value="{{ freelancer_agent_form.name.value|default_if_none:'' }}" id="id_name">
+        </div>
+        <button type="submit" name="freelancer_agent_form" class="button button-orange">Add Agent Freelancer</button>
+    </form>
+
+    <!-- Toggle for Existing Freelancer Agents -->
+    <h3 class="toggle-header" data-section-id="freelancer-agents-section" style="cursor: pointer;">
+        Existing Agent Freelancers <span id="freelancer-agents-section-arrow">▼</span>
+    </h3>
+    <div id="freelancer-agents-section" style="display: none;">
+        <ul>
+            {% for freelancer_agent in freelancer_agents %}
+                <li>
+                    {{ freelancer_agent.name }}
+                    <span class="button-group">
+                        <a href="{% url 'people:edit_freelancer_agent' freelancer_agent.id %}" class="button button-orange">Edit</a>
+                    </span>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
     
     <br><hr><br>
     <!-- Manage Staff -->

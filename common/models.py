@@ -1,6 +1,6 @@
 from django.db import models
 from common.utils import get_exchange_rate, CURRENCY_CHOICES, AGENT_FEE_CHOICES, PAYMENT_TYPE_CHOICES
-from people.models import Agent, Driver, Staff
+from people.models import Agent, Driver, Freelancer, Staff, FreelancerAgent
 from decimal import Decimal
 from common.utils import calculate_cc_fee
 from common.payment_settings import PaymentSettings
@@ -13,16 +13,19 @@ BUDAPEST_TZ = pytz.timezone('Europe/Budapest')
 logger = logging.getLogger('kt')
 
 class Payment(models.Model):
-    job = models.ForeignKey('jobs.Job', on_delete=models.CASCADE, related_name="payments")
+    job = models.ForeignKey('jobs.Job', on_delete=models.CASCADE, null=True, blank=True, related_name="payments")
+    shuttle = models.ForeignKey('shuttle.Shuttle', on_delete=models.CASCADE, related_name="payments", null=True, blank=True)
     payment_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     payment_amount_in_euros = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     payment_currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, null=True, blank=True)
     payment_type = models.CharField(max_length=50, choices=PAYMENT_TYPE_CHOICES, null=True, blank=True)
 
-    # ForeignKey fields to link to Agent, Driver, Staff
-    paid_to_agent = models.ForeignKey(Agent, on_delete=models.SET_NULL, null=True, blank=True)
-    paid_to_driver = models.ForeignKey(Driver, on_delete=models.SET_NULL, null=True, blank=True)
-    paid_to_staff = models.ForeignKey(Staff, on_delete=models.SET_NULL, null=True, blank=True)
+    # ForeignKey fields to link to Agent, Driver, Freelancer, Staff
+    paid_to_agent = models.ForeignKey(Agent, on_delete=models.PROTECT, null=True, blank=True)
+    paid_to_driver = models.ForeignKey(Driver, on_delete=models.PROTECT, null=True, blank=True)
+    paid_to_freelancer = models.ForeignKey(Freelancer, on_delete=models.PROTECT, null=True, blank=True)
+    paid_to_freelancer_agent = models.ForeignKey(FreelancerAgent, on_delete=models.PROTECT, null=True, blank=True)
+    paid_to_staff = models.ForeignKey(Staff, on_delete=models.PROTECT, null=True, blank=True)
 
     @property
     def cc_fee(self):
@@ -63,6 +66,7 @@ class Payment(models.Model):
         paid_to_name = (
             self.paid_to_agent or 
             self.paid_to_driver or 
+            self.paid_to_freelancer or
             self.paid_to_staff or 
             "Not set"
         )

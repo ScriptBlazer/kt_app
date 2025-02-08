@@ -134,23 +134,57 @@ class ShuttleViewTest(TestCase):
         
         driver_c = Driver.objects.create(name="Driver C")  # Ensure driver exists for form data
 
+        # Get the initial formset values
+        response = self.client.get(reverse('shuttle:add_passengers'))
+        payment_formset_management = response.context['payment_formset'].management_form
+
+        # Extract necessary management form data
+        management_form_data = {
+            'payment-TOTAL_FORMS': payment_formset_management['TOTAL_FORMS'].value(),
+            'payment-INITIAL_FORMS': payment_formset_management['INITIAL_FORMS'].value(),
+        }
+
+        # Form data with payments
         data = {
             'customer_name': "Bob Johnson",
             'customer_number': "555123456",
-            'shuttle_email': "bob@example.com",
+            'customer_email': "bob@example.com",
             'shuttle_date': "2023-10-20",
             'shuttle_direction': 'both_ways',
             'no_of_passengers': 3,
-            'driver': driver_c.id
+            'driver': driver_c.id,
+            'payment-0-payment_amount': "60.00",
+            'payment-0-payment_currency': "EUR",
+            'payment-0-payment_type': "Cash",
+            'payment-0-paid_to': f'driver_{driver_c.id}',
+            'payment-0-DELETE': '',
         }
+
+        # Merge management form data
+        data.update(management_form_data)
+
         response = self.client.post(reverse('shuttle:add_passengers'), data)
+        
         if response.status_code != 302:
-            print(response.context['form'].errors) 
+            print("🚨 Form Errors:", response.context['form'].errors) 
+            print("🚨 Payment Formset Errors:", response.context['payment_formset'].errors)
+
         self.assertEqual(response.status_code, 302)
 
     def test_edit_passengers_view(self):
         """Test editing an existing shuttle booking."""
         shuttle = Shuttle.objects.first()
+
+        # Get the initial formset values
+        response = self.client.get(reverse('shuttle:edit_passengers', args=[shuttle.id]))
+        payment_formset_management = response.context['payment_formset'].management_form
+
+        # Extract necessary management form data
+        management_form_data = {
+            'payment-TOTAL_FORMS': payment_formset_management['TOTAL_FORMS'].value(),
+            'payment-INITIAL_FORMS': payment_formset_management['INITIAL_FORMS'].value(),
+        }
+
         data = {
             'customer_name': shuttle.customer_name,
             'customer_number': shuttle.customer_number,
@@ -158,14 +192,28 @@ class ShuttleViewTest(TestCase):
             'shuttle_date': shuttle.shuttle_date.strftime('%Y-%m-%d'),
             'shuttle_direction': shuttle.shuttle_direction,
             'no_of_passengers': 4,  # Update number of passengers
-            'driver': shuttle.driver.id,  # Use driver ID
+            'driver': shuttle.driver.id,
             'shuttle_notes': shuttle.shuttle_notes or '',
+            'payment-0-payment_amount': "60.00",
+            'payment-0-payment_currency': "EUR",
+            'payment-0-payment_type': "Cash",
+            'payment-0-paid_to': f'driver_{shuttle.driver.id}',
+            'payment-0-DELETE': '',
         }
+
+        # Merge management form data
+        data.update(management_form_data)
+
         response = self.client.post(reverse('shuttle:edit_passengers', args=[shuttle.id]), data)
+        
+        if response.status_code != 302:
+            print("🚨 Form Errors:", response.context['form'].errors)  
+            print("🚨 Payment Formset Errors:", response.context['payment_formset'].errors)  
+
         self.assertEqual(response.status_code, 302)
         shuttle.refresh_from_db()
         self.assertEqual(shuttle.no_of_passengers, 4)
-        self.assertEqual(shuttle.price, 240.00)
+        self.assertEqual(shuttle.price, 240.00) 
 
     def test_delete_passengers_view(self):
         """Test deleting a shuttle booking."""

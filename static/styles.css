@@ -436,9 +436,13 @@ table tbody tr:hover {
     box-shadow: inset 0px 0px 10px rgba(225, 209, 252, 0.944);
 }
 
-.orange-job {
+/* .orange-job {
     background-color: rgb(255, 183, 50);
     box-shadow: inset 0px 0px 10px rgba(153, 118, 3, 0.94);
+} */
+.orange-job {
+    background-color: #8fed8f;
+    box-shadow: inset 0px 0px 10px rgba(42, 179, 8, 0.944);
 }
 
 .red-job {
@@ -454,6 +458,14 @@ table tbody tr:hover {
 .cancel-button {
     text-align: center;
     background-color: red !important;
+}
+
+.red {
+    color: red;
+}
+
+.black {
+    color: black;
 }
 
 .sze {
@@ -626,12 +638,14 @@ input[type="checkbox"][name$="-DELETE"] {
     font-size: 1.5em;
     color: red;
 }
+
 .mobile-buttons {
     display: flex;
     justify-content: center;
     gap: 1em;
     margin-top: 1em;
 }
+
 .badge {
     display: inline-block;
     padding: 0.3em 0.5em;
@@ -639,13 +653,20 @@ input[type="checkbox"][name$="-DELETE"] {
     font-size: 0.8em;
     margin-left: 0.5em;
 }
+
 .badge-red {
-    background-color: #ffdddd;
-    color: #ff0000;
+    background-color: red;
+    color: #fff;
 }
+
+.badge-orange {
+    background-color: orange;
+    color: #000;
+}
+
 .badge-green {
-    background-color: #ddffdd;
-    color: #008000;
+    background-color: lightgreen;
+    color: #000;
 }
 
 .payment-entry.hidden {

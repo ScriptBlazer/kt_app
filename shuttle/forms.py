@@ -1,6 +1,6 @@
 from django import forms
 from shuttle.models import Shuttle
-from common.forms import PaidToMixin
+from common.forms import PaidToMixin, PaymentForm
 from people.models import Driver, Agent, Staff
 from common.utils import get_ordered_people
 
@@ -9,7 +9,7 @@ class DriverAssignmentForm(forms.Form):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        _, drivers, _ = get_ordered_people()  # Get the ordered drivers
+        agents, drivers, freelancers, staffs = get_ordered_people()
         self.fields['driver'] = forms.ModelChoiceField(queryset=drivers, label="Select Driver")
 
 class ShuttleForm(PaidToMixin, forms.ModelForm):
@@ -23,7 +23,7 @@ class ShuttleForm(PaidToMixin, forms.ModelForm):
         fields = [
             'customer_name', 'customer_number', 'customer_email', 'shuttle_date',
             'shuttle_direction', 'payment_type', 'no_of_passengers', 'shuttle_notes',
-            'paid_to_agent', 'paid_to_staff', 'paid_to_driver', 'driver', 'is_confirmed', 'is_completed', 'is_paid'
+            'paid_to_staff', 'driver'
         ]
         error_messages = {
             'customer_name': {'required': 'Please enter the customer name.'},
@@ -42,36 +42,37 @@ class ShuttleForm(PaidToMixin, forms.ModelForm):
 
     def set_paid_to_initial(self, instance):
         """Set the initial value for the paid_to field based on the instance."""
-        if instance.paid_to_agent:
-            self.fields['paid_to'].initial = f'agent_{instance.paid_to_agent.id}'
-        elif instance.paid_to_driver:
-            self.fields['paid_to'].initial = f'driver_{instance.paid_to_driver.id}'
-        elif instance.paid_to_staff:
+        if instance.paid_to_staff:
             self.fields['paid_to'].initial = f'staff_{instance.paid_to_staff.id}'
 
     def clean(self):
         cleaned_data = super().clean()
 
-        # Ensure only one 'paid_to' field is populated if something is selected
+        # Ensure only 'paid_to_staff' is populated if something is selected
         paid_to = self.cleaned_data.get('paid_to')
         if paid_to:  # Only validate if a selection is made
-            if paid_to.startswith('driver_'):
-                driver_id = paid_to.split('_')[1]
-                cleaned_data['paid_to_driver'] = Driver.objects.get(id=driver_id)
-                cleaned_data['paid_to_agent'] = None
-                cleaned_data['paid_to_staff'] = None
-            elif paid_to.startswith('agent_'):
-                agent_id = paid_to.split('_')[1]
-                cleaned_data['paid_to_agent'] = Agent.objects.get(id=agent_id)
-                cleaned_data['paid_to_driver'] = None
-                cleaned_data['paid_to_staff'] = None
-            elif paid_to.startswith('staff_'):
+            if paid_to.startswith('staff_'):
                 staff_id = paid_to.split('_')[1]
                 cleaned_data['paid_to_staff'] = Staff.objects.get(id=staff_id)
-                cleaned_data['paid_to_agent'] = None
-                cleaned_data['paid_to_driver'] = None
             else:
                 self.add_error('paid_to', 'Please select a valid "Paid to" option.')
 
-        # No need to raise an error if 'paid_to' is empty
         return cleaned_data
+    
+def save(self, commit=True):
+        """
+        Override save to ensure that 'is_confirmed', 'is_paid', and 'is_completed'
+        do not reset when editing an existing shuttle.
+        """
+        instance = super().save(commit=False)
+
+        if self.instance.pk:
+            original_instance = Shuttle.objects.get(pk=self.instance.pk)
+            instance.is_confirmed = original_instance.is_confirmed
+            instance.is_paid = original_instance.is_paid
+            instance.is_completed = original_instance.is_completed
+
+        if commit:
+            instance.save()
+
+        return instance

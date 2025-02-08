@@ -51,6 +51,48 @@
             {{ form.shuttle_notes.label_tag }}<br>
             {{ form.shuttle_notes }}
         </div>
+
+        <br><br>
+        <!-- Payment Section -->
+        <div id="payment-section">
+            <h3>Payments</h3>
+            {{ payment_formset.management_form }}
+            
+            {% for payment_form in payment_formset %}
+                <div class="payment-entry payment-container" data-payment-number="{{ forloop.counter }}">
+                    {% if forloop.counter > 1 %}
+                        <h4>Payment {{ forloop.counter }}</h4>
+                    {% endif %}
+                    <div class="form-group-inline">
+                        <div class="field-wrapper">
+                            <label>Amount</label><br>
+                            {{ payment_form.payment_amount }}
+                        </div>
+                        <div class="field-wrapper">
+                            <label>Currency</label><br>
+                            {{ payment_form.payment_currency }}
+                        </div>
+                    </div>
+                    <div class="form-group-inline">
+                        <div class="field-wrapper">
+                            <label>Payment Type</label><br>
+                            {{ payment_form.payment_type }}
+                        </div>
+                        <div class="field-wrapper">
+                            <label>Paid To</label><br>
+                            {{ payment_form.paid_to }}
+                        </div>
+                    </div>
+                    {{ payment_form.DELETE }}
+                    {{ payment_form.id }}
+                    <button type="button" class="remove-payment">Remove Payment</button>
+                </div>
+            {% endfor %}
+            
+            <button type="button" id="add-payment">Add Payment</button>
+        </div>
+        <input type="hidden" name="payment-TOTAL_FORMS" value="{{ payment_formset.total_form_count }}">
+        <br><br>
         <p class="nm">*Required fields</p>
 
         <div class="button-group">
@@ -76,4 +118,16 @@
 
 {% block extra_scripts %}
 <script src="{% static 'script.js' %}"></script>
+<script src="{% static 'edit_payment.js' %}"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        function closeModal() {
+            const modal = document.getElementById("error-modal");
+            if (modal) {
+                modal.style.display = "none";
+            }
+        }
+        window.closeModal = closeModal;
+    });
+</script>
 {% endblock %}
