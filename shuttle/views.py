@@ -170,13 +170,17 @@ def edit_passengers(request, shuttle_id):
         payment_formset = PaymentFormSet(request.POST, queryset=Payment.objects.filter(shuttle=shuttle), prefix=formset_prefix)
 
         if form.is_valid() and payment_formset.is_valid():
-            shuttle = form.save()
+            with transaction.atomic():  # Ensure atomicity
+                shuttle = form.save()
 
-            for payment_form in payment_formset:
-                if payment_form.cleaned_data and not payment_form.cleaned_data.get("DELETE"):
-                    payment = payment_form.save(commit=False)
-                    payment.shuttle = shuttle
-                    payment.save()
+                for payment_form in payment_formset:
+                    if payment_form.cleaned_data.get("DELETE") and payment_form.instance.pk:
+                        logger.info(f"Deleting payment ID: {payment_form.instance.pk}")
+                        payment_form.instance.delete()
+                    elif payment_form.cleaned_data and not payment_form.cleaned_data.get("DELETE"):
+                        payment = payment_form.save(commit=False)
+                        payment.shuttle = shuttle
+                        payment.save()
 
             return redirect('shuttle:shuttle')
 
