@@ -76,11 +76,11 @@
             <input class="sbig" type="checkbox" id="is_paid" name="is_paid" {% if guest.is_paid %}checked{% endif %}>
         </p>
     
-        {% if user.is_superuser %}
+        <!-- {% if user.is_superuser %}
         <p><strong>Booking Completed (All Paid):</strong> 
             <input class="sbig" type="checkbox" id="is_completed" name="is_completed" {% if guest.is_completed %}checked{% endif %}>
         </p>
-        {% endif %}
+        {% endif %} -->
     
         <button class="button-purple" type="submit" class="button">Update Status</button>
     </form>

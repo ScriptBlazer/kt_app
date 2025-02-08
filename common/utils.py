@@ -176,7 +176,7 @@ def get_ordered_people():
     drivers = Driver.objects.all().order_by(Lower('name'))
     freelancers = Freelancer.objects.all().order_by(Lower('name'))
     staffs = Staff.objects.all().order_by(Lower('name'))
-    return agents, drivers, staffs
+    return agents, drivers, freelancers, staffs
 
 
 def get_currency_symbol(currency_code):

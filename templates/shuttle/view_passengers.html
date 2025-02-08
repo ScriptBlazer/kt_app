@@ -26,6 +26,57 @@
     <p><strong>Price:</strong> €{{ shuttle.price|intcomma|default_if_none:"" }}</p>
     <p><strong>Notes:</strong> {{ shuttle.shuttle_notes|default_if_none:"-" }}</p>
 
+    <br><br>
+    <!-- Payments Section -->
+    <h3>Payments</h3>
+    <div class="payments-list">
+        {% for payment in shuttle.payments.all %}
+            <p>
+                <strong>Payment {{ forloop.counter }}:</strong> 
+                Amount: 
+                {% if payment.payment_currency == 'HUF' %}
+                    Ft {{ payment.payment_amount }}
+                {% else %}
+                    {{ payment.payment_currency|currency_symbol }}{{ payment.payment_amount }}
+                {% endif %}
+                | Payment Type: {{ payment.payment_type }} | 
+                Paid To: 
+                {% if payment.paid_to_agent %}
+                    Agent: {{ payment.paid_to_agent.name }}
+                {% elif payment.paid_to_driver %}
+                    Driver: {{ payment.paid_to_driver.name }}
+                {% elif payment.paid_to_staff %}
+                    Staff: {{ payment.paid_to_staff.name }}
+                {% else %}
+                    Not specified
+                {% endif %}
+                
+                {% if payment.payment_type == 'Card' %}
+                    | <strong>Credit Card Fee:</strong> 
+                    {% if payment.payment_currency == 'HUF' %}
+                        Ft {{ payment.cc_fee|intcomma }}
+                    {% else %}
+                        {{ payment.payment_currency|currency_symbol }}{{ payment.cc_fee|intcomma }}
+                    {% endif %}
+                    | <strong>Total with Fee:</strong> 
+                    {% if payment.payment_currency == 'HUF' %}
+                        Ft {{ payment.total_with_cc_fee|intcomma }}
+                    {% else %}
+                        {{ payment.payment_currency|currency_symbol }}{{ payment.total_with_cc_fee|intcomma }}
+                    {% endif %}
+                {% endif %}
+                | <strong>Amount in Euros:</strong> 
+                {% if payment.payment_amount_in_euros %}
+                    €{{ payment.payment_amount_in_euros|intcomma }}
+                {% else %}
+                    Not available
+                {% endif %}
+            </p>
+        {% empty %}
+            <p>No payments recorded.</p>
+        {% endfor %}
+    </div>
+
     <div class="button-group">
         <a href="{% url 'shuttle:edit_passengers' shuttle.id %}" class="button button-purple">Edit</a>
         <a href="{% url 'shuttle:delete_passengers' shuttle.id %}" class="button cancel-button">Delete</a>
@@ -42,11 +93,11 @@
             <input class="sbig" type="checkbox" name="is_paid" {% if shuttle.is_paid %}checked{% endif %}>
         </p>
 
-        {% if user.is_superuser %}
+        <!-- {% if user.is_superuser %}
         <p><strong>All Paid (Job Completed):</strong> 
             <input class="sbig" type="checkbox" name="is_completed" {% if shuttle.is_completed %}checked{% endif %}>
         </p>
-        {% endif %}
+        {% endif %} -->
         
         <button class="button-purple" type="submit">Update Status</button>
     </form>

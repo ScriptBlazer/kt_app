@@ -19,26 +19,26 @@ document.addEventListener("DOMContentLoaded", () => {
   const paymentSection = document.getElementById("payment-section");
   const addPaymentButton = document.getElementById("add-payment");
   const totalFormsInput = document.querySelector(
-    "input[name='form-TOTAL_FORMS']"
+    "input[name='payment-TOTAL_FORMS']"
   );
   const basePaymentEntry = document.querySelector(".payment-entry");
   let usedPaymentNumbers = [];
 
   function updateTotalForms() {
+    const totalFormsInput = document.querySelector(
+      "input[name='payment-TOTAL_FORMS']"
+    );
+    if (!totalFormsInput) {
+      console.error(
+        "Error: totalFormsInput is null. Ensure the hidden input exists in the form."
+      );
+      return;
+    }
+
     const visiblePayments = paymentSection.querySelectorAll(
       ".payment-entry:not(.hidden)"
     );
     totalFormsInput.value = visiblePayments.length;
-
-    visiblePayments.forEach((paymentEntry, index) => {
-      let headline = paymentEntry.querySelector("h4");
-      if (!headline) {
-        headline = document.createElement("h4");
-        paymentEntry.prepend(headline);
-      }
-      const paymentNumber = index + 1;
-      headline.textContent = `Payment ${paymentNumber}`;
-    });
   }
 
   function getNextPaymentNumber() {

@@ -95,3 +95,12 @@ class Job(models.Model):
         # Convert job price, and driver fee to Euros
         self.job_price_in_euros = convert_field(self.job_price, self.job_currency)
         self.driver_fee_in_euros = convert_field(self.driver_fee, self.driver_currency)
+    
+    def __str__(self):
+        """String representation of the Job."""
+        driver_name = (
+            self.driver or 
+            self.freelancer or 
+            "Not set"
+        )
+        return f"Job for {self.customer_name} with driver: {driver_name}"

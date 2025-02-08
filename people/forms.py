@@ -1,5 +1,5 @@
 from django import forms
-from people.models import Agent, Driver, Freelancer, Staff
+from people.models import Agent, Driver, FreelancerAgent, Freelancer, Staff
 
 class UniqueNameMixin:
     def clean_name(self):
@@ -21,6 +21,11 @@ class DriverForm(forms.ModelForm, UniqueNameMixin):
 class FreelancerForm(forms.ModelForm, UniqueNameMixin):
     class Meta:
         model = Freelancer
+        fields = ['name']
+
+class FreelancerAgentForm(forms.ModelForm, UniqueNameMixin):
+    class Meta:
+        model = FreelancerAgent
         fields = ['name']
 
 class StaffForm(forms.ModelForm, UniqueNameMixin):

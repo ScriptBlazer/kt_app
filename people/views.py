@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from people.models import Agent, Driver, Freelancer, Staff
-from people.forms import AgentForm, DriverForm, FreelancerForm, StaffForm
+from people.models import Agent, Driver, Freelancer, FreelancerAgent, Staff
+from people.forms import AgentForm, DriverForm, FreelancerForm, FreelancerAgentForm, StaffForm
 from django.contrib.auth.decorators import login_required
 from django.db.models.deletion import ProtectedError
 from django.contrib import messages
@@ -10,12 +10,14 @@ from django.db.models.functions import Lower
 def manage(request):
     agents = Agent.objects.all().order_by(Lower('name'))
     drivers = Driver.objects.all().order_by(Lower('name'))
-    freelancers = Freelancer.objects.all().order_by(Lower('name'))  # ✅ Fixed typo
+    freelancers = Freelancer.objects.all().order_by(Lower('name'))
+    freelancer_agents = FreelancerAgent.objects.all().order_by(Lower('name'))
     staffs = Staff.objects.all().order_by(Lower('name'))
 
     agent_form = AgentForm()
     driver_form = DriverForm()
-    freelancer_form = FreelancerForm()  # ✅ Added Freelancer form
+    freelancer_form = FreelancerForm()
+    freelancer_agent_form = FreelancerAgentForm()
     staff_form = StaffForm()
     error_message = None
 
@@ -55,6 +57,17 @@ def manage(request):
             else:
                 error_message = freelancer_form.errors.get('name', ['Failed to add Freelancer.'])[0]
 
+        elif 'freelancer_agent_form' in request.POST:  # Handle FreelancerAgent form
+            freelancer_agent_form = FreelancerAgentForm(request.POST)
+            if freelancer_agent_form.is_valid():
+                if not FreelancerAgent.objects.filter(name=freelancer_agent_form.cleaned_data['name']).exists():
+                    freelancer_agent_form.save()
+                    return redirect('people:manage')
+                else:
+                    error_message = 'A freelancer agent with this name already exists.'
+            else:
+                error_message = freelancer_agent_form.errors.get('name', ['Failed to add Freelancer Agent.'])[0]
+
         elif 'staff_form' in request.POST:
             staff_form = StaffForm(request.POST)
             if staff_form.is_valid():
@@ -70,10 +83,12 @@ def manage(request):
         'agent_form': agent_form,
         'driver_form': driver_form,
         'freelancer_form': freelancer_form,
+        'freelancer_agent_form': freelancer_agent_form,
         'staff_form': staff_form,
         'agents': agents,
         'drivers': drivers,
         'freelancers': freelancers,
+        'freelancer_agents': freelancer_agents,
         'staffs': staffs,
         'error_message': error_message
     })
@@ -170,4 +185,29 @@ def delete_freelancer(request, freelancer_id):
     except ProtectedError:
         messages.error(request, 'Freelancer cannot be deleted as there are associated records.')
     
+    return redirect('people:manage')
+
+@login_required
+def edit_freelancer_agent(request, freelancer_agent_id):
+    freelancer_agent = get_object_or_404(FreelancerAgent, pk=freelancer_agent_id)
+    if request.method == 'POST':
+        form = FreelancerAgentForm(request.POST, instance=freelancer_agent)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Freelancer Agent updated successfully.')
+            return redirect('people:manage')
+        else:
+            messages.error(request, 'Failed to update Freelancer Agent. Please correct the errors below.')
+    else:
+        form = FreelancerAgentForm(instance=freelancer_agent)
+    return render(request, 'people/edit_freelancer_agent.html', {'form': form, 'freelancer_agent': freelancer_agent})
+
+@login_required
+def delete_freelancer_agent(request, freelancer_agent_id):
+    freelancer_agent = get_object_or_404(FreelancerAgent, pk=freelancer_agent_id)
+    try:
+        freelancer_agent.delete()
+        messages.success(request, 'Freelancer Agent deleted successfully.')
+    except ProtectedError:
+        messages.error(request, 'Freelancer Agent cannot be deleted as there are associated records.')
     return redirect('people:manage')

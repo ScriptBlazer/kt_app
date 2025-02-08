@@ -29,7 +29,7 @@ class HotelBookingForm(PaidToMixin, forms.ModelForm):
         self.set_paid_to_initial(self.instance)
 
         # Set ordered querysets for agents and staffs
-        agents, _, staffs = get_ordered_people()
+        agents, drivers, freelancers, staffs = get_ordered_people()
 
        # Assign the ordered queryset to form fields as expected
         self.fields['agent'].queryset = agents
