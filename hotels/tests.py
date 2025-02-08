@@ -44,7 +44,7 @@ class HotelBookingTests(TestCase):
             customer_pays=Decimal('100.00'),
             customer_pays_currency='GBP',
             agent=self.agent,
-            agent_fee="10%",
+            agent_percentage="10%",
             payment_type="Card"
         )
 
@@ -121,7 +121,7 @@ class HotelBookingTests(TestCase):
             'customer_pays_currency': 'GBP',
             'payment_type': 'Card',
             'agent': self.agent.id,
-            'agent_fee': '10',
+            'agent_percentage': '10',
             'bed_type_1': 1,
             'bed_type_2': 0,
             'bed_type_3': 0,
@@ -156,7 +156,7 @@ class HotelBookingTests(TestCase):
             'customer_pays_currency': 'GBP',
             'payment_type': 'Cash',
             'agent': self.agent.id,
-            'agent_fee': '10',
+            'agent_percentage': '10',
             'bed_type_1': 1,
             'bed_type_2': 0,
             'bed_type_3': 0,
@@ -264,7 +264,7 @@ class HotelBookingAdditionalTests(TestCase):
             customer_pays=Decimal('100.00'),
             customer_pays_currency='GBP',
             agent=self.agent,
-            agent_fee="10%",
+            agent_percentage="10%",
             payment_type="Card",
             is_confirmed=True,
             is_paid=True

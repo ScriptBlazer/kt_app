@@ -49,7 +49,7 @@ class HotelBooking(models.Model):
 
     # Agent Information
     agent = models.ForeignKey(Agent, on_delete=models.PROTECT, null=True, blank=True)
-    agent_fee = models.CharField(max_length=10, choices=AGENT_FEE_CHOICES, null=True, blank=True)
+    agent_percentage = models.CharField(max_length=10, choices=AGENT_FEE_CHOICES, null=True, blank=True)
 
     special_requests = models.TextField(blank=True, null=True)
 

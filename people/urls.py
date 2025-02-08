@@ -11,4 +11,6 @@ urlpatterns = [
     path('manage/drivers/delete/<int:driver_id>/', views.delete_driver, name='delete_driver'),
     path('edit_staff/<int:staff_id>/', views.edit_staff, name='edit_staff'),
     path('delete_staff/<int:staff_id>/', views.delete_staff, name='delete_staff'),
+    path('edit-freelancer/<int:freelancer_id>/', views.edit_freelancer, name='edit_freelancer'),  # ✅ New URL
+    path('delete-freelancer/<int:freelancer_id>/', views.delete_freelancer, name='delete_freelancer'),
 ]

@@ -61,7 +61,7 @@
         {% endif %}
     </p>
     <p><strong>Agent:</strong> {{ guest.agent }}</p>
-    <p><strong>Agent Fee:</strong> {% if guest.agent_fee %}{{ guest.agent_fee }}%{% endif %}</p>
+    <p><strong>Agent Fee:</strong> {% if guest.agent_percentage %}{{ guest.agent_percentage }}%{% endif %}</p>
     <p><strong>Special Requests:</strong> {{ guest.special_requests|default:"No special requests" }}</p>
     <br>
 

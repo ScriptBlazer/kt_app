@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from people.models import Agent, Driver, Staff
-from people.forms import AgentForm, DriverForm, StaffForm
+from people.models import Agent, Driver, Freelancer, Staff
+from people.forms import AgentForm, DriverForm, FreelancerForm, StaffForm
 from django.contrib.auth.decorators import login_required
 from django.db.models.deletion import ProtectedError
 from django.contrib import messages
@@ -10,10 +10,12 @@ from django.db.models.functions import Lower
 def manage(request):
     agents = Agent.objects.all().order_by(Lower('name'))
     drivers = Driver.objects.all().order_by(Lower('name'))
+    freelancers = Freelancer.objects.all().order_by(Lower('name'))  # ✅ Fixed typo
     staffs = Staff.objects.all().order_by(Lower('name'))
 
     agent_form = AgentForm()
     driver_form = DriverForm()
+    freelancer_form = FreelancerForm()  # ✅ Added Freelancer form
     staff_form = StaffForm()
     error_message = None
 
@@ -42,6 +44,17 @@ def manage(request):
             else:
                 error_message = driver_form.errors.get('name', ['Failed to add Driver.'])[0]
 
+        elif 'freelancer_form' in request.POST:  # ✅ New block for Freelancer
+            freelancer_form = FreelancerForm(request.POST)
+            if freelancer_form.is_valid():
+                if not Freelancer.objects.filter(name=freelancer_form.cleaned_data['name']).exists():
+                    freelancer_form.save()
+                    return redirect('people:manage')
+                else:
+                    error_message = 'A freelancer with this name already exists.'
+            else:
+                error_message = freelancer_form.errors.get('name', ['Failed to add Freelancer.'])[0]
+
         elif 'staff_form' in request.POST:
             staff_form = StaffForm(request.POST)
             if staff_form.is_valid():
@@ -56,9 +69,11 @@ def manage(request):
     return render(request, 'people/manage.html', {
         'agent_form': agent_form,
         'driver_form': driver_form,
+        'freelancer_form': freelancer_form,
         'staff_form': staff_form,
         'agents': agents,
         'drivers': drivers,
+        'freelancers': freelancers,
         'staffs': staffs,
         'error_message': error_message
     })
@@ -131,5 +146,28 @@ def delete_staff(request, staff_id):
     except ProtectedError:
         # Add a user-friendly error message
         messages.error(request, 'Staff member cannot be deleted as there are associated records.')
+    
+    return redirect('people:manage')
+
+@login_required
+def edit_freelancer(request, freelancer_id):
+    freelancer = get_object_or_404(Freelancer, pk=freelancer_id)
+    if request.method == 'POST':
+        form = FreelancerForm(request.POST, instance=freelancer)
+        if form.is_valid():
+            form.save()
+            return redirect('people:manage')
+    else:
+        form = FreelancerForm(instance=freelancer)
+    return render(request, 'people/edit_freelancer.html', {'form': form, 'freelancer': freelancer})
+
+@login_required
+def delete_freelancer(request, freelancer_id):
+    freelancer = get_object_or_404(Freelancer, pk=freelancer_id)
+    try:
+        freelancer.delete()
+        messages.success(request, 'Freelancer deleted successfully.')
+    except ProtectedError:
+        messages.error(request, 'Freelancer cannot be deleted as there are associated records.')
     
     return redirect('people:manage')

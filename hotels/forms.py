@@ -20,7 +20,7 @@ class HotelBookingForm(PaidToMixin, forms.ModelForm):
         fields = [
             'customer_name', 'customer_number', 'check_in', 'check_out', 'no_of_people', 'rooms', 'no_of_beds', 
             'hotel_tier', 'special_requests', 'payment_type', 'hotel_price', 'hotel_price_currency', 'customer_pays',
-            'customer_pays_currency', 'agent', 'agent_fee', 'paid_to_agent', 'paid_to_staff'
+            'customer_pays_currency', 'agent', 'agent_percentage', 'paid_to_agent', 'paid_to_staff'
         ]
 
     def __init__(self, *args, **kwargs):
@@ -101,7 +101,7 @@ class HotelBookingForm(PaidToMixin, forms.ModelForm):
         check_in = cleaned_data.get("check_in")
         check_out = cleaned_data.get("check_out")
         agent = cleaned_data.get('agent')
-        agent_fee = cleaned_data.get('agent_fee')
+        agent_percentage = cleaned_data.get('agent_percentage')
         paid_to = cleaned_data.get('paid_to')
 
         # Validate 'paid_to' selection
@@ -121,11 +121,11 @@ class HotelBookingForm(PaidToMixin, forms.ModelForm):
         if check_in and check_out and check_out <= check_in:
             self.add_error('check_out', "Check-out date must be after check-in date.")
         
-        # Ensure agent and agent_fee logic
-        if agent and not agent_fee:
-            self.add_error('agent_fee', 'Agent fee is required when agent is selected.')
+        # Ensure agent and agent_percentage logic
+        if agent and not agent_percentage:
+            self.add_error('agent_percentage', 'Agent fee is required when agent is selected.')
         
-        if agent_fee and not agent:
+        if agent_percentage and not agent:
             self.add_error('agent', 'Agent is required when agent fee is provided.')
 
         # Ensure at least one bed type has a positive quantity if any bed type was entered
