@@ -137,10 +137,12 @@ def add_passengers(request):
 
     # ✅ Override 'paid_to' choices to show only Staff
     staff_members = Staff.objects.all().order_by('name')
-    form.fields['paid_to'].choices = [
-        ('', 'Select an option'),
-        ('Staff', [(f'staff_{staff.id}', staff.name) for staff in staff_members])
-    ]
+    for payment_form in payment_formset.forms:
+        if 'paid_to' in payment_form.fields:
+            payment_form.fields['paid_to'].choices = [
+                ('', 'Select an option'),
+                ('Staff', [(f'staff_{staff.id}', staff.name) for staff in staff_members])
+            ]
 
     return render(request, 'shuttle/add_passengers.html', {
         'form': form,
@@ -184,10 +186,12 @@ def edit_passengers(request, shuttle_id):
 
     # ✅ Override 'paid_to' choices to show only Staff
     staff_members = Staff.objects.all().order_by('name')
-    form.fields['paid_to'].choices = [
-        ('', 'Select an option'),
-        ('Staff', [(f'staff_{staff.id}', staff.name) for staff in staff_members])
-    ]
+    for payment_form in payment_formset.forms:
+        if 'paid_to' in payment_form.fields:
+            payment_form.fields['paid_to'].choices = [
+                ('', 'Select an option'),
+                ('Staff', [(f'staff_{staff.id}', staff.name) for staff in staff_members])
+            ]
 
     return render(request, 'shuttle/edit_passengers.html', {
         'form': form,
