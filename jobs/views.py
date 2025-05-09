@@ -17,6 +17,7 @@ from decimal import Decimal
 import logging
 import pytz
 from common.utils import assign_job_color
+import datetime
 
 logger = logging.getLogger('kt')
 
@@ -112,7 +113,8 @@ def past_jobs(request):
 
     return render(request, 'jobs/past_jobs.html', {
         'past_jobs': page_obj,  # Send paginated jobs
-        'query': query
+        'query': query,
+        'month_range': [(i, datetime.date(1900, i, 1).strftime('%B')) for i in range(1, 13)],
     })
 
 @login_required
