@@ -67,8 +67,6 @@
     <p><strong>Driver Name:</strong> 
         {% if job.driver %}
             {{ job.driver.name }}
-        {% elif job.freelancer %}
-            {{ job.freelancer.name }}
         {% else %}
             Not assigned
         {% endif %}
@@ -97,10 +95,6 @@
                     Driver: {{ payment.paid_to_driver.name }}
                 {% elif payment.paid_to_staff %}
                     Staff: {{ payment.paid_to_staff.name }}
-                {% elif payment.paid_to_freelancer %}
-                    Freelancer: {{ payment.paid_to_freelancer.name }}
-                {% elif payment.paid_to_freelancer_agent %}
-                    Freelancer Agent: {{ payment.paid_to_freelancer_agent.name }}
                 {% else %}
                     Not specified
                 {% endif %}

@@ -2,7 +2,7 @@ from django.db import models
 from decimal import Decimal
 from common.utils import get_exchange_rate, CURRENCY_CHOICES, AGENT_FEE_CHOICES, PAYMENT_TYPE_CHOICES, calculate_cc_fee
 from common.payment_settings import PaymentSettings
-from people.models import Agent, Driver, Freelancer
+from people.models import Agent, Driver
 import logging
 
 logger = logging.getLogger('kt')
@@ -35,7 +35,6 @@ class Job(models.Model):
 
     # Driver and Vehicle Information
     driver = models.ForeignKey(Driver, on_delete=models.PROTECT, null=True, blank=True)
-    freelancer = models.ForeignKey(Freelancer, on_delete=models.PROTECT, null=True, blank=True)
     number_plate = models.CharField(max_length=20, null=True, blank=True)
     vehicle_type = models.CharField(max_length=10, choices=[
         ('Car', 'Car'),
@@ -100,7 +99,6 @@ class Job(models.Model):
         """String representation of the Job."""
         driver_name = (
             self.driver or 
-            self.freelancer or 
             "Not set"
         )
         return f"Job for {self.customer_name} with driver: {driver_name}"

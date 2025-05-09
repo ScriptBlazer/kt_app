@@ -1,0 +1,52 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Export Page{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="buttons">
+        <div class="left-buttons">
+            <a href="{% url 'home' %}" class="button">Back to Home</a>
+            <a href="{% url 'common:admin' %}" class="button button-orange">Back to Admin</a>
+        </div>
+    </div>
+    <h2>Export Driving Jobs</h2>
+    <form method="get" action="{% url 'common:export_jobs' %}">
+        <label for="year">Year:</label>
+        <input type="number" name="year" id="year" min="2000" max="2100">
+
+        <label for="month">Month:</label>
+        <select name="month" id="month">
+            {% for number, name in month_range %}
+            <option value="{{ number }}">{{ name }}</option>
+            {% endfor %}
+        </select>
+
+
+        <label for="format">Format:</label>
+        <select name="format">
+            <option value="xlsx">Excel</option>
+            <option value="csv">CSV</option>
+        </select>
+
+        <button type="submit">Export</button>
+    </form>
+
+    {% if error_message %}
+    <p id="modal-trigger" style="display: none;">{{ error_message }}</p>
+    {% endif %}
+
+    <div id="error-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal()">&times;</span>
+            <p id="modal-message"></p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'script.js' %}"></script>
+{% endblock %}
