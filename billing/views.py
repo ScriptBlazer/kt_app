@@ -111,7 +111,7 @@ def get_agent_totals(jobs, hotels):
 @login_required
 def totals(request):
 
-    show_totals = True  # Set to True when ready to show totals
+    show_totals = False  # Set to True when ready to show totals
     if not show_totals:
         return render(request, 'billing/totals.html', {'show_totals': show_totals})
 
@@ -551,6 +551,6 @@ def balances(request):
 
     context = {
         'categories': categories,
-        'show_balances': True,
+        'show_balances': False,
     }
     return render(request, 'billing/balances.html', context)

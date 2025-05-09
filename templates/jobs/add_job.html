@@ -9,6 +9,11 @@
     <h2>Add Job</h2>
     <form method="post" id="job-form">
         {% csrf_token %}
+        <div class="form-group">
+            <p><strong>Confirm Job:</strong> 
+                <input class="sbig" type="checkbox" id="id_is_confirmed" name="is_confirmed" {% if job_form.initial.is_confirmed %}checked{% endif %}>
+            </p>
+        </div>
         <!-- Job Form Fields -->
         <div class="form-group">
             {{ job_form.customer_name.label_tag }}*<br>

@@ -9,6 +9,12 @@
     <form method="POST">
         {% csrf_token %}
 
+        <div class="form-group">
+            <p><strong>Confirm Shuttle Passengers:</strong> 
+                <input class="sbig" type="checkbox" id="id_is_confirmed" name="is_confirmed" {% if form.initial.is_confirmed %}checked{% endif %}>
+            </p>
+        </div>
+
         <div class="form-group-inline">
             <div class="field-wrapper">
                 {{ form.customer_name.label_tag }}*<br>

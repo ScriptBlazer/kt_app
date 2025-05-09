@@ -26,7 +26,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('customer_name', models.CharField(max_length=255)),
-                ('customer_number', models.CharField(max_length=20)),
+                ('customer_number', models.CharField(max_length=30)),
                 ('check_in', models.DateTimeField()),
                 ('check_out', models.DateTimeField()),
                 ('no_of_people', models.PositiveIntegerField(validators=[django.core.validators.MinValueValidator(1)])),

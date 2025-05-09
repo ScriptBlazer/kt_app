@@ -121,7 +121,9 @@ def add_passengers(request):
         payment_formset = PaymentFormSet(request.POST, queryset=Payment.objects.none(), prefix=formset_prefix)
 
         if form.is_valid() and payment_formset.is_valid():
-            shuttle = form.save()
+            shuttle = form.save(commit=False)
+            shuttle.is_confirmed = form.cleaned_data.get('is_confirmed', False)
+            shuttle.save()
 
             for payment_form in payment_formset:
                 if payment_form.cleaned_data and not payment_form.cleaned_data.get("DELETE"):
@@ -171,7 +173,9 @@ def edit_passengers(request, shuttle_id):
 
         if form.is_valid() and payment_formset.is_valid():
             with transaction.atomic():  # Ensure atomicity
-                shuttle = form.save()
+                shuttle = form.save(commit=False)
+                shuttle.is_confirmed = form.cleaned_data.get('is_confirmed', False)
+                shuttle.save()
 
                 for payment_form in payment_formset:
                     if payment_form.cleaned_data.get("DELETE") and payment_form.instance.pk:
