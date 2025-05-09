@@ -23,7 +23,7 @@ class ShuttleForm(PaidToMixin, forms.ModelForm):
         fields = [
             'customer_name', 'customer_number', 'customer_email', 'shuttle_date',
             'shuttle_direction', 'payment_type', 'no_of_passengers', 'shuttle_notes',
-            'paid_to_staff', 'driver'
+            'paid_to_staff', 'driver', 'is_confirmed'
         ]
         error_messages = {
             'customer_name': {'required': 'Please enter the customer name.'},

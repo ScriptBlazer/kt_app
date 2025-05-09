@@ -215,7 +215,7 @@ class UpdateJobStatusTests(TestCase):
             paid_to_driver=self.driver,
         )
         response = self.client.post(self.url, {'is_confirmed': True, 'is_paid': True, 'is_completed': True})
-        self.assertRedirects(response, reverse('jobs:past_jobs'))
+        self.assertRedirects(response, reverse('jobs:home'))
         self.job.refresh_from_db()
         self.assertTrue(self.job.is_confirmed)
         self.assertTrue(self.job.is_paid)

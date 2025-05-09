@@ -10,7 +10,7 @@ logger = logging.getLogger('kt')
 class Job(models.Model):
     # Customer Information
     customer_name = models.CharField(max_length=100)
-    customer_number = models.CharField(max_length=15)
+    customer_number = models.CharField(max_length=30)
 
     # Job Details
     job_date = models.DateField()
@@ -46,6 +46,10 @@ class Job(models.Model):
     # Agent Information
     agent_name = models.ForeignKey(Agent, null=True, blank=True, on_delete=models.PROTECT)
     agent_percentage = models.CharField(max_length=10, choices=AGENT_FEE_CHOICES, null=True, blank=True)
+
+    # Freelancer Info
+    is_freelancer = models.BooleanField(default=False)
+    freelancer = models.CharField(max_length=50, null=True, blank=True)
 
     # Job Completion and Payment Method
     is_confirmed = models.BooleanField(default=False)

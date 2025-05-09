@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from people.models import Driver, Agent
 from django.utils import timezone
 from django.db.models import Q
 from django.db import transaction
@@ -127,7 +128,9 @@ def add_job(request):
 
         if job_form.is_valid() and payment_formset.is_valid():
             with transaction.atomic():
-                job = job_form.save()
+                job = job_form.save(commit=False)
+                job.is_confirmed = job_form.cleaned_data.get('is_confirmed', False)
+                job.save()
                 for form in payment_formset:
                     if form.cleaned_data and not form.cleaned_data.get('DELETE'):
                         payment = form.save(commit=False)
@@ -168,7 +171,9 @@ def edit_job(request, job_id):
         if job_form.is_valid() and payment_formset.is_valid():
             try:
                 with transaction.atomic():
-                    job_form.save()
+                    job = job_form.save(commit=False)
+                    job.is_confirmed = job_form.cleaned_data.get('is_confirmed', False)
+                    job.save()
 
                     for form in payment_formset:
                         # Check if form contains data to prevent saving empty forms
@@ -201,14 +206,9 @@ def edit_job(request, job_id):
 
 @login_required
 def view_job(request, job_id):
-    # Retrieve the job
     job = get_object_or_404(Job, pk=job_id)
-    # logger.debug(f"Viewing Job ID: {job.id}, CC Fee: {job.cc_fee}")
-
-    # Retrieve associated payments for the job
     payments = job.payments.all()
 
-    # Handle 'paid_to' logic from Payments
     paid_to_names = []
     for payment in payments:
         if payment.paid_to_driver:
@@ -220,12 +220,29 @@ def view_job(request, job_id):
 
     paid_to_name = ', '.join(paid_to_names) if paid_to_names else "Not set"
 
-    # Set default values for fields
     driver_fee_in_euros = job.driver_fee_in_euros or Decimal('0.00')
     kilometers = job.kilometers or Decimal('0.00')
-
-    # Total price including credit card fee (if payment was by Card)
     total_with_cc_fee = job.job_price + job.cc_fee if job.payment_type == 'Card' else None
+
+    drivers = Driver.objects.order_by('name')
+    agents = Agent.objects.order_by('name')
+
+    freelancer_name = "-"
+    if job.is_freelancer and job.freelancer:
+        try:
+            role, pk = job.freelancer.split('_')
+            if role == 'driver':
+                driver = Driver.objects.filter(pk=pk).first()
+                freelancer_name = f"Driver: {driver.name}" if driver else "Driver not found"
+            elif role == 'agent':
+                agent = Agent.objects.filter(pk=pk).first()
+                freelancer_name = f"Agent: {agent.name}" if agent else "Agent not found"
+            else:
+                freelancer_name = "Invalid format"
+        except Exception:
+            freelancer_name = "Invalid format"
+    elif job.is_freelancer:
+        freelancer_name = "Marked but not selected"
 
     return render(request, 'jobs/view_job.html', {
         'job': job,
@@ -233,6 +250,10 @@ def view_job(request, job_id):
         'kilometers': kilometers,
         'total_with_cc_fee': total_with_cc_fee,
         'paid_to_name': paid_to_name,
+        'drivers': drivers,
+        'agents': agents,
+        'freelancer_name': freelancer_name,
+        'selected_freelancer': job.freelancer,
     })
 
 @login_required
@@ -268,6 +289,12 @@ def delete_job(request, job_id):
 def update_job_status(request, job_id):
     job = get_object_or_404(Job, pk=job_id)
     error_message = None
+
+    is_freelancer = 'is_freelancer' in request.POST
+    freelancer = request.POST.get('freelancer', '')
+
+    if is_freelancer and not freelancer:
+        error_message = 'You must select a freelancer (driver or agent) if the job is marked as a freelancer job.'
 
     # Retrieve the intended new statuses from the POST request
     is_confirmed = 'is_confirmed' in request.POST
@@ -343,8 +370,10 @@ def update_job_status(request, job_id):
         job.is_confirmed = is_confirmed
         job.is_paid = is_paid
         job.is_completed = is_completed
+        job.is_freelancer = is_freelancer
+        job.freelancer = freelancer
         job.save()
-        return redirect('jobs:past_jobs')
+        return redirect('jobs:home')
 
     # Return error message if any validation failed
     return render(request, 'jobs/view_job.html', {'job': job, 'error_message': error_message}, status=400)
