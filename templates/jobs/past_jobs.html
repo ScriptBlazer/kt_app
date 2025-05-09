@@ -19,6 +19,7 @@
     
     <br><br>
     <h2>Past Jobs</h2>
+
     <ul>
         {% for job in past_jobs %}
             <li class="job-container {% if job.color == 'red' %}red-job{% elif job.color == 'orange' %}orange-job{% elif job.color == 'green' %}green-job{% else %}white-job{% endif %}">
@@ -63,7 +64,7 @@
             {% endif %}
         </span>
     </div>
-</div>
+</div
 {% endblock %}
 
 {% block extra_scripts %}

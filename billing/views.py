@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.db.models import Sum
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden
-from people.models import Agent, Driver, Freelancer, Staff
+from people.models import Agent, Driver, Staff
 from django.utils import timezone
 from jobs.models import Job
 from shuttle.models import Shuttle
@@ -111,7 +111,7 @@ def get_agent_totals(jobs, hotels):
 @login_required
 def totals(request):
 
-    show_totals = False  # Set to True when ready to show totals
+    show_totals = True  # Set to True when ready to show totals
     if not show_totals:
         return render(request, 'billing/totals.html', {'show_totals': show_totals})
 
@@ -551,6 +551,6 @@ def balances(request):
 
     context = {
         'categories': categories,
-        'show_balances': False,
+        'show_balances': True,
     }
     return render(request, 'billing/balances.html', context)

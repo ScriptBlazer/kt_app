@@ -9,7 +9,7 @@ class DriverAssignmentForm(forms.Form):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        agents, drivers, freelancers, staffs = get_ordered_people()
+        agents, drivers, _, staffs = get_ordered_people()
         self.fields['driver'] = forms.ModelChoiceField(queryset=drivers, label="Select Driver")
 
 class ShuttleForm(PaidToMixin, forms.ModelForm):

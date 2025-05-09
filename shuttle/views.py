@@ -47,7 +47,7 @@ def shuttle(request):
     shuttles_this_month = Shuttle.objects.filter(shuttle_date__range=(first_day_of_month, last_day_of_month), is_confirmed=True)
     all_shuttles = Shuttle.objects.filter(is_confirmed=True)
     upcoming_shuttles = Shuttle.objects.filter(shuttle_date__gte=now_budapest.date(), is_confirmed=True).order_by('shuttle_date')
-    past_shuttles = Shuttle.objects.filter(shuttle_date__lt=now_budapest.date(), is_confirmed=True).order_by('shuttle_date')
+    past_shuttles = Shuttle.objects.filter(shuttle_date__lt=now_budapest.date(), is_confirmed=True).order_by('-shuttle_date')
 
     # Total calculations
     def calculate_totals(queryset):
@@ -63,7 +63,7 @@ def shuttle(request):
     def group_shuttles_by_date(shuttles):
         grouped = []
         for shuttle_date, items in groupby(shuttles, key=attrgetter('shuttle_date')):
-            shuttles_list = list(items)
+            shuttles_list = sorted(list(items), key=lambda s: s.customer_name.lower())
             total_passengers = sum(shuttle.no_of_passengers for shuttle in shuttles_list)
             total_price = sum(shuttle.price for shuttle in shuttles_list)
             driver_form = DriverAssignmentForm(initial={'date': shuttle_date})

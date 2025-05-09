@@ -3,7 +3,7 @@ from decimal import Decimal
 from jobs.models import Job
 from django.apps import apps
 from django.core.exceptions import ValidationError
-from people.models import Driver, Agent, Freelancer, Staff
+from people.models import Driver, Agent, Staff
 from django.db.models.functions import Lower
 from common.forms import PaidToMixin
 from common.utils import get_ordered_people
@@ -23,7 +23,7 @@ class CustomTimeField(forms.TimeField):
 
 
 class JobForm(PaidToMixin, forms.ModelForm):
-    driver = forms.ChoiceField(required=False, label="Driver / Freelancer")
+    driver = forms.ChoiceField(required=False, label="Driver")
 
     job_time = CustomTimeField(widget=forms.TimeInput(format='%H:%M', attrs={'placeholder': 'HH:MM'}), error_messages={
         'required': 'Please enter the job time.'
@@ -63,27 +63,23 @@ class JobForm(PaidToMixin, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(JobForm, self).__init__(*args, **kwargs)
 
-        # Get ordered lists of drivers and freelancers
+        # Get ordered lists of drivers
         ordered_drivers = Driver.objects.order_by(Lower('name'))
-        ordered_freelancers = Freelancer.objects.order_by(Lower('name'))
 
-        # Populate driver field with options for drivers and freelancers
+        # Populate driver field with options for drivers
         self.fields['driver'].choices = [
             ('', 'Select an option'),
             ('Drivers', [(f"driver_{driver.id}", driver.name) for driver in ordered_drivers]),
-            ('Freelancers', [(f"freelancer_{freelancer.id}", freelancer.name) for freelancer in ordered_freelancers]),
         ]
 
         # Set initial value for driver if editing an existing job
         if self.instance.pk:
             if self.instance.driver:
                 self.fields['driver'].initial = f"driver_{self.instance.driver.id}"
-            elif self.instance.freelancer:
-                self.fields['driver'].initial = f"freelancer_{self.instance.freelancer.id}"
 
 
     def clean_driver(self):
-        """Convert the driver field (like 'driver_1' or 'freelancer_2') to an actual Driver or Freelancer object."""
+        """Convert the driver field (like 'driver_1') to an actual Driver object."""
         driver_value = self.cleaned_data.get('driver')
         
         if not driver_value:
@@ -95,13 +91,6 @@ class JobForm(PaidToMixin, forms.ModelForm):
                 return Driver.objects.get(id=driver_id)
             except Driver.DoesNotExist:
                 raise ValidationError('Selected driver does not exist.')
-
-        elif driver_value.startswith('freelancer_'):
-            freelancer_id = driver_value.split('_')[1]
-            try:
-                return Freelancer.objects.get(id=freelancer_id)
-            except Freelancer.DoesNotExist:
-                raise ValidationError('Selected freelancer does not exist.')
 
         raise ValidationError('Invalid driver selection.')
 
@@ -124,21 +113,13 @@ class JobForm(PaidToMixin, forms.ModelForm):
 
             # Reset both fields to None initially
             cleaned_data['driver'] = None
-            cleaned_data['freelancer'] = None
 
             if model_type == 'driver':
                 cleaned_data['driver'] = Driver.objects.get(id=id_)
-            elif model_type == 'freelancer':
-                cleaned_data['freelancer'] = Freelancer.objects.get(id=id_)
 
         elif isinstance(driver, Driver):
             # If the driver is already a Driver instance
             cleaned_data['driver'] = driver
-            cleaned_data['freelancer'] = None
-        elif isinstance(driver, Freelancer):
-            # If the driver is already a Freelancer instance
-            cleaned_data['freelancer'] = driver
-            cleaned_data['driver'] = None
 
         # Currency field validation
         if not job_currency:
