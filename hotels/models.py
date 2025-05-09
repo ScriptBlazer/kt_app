@@ -17,7 +17,7 @@ class HotelBooking(models.Model):
 
     # Customer Information
     customer_name = models.CharField(max_length=255)
-    customer_number = models.CharField(max_length=20)
+    customer_number = models.CharField(max_length=30)
 
     # Booking Details
     check_in = models.DateTimeField()
@@ -33,7 +33,7 @@ class HotelBooking(models.Model):
     hotel_price_in_euros = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     
     # Set default value for customer_pays to €20
-    payment_type = models.CharField(max_length=10, choices=PAYMENT_TYPE_CHOICES, null=True, blank=True)
+    payment_type = models.CharField(max_length=50, choices=PAYMENT_TYPE_CHOICES, null=True, blank=True)
     customer_pays = models.DecimalField(max_digits=10, decimal_places=2, default=20.00)
     customer_pays_currency = models.CharField(max_length=10, choices=CURRENCY_CHOICES, default='EUR')
     customer_pays_in_euros = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)

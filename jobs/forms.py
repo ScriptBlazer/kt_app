@@ -22,6 +22,27 @@ class CustomTimeField(forms.TimeField):
             raise ValidationError(self.error_messages['invalid'], code='invalid')
 
 
+class FreelancerMixin(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.initialize_freelancer_field()
+
+    def initialize_freelancer_field(self):
+        drivers = Driver.objects.order_by(Lower('name'))
+        agents = Agent.objects.order_by(Lower('name'))
+
+        self.fields['freelancer'] = forms.ChoiceField(
+            required=False,
+            choices=[
+                ('', 'Select an option'),
+                ('Drivers', [(f'driver_{driver.id}', driver.name) for driver in drivers]),
+                ('Agents', [(f'agent_{agent.id}', agent.name) for agent in agents]),
+            ],
+            widget=forms.Select(attrs={'class': 'form-control'}),
+            label="Freelancer"
+        )
+
+
 class JobForm(PaidToMixin, forms.ModelForm):
     driver = forms.ChoiceField(required=False, label="Driver")
 
@@ -45,7 +66,7 @@ class JobForm(PaidToMixin, forms.ModelForm):
             'job_description', 'no_of_passengers', 'vehicle_type', 'kilometers',
             'pick_up_location', 'drop_off_location', 'flight_number', 'payment_type',
             'job_price', 'driver_fee', 
-            'number_plate', 'agent_name', 'agent_percentage', 'job_currency', 'driver_currency', 'driver', 'agent_name'
+            'number_plate', 'agent_name', 'agent_percentage', 'job_currency', 'driver_currency', 'driver', 'agent_name', 'is_confirmed'
         ]
         
         error_messages = {

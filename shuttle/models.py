@@ -30,7 +30,7 @@ class Shuttle(models.Model):
     ]
 
     customer_name = models.CharField(max_length=255)
-    customer_number = models.CharField(max_length=15)
+    customer_number = models.CharField(max_length=30)
     customer_email = models.EmailField(blank=True, null=True)
     shuttle_date = models.DateField(default=timezone.now)
     shuttle_direction = models.CharField(max_length=20, choices=DIRECTION_CHOICES)
