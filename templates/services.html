@@ -57,7 +57,24 @@
             <li>No hotel bookings today</li>
         {% endfor %}
     </ul>
-</div>
+    <div class="mobile-bottom-nav">
+        <a href="{% url 'home' %}" class="mobile-nav-item">
+            <i class="fas fa-home" style="color: #007bff;"></i>
+            <div style="color: #007bff;">Home</div>
+        </a>
+        <a href="{% url 'shuttle:shuttle' %}" class="mobile-nav-item">
+            <i class="fas fa-shuttle-van" style="color: purple;"></i>
+            <div style="color: purple;">Shuttle</div>
+        </a>
+        <a href="{% url 'hotels:hotel_bookings' %}" class="mobile-nav-item">
+            <i class="fas fa-hotel" style="color: purple;"></i>
+            <div style="color: purple;">Hotels</div>
+        </a>
+        <a href="#" class="mobile-nav-item">
+            <i class="fas fa-car" style="color: purple;"></i>
+            <div style="color: purple;">Car Rental</div>
+        </a>
+    </div>
 {% endblock %}
 {% block extra_scripts %}
 <script src="{% static 'script.js' %}"></script>

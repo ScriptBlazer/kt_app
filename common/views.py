@@ -90,10 +90,14 @@ def export_jobs(request):
             'error_message': error_message
         })
 
-    jobs = Job.objects.filter(is_confirmed=True)
+    if file_format == 'csv':
+        jobs = Job.objects.filter(is_confirmed=True).order_by('-job_date', '-job_time')
+    else:
+        jobs = Job.objects.filter(is_confirmed=True).order_by('-job_date', '-job_time')
+
     try:
         year_int = int(year)
-        jobs = jobs.filter(job_date__year=year_int)
+        jobs = jobs.filter(job_date__year=year_int).order_by('-job_date', '-job_time')
         if month and month != "0":
             month_int = int(month)
             jobs = jobs.filter(job_date__month=month_int)
@@ -112,7 +116,7 @@ def export_jobs(request):
             'Customer Name', 'Customer Number', 'Job Date', 'Job Time',
             'No. of Passengers', 'Vehicle Type', 'Kilometers', 'Pickup',
             'Drop-off', 'Flight Number', 'Price', 'Currency', 'Payment Type',
-            'Confirmed', 'Paid', 'Completed', 'Driver', 'Number Plate',
+            'Confirmed', 'Paid', 'Driver', 'Number Plate',
             'Agent Name', 'Agent Fee', 'Payments Summary'
         ])
         for job in jobs:
@@ -159,7 +163,6 @@ def export_jobs(request):
                 job.payment_type,
                 job.is_confirmed,
                 job.is_paid,
-                job.is_completed,
                 job.driver.name if job.driver else '',
                 job.number_plate,
                 job.agent_name.name if job.agent_name else '',
@@ -176,10 +179,27 @@ def export_jobs(request):
             'Customer Name', 'Customer Number', 'Job Date', 'Job Time',
             'No. of Passengers', 'Vehicle Type', 'Kilometers', 'Pickup',
             'Drop-off', 'Flight Number', 'Price', 'Currency', 'Payment Type',
-            'Confirmed', 'Paid', 'Completed', 'Driver', 'Number Plate',
+            'Confirmed', 'Paid', 'Driver', 'Number Plate',
             'Agent Name', 'Agent Fee', 'Payments Summary'
         ]
         ws.append(headers)
+
+        from openpyxl.styles import Font, PatternFill
+
+        # Style header row
+        header_font = Font(bold=True)
+        header_fill = PatternFill(start_color="FFA500", end_color="FFA500", fill_type="solid")  # Orange
+        for cell in ws[1]:
+            cell.font = header_font
+            cell.fill = header_fill
+
+        # Freeze top row
+        ws.freeze_panes = "A2"
+
+        # Apply auto-filter to the full header row (A1:R1) as openpyxl only supports a contiguous range.
+        
+        last_column = get_column_letter(len(headers))
+        ws.auto_filter.ref = f"A1:{last_column}1"
 
         for job in jobs:
             payments = list(job.payments.all())
@@ -224,7 +244,6 @@ def export_jobs(request):
                 job.payment_type,
                 job.is_confirmed,
                 job.is_paid,
-                job.is_completed,
                 job.driver.name if job.driver else '',
                 job.number_plate,
                 job.agent_name.name if job.agent_name else '',
@@ -232,8 +251,15 @@ def export_jobs(request):
                 payments_summary
             ])
 
-        for col in range(1, len(headers) + 1):
-            ws.column_dimensions[get_column_letter(col)].width = 15
+        # Auto-size columns based on max content width
+        for col_num, column_title in enumerate(headers, 1):
+            column_letter = get_column_letter(col_num)
+            max_length = len(column_title)
+            for row in ws.iter_rows(min_col=col_num, max_col=col_num):
+                for cell in row:
+                    if cell.value:
+                        max_length = max(max_length, len(str(cell.value)))
+            ws.column_dimensions[column_letter].width = max_length + 2
 
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         filename = sheet_title + ".xlsx"

@@ -32,6 +32,19 @@
         <a href="{% url 'expenses:delete_expense' expense.id %}" class="button cancel-button">Delete</a>
     </div>
 </div>
+<div class="mobile-bottom-nav">
+    <a href="{% url 'home' %}" class="mobile-nav-item">
+        <i class="fas fa-home" style="color: #007bff;"></i>
+        <div style="color: #007bff;">Home</div>
+    </a>
+    <a href="{% url 'expenses:expenses' %}" class="mobile-nav-item" style="color: orange;">
+        <i class="fas fa-receipt" style="color: orange;"></i><span>Expenses</span>
+    </a>
+    <a href="{% url 'common:admin' %}" class="mobile-nav-item">
+        <i class="fas fa-user-shield" style="color: orange;"></i>
+        <div style="color: orange;">Admin</div>
+    </a>
+</div>
 {% endblock %}
 
 {% block extra_scripts %}
