@@ -43,6 +43,38 @@
         {% endfor %}
     </ul>
 </div>
+<div class="mobile-bottom-nav">
+    <a href="{% url 'home' %}" class="mobile-nav-item" style="color: #007bff;">
+        <i class="fas fa-home"></i><span>Home</span>
+    </a>
+    <a href="{% url 'people:manage' %}" class="mobile-nav-item" style="color: orange;">
+        <i class="fas fa-users-cog" style="color: orange;"></i><span>Manage</span>
+    </a>
+    <a href="{% url 'expenses:expenses' %}" class="mobile-nav-item" style="color: orange;">
+        <i class="fas fa-receipt" style="color: orange;"></i><span>Expenses</span>
+    </a>
+    <a href="#" class="mobile-nav-item" id="more-toggle" style="color: orange;">
+        <i class="fas fa-ellipsis-h" style="color: orange;"></i><span>More</span>
+    </a>
+</div>
+
+<div id="more-menu" class="more-menu hidden">
+    <a href="{% url 'billing:totals' %}" style="color: orange;">Totals</a>
+    <a href="{% url 'billing:balances' %}" style="color: orange;">Balances</a>
+    <a href="{% url 'common:export_jobs' %}" style="color: orange;">Export</a>
+    <a href="/admin/" style="color: orange;">Console</a>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const toggle = document.getElementById("more-toggle");
+    const menu = document.getElementById("more-menu");
+    toggle.addEventListener("click", function (e) {
+      e.preventDefault();
+      menu.classList.toggle("hidden");
+    });
+  });
+</script>
 {% endblock %}
 
 {% block extra_scripts %}

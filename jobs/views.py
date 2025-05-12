@@ -130,6 +130,8 @@ def add_job(request):
             with transaction.atomic():
                 job = job_form.save(commit=False)
                 job.is_confirmed = job_form.cleaned_data.get('is_confirmed', False)
+                job.created_by = request.user
+                job.created_at = timezone.now().astimezone(hungary_tz)
                 job.save()
                 for form in payment_formset:
                     if form.cleaned_data and not form.cleaned_data.get('DELETE'):
@@ -172,6 +174,8 @@ def edit_job(request, job_id):
             try:
                 with transaction.atomic():
                     job = job_form.save(commit=False)
+                    job.last_modified_by = request.user
+                    job.last_modified_at = timezone.now().astimezone(hungary_tz)
                     job.is_confirmed = job_form.cleaned_data.get('is_confirmed', False)
                     job.save()
 

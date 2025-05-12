@@ -266,6 +266,7 @@ form input::-webkit-inner-spin-button {
     font-weight: bold;
     color: #333;
     /* width: 100%; */
+    position: relative;
 }
 
 .job-container .customer-name {
@@ -429,6 +430,23 @@ table tbody tr:hover {
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+.job-tag-container {
+    position: absolute;
+    top: 8px;
+    left: 10px;
+    display: flex;
+    gap: 5px;
+}
+
+.job-added-by-tag,
+.job-edited-by-tag {
+    background-color: #eef;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    display: inline-block;
 }
 
 .white-job {
@@ -673,9 +691,11 @@ input[type="checkbox"][name$="-DELETE"] {
     display: none;
 }
 
+/* Pagination controls */
 .pagination {
     text-align: center;
     margin-top: 20px;
+    font-size: 12px;
 }
 
 .pagination .step-links {
@@ -684,16 +704,20 @@ input[type="checkbox"][name$="-DELETE"] {
     padding: 0;
 }
 
-.pagination-btn {
+.pagination-btn,
+.pagination .current-page {
     display: inline-block;
-    padding: 10px 15px;
-    margin: 0 5px;
+    font-size: 12px;
+    padding: 6px 10px;
+    margin: 0 2px;
+    border-radius: 4px;
+    transition: background-color 0.3s ease, transform 0.2s;
+}
+
+.pagination-btn {
     background-color: #007bff;
     color: white;
     text-decoration: none;
-    font-size: 14px;
-    border-radius: 4px;
-    transition: background-color 0.3s ease, transform 0.2s;
     border: none;
 }
 
@@ -702,17 +726,13 @@ input[type="checkbox"][name$="-DELETE"] {
 }
 
 .pagination .current-page {
-    display: inline-block;
-    padding: 10px 15px;
+    background-color: #f1f1f1;
     color: #333;
     font-weight: bold;
-    font-size: 14px;
-    background-color: #f1f1f1;
-    border-radius: 4px;
-    margin: 0 5px;
 }
 
-.pagination-btn:disabled, .pagination-btn[disabled] {
+.pagination-btn:disabled,
+.pagination-btn[disabled] {
     background-color: #cccccc;
     color: #666666;
     pointer-events: none;
@@ -731,6 +751,38 @@ input[type="checkbox"][name$="-DELETE"] {
     width: 100%;
     background-color: #f4f4f4;
     padding: 10px 0;
+}
+
+.mobile-bottom-nav {
+    display: none;
+}
+
+.floating-add-button {
+    display: none;
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: #007bff;
+    color: white;
+    font-size: 24px;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    text-decoration: none;
+}
+
+.floating-add-button:hover {
+    background-color: #0056b3;
+}
+
+/* Set icon color to blue for mobile nav item icons */
+.mobile-nav-item i {
+    font-size: 22px;
+    color: #007bff;
 }
 
 
@@ -801,8 +853,18 @@ input[type="checkbox"][name$="-DELETE"] {
 
         /* regular Mobile screens */
         @media (max-width: 600px) {
+            .overall_totals-text {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
             .container {
-                max-width: 90%;
+                max-width: 95%;
+                margin: 0px auto 0;
+            }
+
+            .content {
+                padding: 10px;
             }
 
             .lne {
@@ -839,6 +901,10 @@ input[type="checkbox"][name$="-DELETE"] {
                 font-size: 1.2em;
             }
 
+            .left-buttons {
+                display: none;
+            }
+
             .view {
                 padding: 10px;
             }
@@ -846,6 +912,55 @@ input[type="checkbox"][name$="-DELETE"] {
             .phone {
                 display: none;
             }
+
+            .buttons {
+                display: none;
+            }
+
+            .pagination {
+                font-size: 9px;
+            }
+        
+            .pagination-btn,
+            .pagination .current-page {
+                font-size: 9px;
+                padding: 4px 6px;
+                margin: 0 1px;
+            }
+            
+
+            .mobile-bottom-nav {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                height: 60px;
+                background-color: #fff;
+                border-top: 1px solid #ccc;
+                display: flex;
+                justify-content: space-around;
+                align-items: center;
+                z-index: 999;
+            }
+
+            .mobile-nav-item {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                font-size: 12px;
+                color: #333;
+                text-decoration: none;
+            }
+
+            .mobile-nav-item i {
+                font-size: 22px;
+                color: #007bff;
+            }
+
+            .floating-add-button {
+                display: flex;
+            }
+
 
             @media (max-width: 415px) {
                 .lne h1 {
@@ -873,4 +988,35 @@ input[type="checkbox"][name$="-DELETE"] {
             }
         }
     }
+}
+
+.more-menu {
+    position: fixed;
+    bottom: 65px;
+    right: 10px;
+    background-color: white;
+    border: 1px solid #ccc;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    border-radius: 5px;
+    padding: 10px;
+    z-index: 1001;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.more-menu.hidden {
+    display: none;
+}
+
+.more-menu a {
+    font-size: 14px;
+    color: #007bff;
+    text-decoration: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+}
+
+.more-menu a:hover {
+    background-color: #f0f0f0;
 }
