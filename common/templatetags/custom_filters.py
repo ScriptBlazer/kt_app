@@ -19,7 +19,7 @@ def time_format(value):
 def truncate_words_chars(value):
     words = value.split()
     truncated = ' '.join(words[:2])  # Take first two words
-    if len(truncated) > 22:
+    if len(truncated) > 13:
         truncated = truncated[:12] + '...'  # Limit to 12 characters
     return truncated
 

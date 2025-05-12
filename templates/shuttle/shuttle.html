@@ -109,6 +109,24 @@
             <p>No past shuttles.</p>
         {% endif %}
     </div>
+    <div class="mobile-bottom-nav">
+        <a href="{% url 'home' %}" class="mobile-nav-item">
+            <i class="fas fa-home" style="color: #007bff;"></i>
+            <div style="color: #007bff;">Home</div>
+        </a>
+        <a href="{% url 'shuttle:enquiries' %}" class="mobile-nav-item">
+            <i class="fas fa-question-circle" style="color: purple;"></i>
+            <div style="color: purple;">Enquiries</div>
+        </a>
+        <a href="{% url 'common:services' %}" class="mobile-nav-item">
+            <i class="fas fa-cogs" style="color: purple;"></i>
+            <div style="color: purple;">Services</div>
+        </a>
+    </div>
+
+    <a href="{% url 'shuttle:add_passengers' %}" class="floating-add-button button-purple">
+        <i class="fas fa-plus"></i>
+    </a>
 </div>
 {% endblock %}
 

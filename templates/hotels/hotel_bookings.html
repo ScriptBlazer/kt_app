@@ -29,9 +29,9 @@
                 <span class="customer-name">{{ booking.customer_name|truncate_words_chars }}</span>
                 <div class="job-info">
                     <span>{{ booking.check_in|date:"d M Y" }}</span>
-                    <span>{{ booking.no_of_people }}</span>
+                    <span class="phone"> {{ booking.no_of_people }}</span>
                     <span>{{ booking.customer_pays }} {{ booking.customer_pays_currency }}</span>
-                    <span> {{ booking.hotel_price }} {{ booking.hotel_price_currency }}</span>
+                    <span class="phone"> {{ booking.hotel_price }} {{ booking.hotel_price_currency }}</span>
                 </div>
                 <div class="button-group">
                     <a href="{% url 'hotels:edit_guests' booking.id %}" class="button tablet button-purple">Edit</a>
@@ -69,6 +69,28 @@
         <p>No upcoming hotel bookings.</p>
     {% endif %}
 </div>
+    <div class="mobile-bottom-nav">
+        <a href="{% url 'home' %}" class="mobile-nav-item">
+            <i class="fas fa-home" style="color: #007bff;"></i>
+            <div style="color: #007bff;">Home</div>
+        </a>
+        <a href="{% url 'hotels:enquiries' %}" class="mobile-nav-item">
+            <i class="fas fa-question-circle" style="color: purple;"></i>
+            <div style="color: purple;">Enquiries</div>
+        </a>
+        <a href="{% url 'hotels:past_bookings' %}" class="mobile-nav-item">
+            <i class="fas fa-history" style="color: purple;"></i>
+            <div style="color: purple;">Past</div>
+        </a>
+        <a href="{% url 'common:services' %}" class="mobile-nav-item">
+            <i class="fas fa-cogs" style="color: purple;"></i>
+            <div style="color: purple;">Services</div>
+        </a>
+    </div>
+
+    <a href="{% url 'hotels:add_guests' %}" class="floating-add-button" style="background-color: purple;">
+        <i class="fas fa-plus"></i>
+    </a>
 {% endblock %}
 
 {% block extra_scripts %}

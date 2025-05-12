@@ -4,6 +4,7 @@ from common.utils import get_exchange_rate, CURRENCY_CHOICES, AGENT_FEE_CHOICES,
 from common.payment_settings import PaymentSettings
 from people.models import Agent, Driver
 import logging
+from django.contrib.auth.models import User
 
 logger = logging.getLogger('kt')
 
@@ -50,6 +51,11 @@ class Job(models.Model):
     # Freelancer Info
     is_freelancer = models.BooleanField(default=False)
     freelancer = models.CharField(max_length=50, null=True, blank=True)
+
+    # Track who created and edited the job
+    created_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='jobs_created')
+    last_modified_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='jobs_modified')
+    last_modified_at = models.DateTimeField(null=True, blank=True)
 
     # Job Completion and Payment Method
     is_confirmed = models.BooleanField(default=False)

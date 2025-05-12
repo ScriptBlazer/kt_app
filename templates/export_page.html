@@ -1,4 +1,4 @@
-{% extends 'base/base.html' %}
+{% extends 'base/base_admin.html' %}
 {% load static %}
 {% load custom_filters %}
 
@@ -31,7 +31,7 @@
             <option value="csv">CSV</option>
         </select>
 
-        <button type="submit">Export</button>
+        <button class="button button-orange" type="submit">Export</button>
     </form>
 
     {% if error_message %}
@@ -44,6 +44,20 @@
             <p id="modal-message"></p>
         </div>
     </div>
+</div>
+<div class="mobile-bottom-nav">
+    <a href="{% url 'home' %}" class="mobile-nav-item">
+        <i class="fas fa-home" style="color: #007bff;"></i>
+        <div style="color: #007bff;">Home</div>
+    </a>
+    <a href="{% url 'common:admin' %}" class="mobile-nav-item">
+        <i class="fas fa-user-shield" style="color: orange;"></i>
+        <div style="color: orange;">Admin</div>
+    </a>
+
+    <a href="{% url 'expenses:add_expense' %}" class="floating-add-button button-orange">
+        <i class="fas fa-plus"></i>
+    </a>
 </div>
 {% endblock %}
 

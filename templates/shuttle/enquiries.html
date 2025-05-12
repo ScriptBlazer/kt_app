@@ -1,3 +1,4 @@
+
 {% extends 'base/base_services.html' %}
 {% load custom_filters %}
 {% load humanize %}
@@ -31,4 +32,18 @@
         {% endfor %}
     </ul>
 </div>
+    <div class="mobile-bottom-nav">
+        <a href="{% url 'home' %}" class="mobile-nav-item">
+            <i class="fas fa-home"></i>
+            <div>Home</div>
+        </a>
+        <a href="{% url 'shuttle:shuttle' %}" class="mobile-nav-item">
+            <i class="fas fa-shuttle-van" style="color: purple;"></i>
+            <div style="color: purple;">Shuttle</div>
+        </a>
+        <a href="{% url 'common:services' %}" class="mobile-nav-item">
+            <i class="fas fa-cogs" style="color: purple;"></i>
+            <div style="color: purple;">Services</div>
+        </a>
+    </div>
 {% endblock %}
