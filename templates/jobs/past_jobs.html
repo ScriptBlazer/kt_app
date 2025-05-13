@@ -78,24 +78,24 @@
             {% endif %}
         </span>
     </div>
-    <div class="mobile-bottom-nav">
-        <a href="{% url 'home' %}" class="mobile-nav-item">
-            <i class="fas fa-home"></i>
-            <div>Home</div>
-        </a>
-        <a href="{% url 'jobs:enquiries' %}" class="mobile-nav-item">
-            <i class="fas fa-question-circle"></i>
-            <div>Enquiries</div>
-        </a>
-        <a href="{% url 'common:services' %}" class="mobile-nav-item">
-            <i class="fas fa-cogs" style="color: purple;"></i>
-            <div style="color: purple;">Services</div>
-        </a>
-        <a href="{% url 'common:admin' %}" class="mobile-nav-item">
-            <i class="fas fa-user-shield" style="color: orange;"></i>
-            <div style="color: orange;">Admin</div>
-        </a>
-    </div>
+</div>
+<div class="mobile-bottom-nav">
+    <a href="{% url 'home' %}" class="mobile-nav-item">
+        <i class="fas fa-home"></i>
+        <div>Home</div>
+    </a>
+    <a href="{% url 'jobs:enquiries' %}" class="mobile-nav-item">
+        <i class="fas fa-question-circle"></i>
+        <div>Enquiries</div>
+    </a>
+    <a href="{% url 'common:services' %}" class="mobile-nav-item">
+        <i class="fas fa-cogs" style="color: purple;"></i>
+        <div style="color: purple;">Services</div>
+    </a>
+    <a href="{% url 'common:admin' %}" class="mobile-nav-item">
+        <i class="fas fa-user-shield" style="color: orange;"></i>
+        <div style="color: orange;">Admin</div>
+    </a>
 </div>
 {% endblock %}
 

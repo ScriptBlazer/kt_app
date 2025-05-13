@@ -188,6 +188,28 @@
     </div>
     
 </div>
+<div class="mobile-bottom-nav">
+    <a href="{% url 'home' %}" class="mobile-nav-item">
+        <i class="fas fa-home"></i>
+        <div>Home</div>
+    </a>
+    <a href="{% url 'jobs:past_jobs' %}" class="mobile-nav-item">
+        <i class="fas fa-history"></i>
+        <div>Past Jobs</div>
+    </a>
+    <a href="{% url 'jobs:enquiries' %}" class="mobile-nav-item">
+        <i class="fas fa-question-circle"></i>
+        <div>Enquiries</div>
+    </a>
+    <a href="{% url 'common:services' %}" class="mobile-nav-item">
+        <i class="fas fa-cogs" style="color: purple;"></i>
+        <div style="color: purple;">Services</div>
+    </a>
+
+    <a href="#" class="floating-add-button" onclick="copyJobDetails()">
+        <i class="fas fa-copy"></i>
+    </a>
+</div>
 
 <!-- Modal Structure -->
 <div id="error-modal" class="modal" style="display: none;">
