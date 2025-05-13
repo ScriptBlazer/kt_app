@@ -785,6 +785,10 @@ input[type="checkbox"][name$="-DELETE"] {
     color: #007bff;
 }
 
+.mobile-nav-item div {
+    color: #007bff;
+}
+
 
 /* Small laptop screens */
 @media (max-width: 1200px) {

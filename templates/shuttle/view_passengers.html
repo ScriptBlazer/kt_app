@@ -107,6 +107,29 @@
     <p id="modal-trigger" style="display:none;">{{ error_message }}</p>
     {% endif %}
 </div>
+<div class="mobile-bottom-nav">
+    <a href="{% url 'home' %}" class="mobile-nav-item">
+        <i class="fas fa-home"></i>
+        <div>Home</div>
+    </a>
+    <a href="{% url 'shuttle:shuttle' %}" class="mobile-nav-item">
+        <i class="fas fa-shuttle-van" style="color: purple;"></i>
+        <div style="color: purple;">Shuttle</div>
+    </a>
+    <a href="{% url 'shuttle:enquiries' %}" class="mobile-nav-item">
+        <i class="fas fa-question-circle" style="color: purple;"></i>
+        <div style="color: purple;">Enquiries</div>
+    </a>
+    <a href="{% url 'common:services' %}" class="mobile-nav-item">
+        <i class="fas fa-cogs" style="color: purple;"></i>
+        <div style="color: purple;">Services</div>
+    </a>
+
+    <a href="#" class="floating-add-button button-purple" onclick="copyShuttleDetails()">
+        <i class="fas fa-copy"></i>
+    </a>
+</div>
+
 
 <!-- Modal Structure -->
 <div id="error-modal" class="modal" style="display: none;">

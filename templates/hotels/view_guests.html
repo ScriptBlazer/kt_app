@@ -102,6 +102,29 @@
         <p id="modal-message">{{ error_message }}</p>
     </div>
 </div>
+
+<div class="mobile-bottom-nav">
+    <a href="{% url 'home' %}" class="mobile-nav-item">
+        <i class="fas fa-home"></i>
+        <div>Home</div>
+    </a>
+    <a href="{% url 'hotels:hotel_bookings' %}" class="mobile-nav-item">
+        <i class="fas fa-hotel" style="color: purple;"></i>
+        <div style="color: purple;">Hotel</div>
+    </a>
+    <a href="{% url 'hotels:enquiries' %}" class="mobile-nav-item">
+        <i class="fas fa-question-circle" style="color: purple;"></i>
+        <div style="color: purple;">Enquiries</div>
+    </a>
+    <a href="{% url 'hotels:past_bookings' %}" class="mobile-nav-item">
+        <i class="fas fa-history" style="color: purple;"></i>
+        <div style="color: purple;">Past</div>
+    </a>
+
+    <a href="#" class="floating-add-button button-purple" onclick="copyGuestDetails()">
+        <i class="fas fa-copy"></i>
+    </a>
+</div>
 {% endblock %}
 
 {% block extra_scripts %}
