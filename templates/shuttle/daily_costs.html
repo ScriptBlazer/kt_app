@@ -1,0 +1,98 @@
+{% extends 'base/base_services.html' %}
+{% load static %}
+{% block title %}Shuttle Info – {{ date }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="buttons">
+        <div class="left-buttons">
+            <a href="{% url 'home' %}" class="button">Back to Home</a>
+            <a href="{% url 'common:services' %}" class="button button-purple">Back to Services</a>
+            <a href="{% url 'shuttle:enquiries' %}" class="button button-purple">Enquiries</a>
+        </div>
+        <a href="{% url 'shuttle:add_passengers' %}" class="button button-purple">Add Passengers</a>
+    </div>
+    <h2>Shuttle Info – {{ date }}</h2>
+    {% if error_message %}
+        <div class="error-message" style="color: red; margin-bottom: 1em;">{{ error_message }}</div>
+    {% endif %}
+    <form method="post">
+        {% csrf_token %}
+        {{ formset.management_form }}
+        <div id="payment-section">
+            <div id="formset-container">
+                {% for form in formset %}
+                    <div class="payment-entry payment-container" data-payment-number="{{ forloop.counter }}">
+                        {{ form.id }}
+                        {{ form.DELETE }}
+                        <div class="form-group-inline">
+                            <div class="field-wrapper">
+                                <label>Driver *</label><br>
+                                {{ form.driver }}
+                            </div>
+                            <div class="field-wrapper">
+                                <label>Number Plate</label><br>
+                                {{ form.number_plate }}
+                            </div>
+                        </div>
+                        <div class="form-group-inline">
+                            <div class="field-wrapper">
+                                <label>Driver Fee *</label><br>
+                                {{ form.driver_fee }}
+                            </div>
+                            <div class="field-wrapper">
+                                <label>Currency *</label><br>
+                                {{ form.currency }}
+                            </div>
+                        </div>
+                        <button type="button" class="remove-payment">Remove Entry</button>
+                        {% if form.errors %}
+                            <div class="form-errors" style="color: red; margin-top: 0.5em;">
+                                <ul>
+                                    {% for field in form %}
+                                        {% for error in field.errors %}
+                                            <li>{{ field.label }}: {{ error }}</li>
+                                        {% endfor %}
+                                    {% endfor %}
+                                    {% for error in form.non_field_errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+            <button type="button" id="add-payment" class="button button-orange">Add Another</button>
+        </div>
+        <button type="submit" class="button button-purple">Save</button>
+    </form>
+</div>
+<!-- Modal Structure -->
+<div id="error-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close-button" onclick="closeModal()">&times;</span>
+        <p id="modal-message"></p>
+    </div>
+</div>
+</div>
+<div class="mobile-bottom-nav">
+    <a href="{% url 'home' %}" class="mobile-nav-item">
+        <i class="fas fa-home"></i>
+        <div>Home</div>
+    </a>
+    <a href="{% url 'shuttle:shuttle' %}" class="mobile-nav-item">
+        <i class="fas fa-shuttle-van" style="color: purple;"></i>
+        <div style="color: purple;">Shuttle</div>
+    </a>
+    <a href="{% url 'common:services' %}" class="mobile-nav-item">
+        <i class="fas fa-cogs" style="color: purple;"></i>
+        <div style="color: purple;">Services</div>
+    </a>
+</div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'edit_payment.js' %}"></script>
+{% endblock %}

@@ -1,4 +1,7 @@
 from django import forms
+from shuttle.models import ShuttleDailyCost
+
+from django import forms
 from shuttle.models import Shuttle
 from common.forms import PaidToMixin, PaymentForm
 from people.models import Driver, Agent, Staff
@@ -39,27 +42,43 @@ class ShuttleForm(PaidToMixin, forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.initialize_paid_to_field()
         self.set_paid_to_initial(self.instance)
+        self.fields['driver'].queryset = Driver.objects.all().order_by('name')
+        self.fields['driver'].empty_label = 'Select Driver'
 
     def set_paid_to_initial(self, instance):
         """Set the initial value for the paid_to field based on the instance."""
+        agents, drivers, _, staffs = get_ordered_people()
+
         if instance.paid_to_staff:
             self.fields['paid_to'].initial = f'staff_{instance.paid_to_staff.id}'
+        elif instance.driver:
+            self.fields['paid_to'].initial = f'driver_{instance.driver.id}'
+
+        self.fields['paid_to'].choices = [
+            ('', 'Select an option'),
+            ('Drivers', [(f"driver_{driver.id}", driver.name) for driver in drivers]),
+            ('Agents', [(f"agent_{agent.id}", agent.name) for agent in agents]),
+            ('Staff', [(f"staff_{staff.id}", staff.name) for staff in staffs]),
+        ]
 
     def clean(self):
         cleaned_data = super().clean()
 
-        # Ensure only 'paid_to_staff' is populated if something is selected
+        # Ensure only 'staff_' or 'driver_' prefixes are accepted for paid_to
         paid_to = self.cleaned_data.get('paid_to')
-        if paid_to:  # Only validate if a selection is made
+        if paid_to:
             if paid_to.startswith('staff_'):
                 staff_id = paid_to.split('_')[1]
                 cleaned_data['paid_to_staff'] = Staff.objects.get(id=staff_id)
+            elif paid_to.startswith('driver_'):
+                driver_id = paid_to.split('_')[1]
+                cleaned_data['driver'] = Driver.objects.get(id=driver_id)
             else:
                 self.add_error('paid_to', 'Please select a valid "Paid to" option.')
 
         return cleaned_data
     
-def save(self, commit=True):
+    def save(self, commit=True):
         """
         Override save to ensure that 'is_confirmed', 'is_paid', and 'is_completed'
         do not reset when editing an existing shuttle.
@@ -76,3 +95,24 @@ def save(self, commit=True):
             instance.save()
 
         return instance
+
+
+# --- ShuttleDailyCostForm ---
+class ShuttleDailyCostForm(forms.ModelForm):
+    class Meta:
+        model = ShuttleDailyCost
+        fields = ['driver', 'number_plate', 'driver_fee', 'currency']
+
+    def clean(self):
+        cleaned_data = super().clean()
+        driver = cleaned_data.get('driver')
+        fee = cleaned_data.get('driver_fee')
+        currency = cleaned_data.get('currency')
+
+        if driver:
+            if not fee:
+                self.add_error('driver_fee', 'Driver fee is required when a driver is assigned.')
+            if not currency:
+                self.add_error('currency', 'Currency is required when a driver is assigned.')
+
+        return cleaned_data

@@ -1,0 +1,77 @@
+{% extends 'base/base_services.html' %}
+{% load static %}
+{% load humanize %}
+{% block title %}Shuttle Info for {{ date }}{% endblock %}
+
+{% block content %}
+<div class="view">
+    <div class="buttons">
+        <div class="left-buttons">
+            <a href="{% url 'home' %}" class="button">Back to Home</a>
+            <a href="{% url 'common:services' %}" class="button button-purple">Back to Services</a>
+            <a href="{% url 'shuttle:shuttle' %}" class="button button-purple">Back to Shuttle List</a>
+        </div>
+    </div>
+    <p id="copy-success" style="display: none; color: green;">Shuttle info copied to clipboard!</p>
+    <br>
+
+    <h2>Shuttle Info – {{ date }}</h2>
+
+    <p><strong>Total Passengers:</strong> {{ total_passengers }}</p>
+    <p><strong>Total Price:</strong> €{{ total_price|floatformat:2|intcomma }}</p>      
+    <p><strong>Total Drivers:</strong> {{ total_drivers }}</p>
+    <p><strong>Total Costs:</strong> €{{ total_costs|floatformat:2|intcomma }}</p>
+
+
+    <br>
+    <h2>Passengers</h2>
+    {% for shuttle in shuttles %}
+        <div class="shuttle-details" style="margin-bottom: 2em;">
+            <p><strong>Customer Name:</strong> {{ shuttle.customer_name|default_if_none:"" }}</p>
+            <p><strong>Shuttle Direction:</strong> {{ shuttle.shuttle_direction|default:"No direction" }}</p>
+            <p><strong>No of Passengers:</strong> {{ shuttle.no_of_passengers|default_if_none:"" }}</p>
+            <p><strong>Driver:</strong> {{ shuttle.driver|default:"No driver" }}</p>
+        </div>
+    {% empty %}
+        <p>No passengers for this day.</p>
+    {% endfor %}
+
+    <br>
+    <h2>Drivers</h2>
+    {% for cost in driver_costs %}
+        <div class="driver-cost-details" style="margin-bottom: 2em;">
+            <p><strong>Driver:</strong> {{ cost.driver }}</p>
+            <p><strong>Number Plate:</strong> {{ cost.number_plate|default:"N/A" }}</p>
+            <p><strong>Driver Fee:</strong> 
+                {% if cost.driver_fee_in_euros %}
+                    €{{ cost.driver_fee_in_euros }}
+                    {% if cost.currency != 'EUR' %} 
+                        ({% if cost.currency == 'GBP' %}£{% elif cost.currency == 'USD' %}${% elif cost.currency == 'HUF' %}Ft {% else %}{{ cost.currency }}{% endif %}{{ cost.driver_fee }})
+                    {% endif %}
+                {% endif %}
+            </p>
+        </div>
+    {% empty %}
+        <p>No driver cost entries for this day.</p>
+    {% endfor %}
+
+    <div class="button-group">
+        <a href="{% url 'shuttle:daily_costs' date %}" class="button button-purple">Edit Costs</a>
+    </div>
+</div>
+
+<div class="mobile-bottom-nav">
+    <a href="{% url 'home' %}" class="mobile-nav-item">
+        <i class="fas fa-home"></i>
+        <div>Home</div>
+    </a>
+    <a href="{% url 'shuttle:shuttle' %}" class="mobile-nav-item">
+        <i class="fas fa-shuttle-van" style="color: purple;"></i>
+        <div style="color: purple;">Shuttle</div>
+    </a>
+    <a href="{% url 'common:services' %}" class="mobile-nav-item">
+        <i class="fas fa-cogs" style="color: purple;"></i>
+        <div style="color: purple;">Services</div>
+    </a>
+</div>
+{% endblock %}

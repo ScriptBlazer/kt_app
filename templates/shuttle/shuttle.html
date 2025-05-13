@@ -34,13 +34,16 @@
         <p><strong>Total Passengers:</strong> {{ group.total_passengers }}</p>
         <p><strong>Total Price:</strong> €{{ group.total_price|intcomma }}</p>
 
-        <!-- Driver Assignment Form -->
-        <div class="assign-driver-form-container">
-            <form method="post" action="{% url 'shuttle:shuttle' %}" class="assign-driver-form">
-                {% csrf_token %}
-                {{ group.driver_form.as_p }}
-                <button type="submit" name="assign_driver" class="assign-driver-submit-button button-purple button-purple">Assign Driver</button>
-            </form>
+        <div class="button-group">
+            <!-- Daily Costs -->
+            <div class="assign-driver-form-container">
+                <a href="{% url 'shuttle:daily_costs' group.date %}" class="button button-purple">Daily Costs</a>
+            </div>
+
+            <!-- Shuttle Info -->
+            <div class="assign-driver-form-container">
+                <a href="{% url 'shuttle:view_day_info' group.date %}" class="button button-purple">Shuttle Info</a>
+            </div>
         </div>
 
         <ul>
@@ -75,13 +78,9 @@
                 <p><strong>Total Passengers:</strong> {{ group.total_passengers }}</p>
                 <p><strong>Total Price:</strong> €{{ group.total_price|floatformat:2|intcomma }}</p>
 
-                <!-- Driver assignment form for each date -->
+                <!-- Shuttle Info Button -->
                 <div class="assign-driver-form-container">
-                    <form method="post" action="{% url 'shuttle:shuttle' %}" class="assign-driver-form">
-                        {% csrf_token %}
-                        {{ group.driver_form.as_p }}
-                        <button type="submit" name="assign_driver" class="assign-driver-submit-button button-purple">Assign Driver</button>
-                    </form>
+                    <a href="{% url 'shuttle:view_day_info' group.date %}" class="button button-purple">Shuttle Info</a>
                 </div>
 
                 <ul>
