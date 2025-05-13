@@ -112,8 +112,9 @@ def assign_job_color(job, now):
       - Red: If the booking is more than one day old and unpaid.
     """
     
-    # Determine if we're dealing with a job or hotel based on attributes
-    is_job = hasattr(job, 'driver')
+    # Determine if we're dealing with a job, shuttle, or hotel based on attributes
+    is_shuttle = hasattr(job, 'shuttle_date')
+    is_job = hasattr(job, 'driver') and not is_shuttle
     is_confirmed = getattr(job, 'is_confirmed', False)
     driver = getattr(job, 'driver', None) if is_job else None
     job_date = getattr(job, 'job_date', None) or getattr(job, 'shuttle_date', None) or getattr(job, 'check_in', None)
@@ -138,6 +139,10 @@ def assign_job_color(job, now):
         if not driver:
             logger.debug("Assigned color: white (job without driver)")
             return 'white'
+    elif is_shuttle:
+        if not is_confirmed:
+            logger.debug("Assigned color: white (unconfirmed shuttle)")
+            return 'white'
     else:
         # Hotel-specific logic: remains white until confirmed
         if not is_confirmed:
@@ -152,7 +157,7 @@ def assign_job_color(job, now):
         return 'red'  # Job/booking is old and unpaid
 
     # If the job/booking is completed, mark it as green
-    if is_completed:
+    if is_paid or is_completed:
         logger.debug("Assigned color: green")
         return 'green'  # Job/booking is completed
 

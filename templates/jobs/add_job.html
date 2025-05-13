@@ -14,7 +14,7 @@
                 <input class="sbig" type="checkbox" id="id_is_confirmed" name="is_confirmed" {% if job_form.initial.is_confirmed %}checked{% endif %}>
             </p>
         </div>
-        <!-- Job Form Fields -->
+        <!-- Main Job Fields (above tabs) -->
         <div class="form-group">
             {{ job_form.customer_name.label_tag }}*<br>
             {{ job_form.customer_name }}
@@ -67,14 +67,6 @@
                 {{ job_form.vehicle_type }}
             </div>
         </div>
-
-        <!-- Pricing and Payment Fields -->
-        <!-- <div class="form-group-inline">
-            <div class="field-wrapper">
-                {{ job_form.payment_type.label_tag }}<br>
-                {{ job_form.payment_type }}
-            </div>
-        </div> -->
         <div class="form-group-inline">
             <div class="field-wrapper">
                 {{ job_form.job_price.label_tag }}*<br>
@@ -82,7 +74,7 @@
             </div>
             <div class="field-wrapper">
                 {{ job_form.job_currency.label_tag }}*<br>
-                {{ job_form.job_currency }} 
+                {{ job_form.job_currency }}
             </div>
         </div>
         <div class="form-group-inline">
@@ -95,70 +87,82 @@
                 {{ job_form.driver_currency }}
             </div>
         </div>
-
-        <div id="payment-section">
-            <h3>Payments</h3>
-            {{ payment_formset.management_form }}
-            {% for payment_form in payment_formset %}
-                <div class="payment-entry payment-container" data-payment-number="{{ forloop.counter }}">
-                    {% if forloop.counter > 1 %}
-                        <h4>Payment {{ forloop.counter }}</h4>
-                    {% endif %}
-                    <div class="form-group-inline">
-                        <div class="field-wrapper">
-                            <label>Amount</label><br>
-                            {{ payment_form.payment_amount }}
-                        </div>
-                        <div class="field-wrapper">
-                            <label>Currency</label><br>
-                            {{ payment_form.payment_currency }}
-                        </div>
+        <!-- Tabs Section -->
+        <div class="tabs">
+            <div class="tab-buttons">
+                <button type="button" class="tab-btn active" data-tab="agent-tab">Agent</button>
+                <button type="button" class="tab-btn" data-tab="driver-tab">Driver</button>
+                <button type="button" class="tab-btn" data-tab="payment-tab">Payments</button>
+            </div>
+            <div id="agent-tab" class="tab-content active">
+                <div class="form-group-inline">
+                    <div class="field-wrapper">
+                        {{ job_form.agent_name.label_tag }}<br>
+                        {{ job_form.agent_name }}
                     </div>
-                    <div class="form-group-inline">
-                        <div class="field-wrapper">
-                            <label>Payment Type</label><br>
-                            {{ payment_form.payment_type }}
-                        </div>
-                        <div class="field-wrapper">
-                            <label>Paid To</label><br>
-                            {{ payment_form.paid_to }}
-                        </div>
+                    <div class="field-wrapper">
+                        {{ job_form.agent_percentage.label_tag }}<br>
+                        {{ job_form.agent_percentage }}
                     </div>
-                    {{ payment_form.DELETE }}
-                    {{ payment_form.id }}
-                    <button type="button" class="remove-payment">Remove Payment</button>
                 </div>
-            {% endfor %}
-            <button type="button" id="add-payment">Add Payment</button>
+            </div>
+            <div id="driver-tab" class="tab-content">
+                <div class="form-group-inline">
+                    <div class="field-wrapper">
+                        {{ job_form.driver.label_tag }}<br>
+                        {{ job_form.driver }}
+                    </div>
+                    <div class="field-wrapper">
+                        {{ job_form.number_plate.label_tag }}<br>
+                        {{ job_form.number_plate }}
+                    </div>
+                </div>
+                <div class="form-group">
+                    {{ job_form.hours_worked.label_tag }}<br>
+                    {{ job_form.hours_worked }}
+                </div>
+            </div>
+            <div id="payment-tab" class="tab-content">
+                <div id="payment-section">
+                    <h3>Payments</h3>
+                    {{ payment_formset.management_form }}
+                    {% for payment_form in payment_formset %}
+                        <div class="payment-entry payment-container" data-payment-number="{{ forloop.counter }}">
+                            {% if forloop.counter > 1 %}
+                                <h4>Payment {{ forloop.counter }}</h4>
+                            {% endif %}
+                            <div class="form-group-inline">
+                                <div class="field-wrapper">
+                                    <label>Amount</label><br>
+                                    {{ payment_form.payment_amount }}
+                                </div>
+                                <div class="field-wrapper">
+                                    <label>Currency</label><br>
+                                    {{ payment_form.payment_currency }}
+                                </div>
+                            </div>
+                            <div class="form-group-inline">
+                                <div class="field-wrapper">
+                                    <label>Payment Type</label><br>
+                                    {{ payment_form.payment_type }}
+                                </div>
+                                <div class="field-wrapper">
+                                    <label>Paid To</label><br>
+                                    {{ payment_form.paid_to }}
+                                </div>
+                            </div>
+                            {{ payment_form.DELETE }}
+                            {{ payment_form.id }}
+                            <button type="button" class="remove-payment">Remove Payment</button>
+                        </div>
+                    {% endfor %}
+                    <button type="button" id="add-payment">Add Payment</button>
+                </div>
+            </div>
         </div>
         <input type="hidden" name="payment-TOTAL_FORMS" value="{{ payment_formset.total_form_count }}">
         <br><br>
-
-        <!-- Driver Info -->
-        <div class="form-group-inline">
-            <div class="field-wrapper">
-                {{ job_form.driver.label_tag }}<br>
-                {{ job_form.driver }}
-            </div>
-            <div class="field-wrapper">
-                {{ job_form.number_plate.label_tag }}<br>
-                {{ job_form.number_plate }}
-            </div>
-        </div>
-
-        <!-- Agent Info -->
-        <div class="form-group-inline">
-            <div class="field-wrapper">
-                {{ job_form.agent_name.label_tag }}<br>
-                {{ job_form.agent_name }}
-            </div>
-            <div class="field-wrapper">
-                {{ job_form.agent_percentage.label_tag }}<br>
-                {{ job_form.agent_percentage }}
-            </div>
-        </div>
         <p class="nm">*Required fields</p>
-
         <div class="button-group">
             <button type="submit" id="save-button">Save Job</button>
             <a href="{% url 'home' %}" class="button cancel-button">Cancel</a>
@@ -228,6 +232,15 @@
             }
         }
         window.closeModal = closeModal;
+        // Tabs logic
+        document.querySelectorAll('.tab-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+                button.classList.add('active');
+                document.getElementById(button.dataset.tab).classList.add('active');
+            });
+        });
     });
 </script>
 {% endblock %}

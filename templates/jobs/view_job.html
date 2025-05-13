@@ -72,6 +72,7 @@
         {% endif %}
     </p>
     <p><strong>Number Plate:</strong> {{ job.number_plate|default_if_none:"" }}</p>
+    <p><strong>Hours Worked:</strong> {{ job.hours_worked|default_if_none:"" }}</p>
     <p><strong>Agent Name:</strong> {{ job.agent_name.name|default_if_none:"" }}</p>
     <p><strong>Agent Fee:</strong> {% if job.agent_percentage %}{{ job.agent_percentage }}%{% endif %}</p>
     {% if freelancer_name and freelancer_name != "-" %}

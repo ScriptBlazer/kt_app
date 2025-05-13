@@ -4,6 +4,8 @@ from django.utils import timezone
 from django.db.models import Q
 from django.db import transaction
 from jobs.models import Job
+from shuttle.models import Shuttle
+from hotels.models import HotelBooking
 from common.models import Payment
 from jobs.forms import JobForm
 from common.forms import PaymentForm
@@ -69,11 +71,20 @@ def home(request):
 
 @login_required
 def enquiries(request):
-    # Fetch all jobs that are not confirmed
-    enquiries_jobs = Job.objects.filter(is_confirmed=False).order_by('-job_date', '-job_time')
-    logger.info(f"Found {enquiries_jobs.count()} unconfirmed jobs.")
+    # Fetch the 3 most recent unconfirmed jobs, shuttles, and hotels
+    all_jobs = Job.objects.filter(is_confirmed=False).order_by('-job_date', '-job_time')
+    all_shuttles = Shuttle.objects.filter(is_confirmed=False).order_by('-shuttle_date')
+    all_hotels = HotelBooking.objects.filter(is_confirmed=False).order_by('-check_in')
 
-    return render(request, 'jobs/enquiries.html', {'enquiries_jobs': enquiries_jobs})
+    context = {
+        'recent_jobs': all_jobs[:3],
+        'older_jobs': all_jobs[3:],
+        'recent_shuttles': all_shuttles[:3],
+        'older_shuttles': all_shuttles[3:],
+        'recent_hotels': all_hotels[:3],
+        'older_hotels': all_hotels[3:]
+    }
+    return render(request, 'jobs/enquiries.html', context)
 
 @login_required
 def past_jobs(request):

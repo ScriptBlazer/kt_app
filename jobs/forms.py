@@ -66,7 +66,8 @@ class JobForm(PaidToMixin, forms.ModelForm):
             'job_description', 'no_of_passengers', 'vehicle_type', 'kilometers',
             'pick_up_location', 'drop_off_location', 'flight_number', 'payment_type',
             'job_price', 'driver_fee', 
-            'number_plate', 'agent_name', 'agent_percentage', 'job_currency', 'driver_currency', 'driver', 'agent_name', 'is_confirmed'
+            'number_plate', 'agent_name', 'agent_percentage', 'job_currency', 'driver_currency', 'driver', 'agent_name', 'is_confirmed',
+            'hours_worked',
         ]
         
         error_messages = {
@@ -88,15 +89,16 @@ class JobForm(PaidToMixin, forms.ModelForm):
         ordered_drivers = Driver.objects.order_by(Lower('name'))
 
         # Populate driver field with options for drivers
-        self.fields['driver'].choices = [
-            ('', 'Select an option'),
-            ('Drivers', [(f"driver_{driver.id}", driver.name) for driver in ordered_drivers]),
-        ]
+        driver_choices = [(f"driver_{driver.id}", driver.name) for driver in ordered_drivers]
+        self.fields['driver'].choices = [('', 'Select an option'), ('Drivers', driver_choices)]
+
+        # If editing an existing job, prefill the driver field with the selected value
+        if self.instance.pk and self.instance.driver:
+            self.initial['driver'] = f"driver_{self.instance.driver.id}"
 
         # Set initial value for driver if editing an existing job
-        if self.instance.pk:
-            if self.instance.driver:
-                self.fields['driver'].initial = f"driver_{self.instance.driver.id}"
+        if self.instance.pk and self.instance.driver:
+            self.fields['driver'].initial = f"driver_{self.instance.driver.id}"
 
 
     def clean_driver(self):

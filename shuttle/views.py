@@ -1,9 +1,11 @@
+from shuttle.models import Shuttle, ShuttleDay, ShuttleDailyCost
+from shuttle.forms import ShuttleForm, DriverAssignmentForm, ShuttleDailyCostForm
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
+from django.forms import inlineformset_factory
 from django.forms import modelformset_factory
-from shuttle.models import Shuttle
-from shuttle.forms import ShuttleForm, DriverAssignmentForm
+
 from django.db.models import Sum
 from django.db import transaction
 from django.utils import timezone
@@ -127,6 +129,24 @@ def add_passengers(request):
 
             for payment_form in payment_formset:
                 if payment_form.cleaned_data and not payment_form.cleaned_data.get("DELETE"):
+                    amount = payment_form.cleaned_data.get("payment_amount")
+                    currency = payment_form.cleaned_data.get("payment_currency")
+                    payment_type = payment_form.cleaned_data.get("payment_type")
+                    has_paid_to = any([
+                        payment_form.cleaned_data.get("paid_to_driver"),
+                        payment_form.cleaned_data.get("paid_to_agent"),
+                        payment_form.cleaned_data.get("paid_to_staff")
+                    ])
+
+                    if not all([amount, currency, payment_type]) or not has_paid_to:
+                        form.add_error(None, "All payment fields (amount, currency, type, paid to) are required.")
+                        return render(request, 'shuttle/add_passengers.html', {
+                            'form': form,
+                            'payment_formset': payment_formset,
+                            'formset_prefix': formset_prefix,
+                            'error_message': "Please complete all payment fields before submitting."
+                        })
+
                     payment = payment_form.save(commit=False)
                     payment.shuttle = shuttle
                     payment.save()
@@ -137,13 +157,14 @@ def add_passengers(request):
         form = ShuttleForm()
         payment_formset = PaymentFormSet(queryset=Payment.objects.none(), prefix=formset_prefix)
 
-    # ✅ Override 'paid_to' choices to show only Staff
-    staff_members = Staff.objects.all().order_by('name')
+    agents, drivers, _, staff_members = get_ordered_people()
+
     for payment_form in payment_formset.forms:
         if 'paid_to' in payment_form.fields:
             payment_form.fields['paid_to'].choices = [
                 ('', 'Select an option'),
-                ('Staff', [(f'staff_{staff.id}', staff.name) for staff in staff_members])
+                ('Drivers', [(f'driver_{driver.id}', driver.name) for driver in drivers]),
+                ('Staff', [(f'staff_{staff.id}', staff.name) for staff in staff_members]),
             ]
 
     return render(request, 'shuttle/add_passengers.html', {
@@ -182,6 +203,24 @@ def edit_passengers(request, shuttle_id):
                         logger.info(f"Deleting payment ID: {payment_form.instance.pk}")
                         payment_form.instance.delete()
                     elif payment_form.cleaned_data and not payment_form.cleaned_data.get("DELETE"):
+                        amount = payment_form.cleaned_data.get("payment_amount")
+                        currency = payment_form.cleaned_data.get("payment_currency")
+                        payment_type = payment_form.cleaned_data.get("payment_type")
+                        has_paid_to = any([
+                            payment_form.cleaned_data.get("paid_to_driver"),
+                            payment_form.cleaned_data.get("paid_to_agent"),
+                            payment_form.cleaned_data.get("paid_to_staff")
+                        ])
+
+                        if not all([amount, currency, payment_type]) or not has_paid_to:
+                            form.add_error(None, "All payment fields (amount, currency, type, paid to) are required.")
+                            return render(request, 'shuttle/edit_passengers.html', {
+                                'form': form,
+                                'payment_formset': payment_formset,
+                                'formset_prefix': formset_prefix,
+                                'error_message': "Please complete all payment fields before submitting."
+                            })
+
                         payment = payment_form.save(commit=False)
                         payment.shuttle = shuttle
                         payment.save()
@@ -192,13 +231,15 @@ def edit_passengers(request, shuttle_id):
         form = ShuttleForm(instance=shuttle)
         payment_formset = PaymentFormSet(queryset=Payment.objects.filter(shuttle=shuttle), prefix=formset_prefix)
 
-    # ✅ Override 'paid_to' choices to show only Staff
-    staff_members = Staff.objects.all().order_by('name')
+    # Get choices for 'paid_to' field
+    agents, drivers, _, staff_members = get_ordered_people()
+    # 'paid_to' choices
     for payment_form in payment_formset.forms:
         if 'paid_to' in payment_form.fields:
             payment_form.fields['paid_to'].choices = [
                 ('', 'Select an option'),
-                ('Staff', [(f'staff_{staff.id}', staff.name) for staff in staff_members])
+                ('Drivers', [(f'driver_{driver.id}', driver.name) for driver in drivers]),
+                ('Staff', [(f'staff_{staff.id}', staff.name) for staff in staff_members]),
             ]
 
     return render(request, 'shuttle/edit_passengers.html', {
@@ -248,7 +289,7 @@ def update_shuttle_status(request, id):
     if is_paid and not is_confirmed:
         error_message = 'Shuttle must be confirmed before it can be marked as paid.'
     elif is_completed and not is_confirmed:
-        error_message = 'Shuttle must be confirmed before it can be marked as completed.'
+        error_message = 'To mark the shuttle as completed, it must first be confirmed.'
     elif is_completed and not is_paid:
         error_message = 'Shuttle must be paid before it can be marked as completed.'
 
@@ -321,3 +362,54 @@ def update_shuttle_status(request, id):
         'shuttle': shuttle,
         'error_message': error_message
     }, status=400)
+
+
+@login_required
+def view_day_info(request, date):
+    parent, _ = ShuttleDay.objects.get_or_create(date=date)
+    shuttles = Shuttle.objects.filter(shuttle_date=date).order_by('customer_name')
+    driver_costs = ShuttleDailyCost.objects.filter(parent=parent)
+
+    context = {
+        'date': date,
+        'shuttles': shuttles,
+        'driver_costs': driver_costs,
+        'total_passengers': shuttles.aggregate(Sum('no_of_passengers'))['no_of_passengers__sum'] or 0,
+        'total_price': shuttles.aggregate(Sum('price'))['price__sum'] or 0,
+        'total_drivers': driver_costs.count(),
+        'total_costs': driver_costs.aggregate(Sum('driver_fee_in_euros'))['driver_fee_in_euros__sum'] or 0,
+    }
+    return render(request, 'shuttle/day_info.html', context)
+
+@login_required
+def shuttle_daily_costs(request, date):
+    parent, _ = ShuttleDay.objects.get_or_create(date=date)
+    ShuttleDailyCostFormSet = inlineformset_factory(
+        ShuttleDay, ShuttleDailyCost, form=ShuttleDailyCostForm, extra=1, can_delete=True
+    )
+
+    if request.method == 'POST':
+        formset = ShuttleDailyCostFormSet(request.POST, instance=parent)
+        error_message = None
+
+        if formset.is_valid():
+            with transaction.atomic():
+                instances = formset.save(commit=False)
+                for obj in instances:
+                    obj.parent = parent
+                    obj.save()
+                for form in formset.deleted_forms:
+                    if form.instance.pk:
+                        form.instance.delete()
+            return redirect('shuttle:shuttle')
+        else:
+            error_message = "Please correct the form errors."
+    else:
+        formset = ShuttleDailyCostFormSet(instance=parent)
+        error_message = None
+
+    return render(request, 'shuttle/daily_costs.html', {
+        'formset': formset,
+        'date': date,
+        'error_message': error_message,
+    })
