@@ -34,6 +34,9 @@ class Job(models.Model):
     driver_currency = models.CharField(max_length=10, choices=CURRENCY_CHOICES, null=True, blank=True)
     driver_fee_in_euros = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
 
+    # Hours worked
+    hours_worked = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+
     # Driver and Vehicle Information
     driver = models.ForeignKey(Driver, on_delete=models.PROTECT, null=True, blank=True)
     number_plate = models.CharField(max_length=20, null=True, blank=True)

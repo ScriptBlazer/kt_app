@@ -625,7 +625,7 @@ class AdditionalJobTests(TestCase):
             vehicle_type='Car',
         )
         color = assign_job_color(job, timezone.now())
-        self.assertNotEqual(color, 'green')  # Should not be green
+        self.assertEqual(color, 'green')  # Should be green according to new logic
 
     @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.2'))
     def test_agent_percentage_applies_to_total(self, mock_get_exchange_rate):

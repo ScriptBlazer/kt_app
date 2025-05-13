@@ -1,10 +1,22 @@
 from django.db import models
+
+# --- ShuttleDay Model ---
+class ShuttleDay(models.Model):
+    date = models.DateField(unique=True)
+
+    def __str__(self):
+        return str(self.date)
+
+from django.db import models
 import pytz
 from django.utils import timezone
 from common.utils import PAYMENT_TYPE_CHOICES, calculate_cc_fee
 from people.models import Staff, Driver
 from decimal import Decimal
 from people.models import Driver
+
+from common.utils import get_exchange_rate, CURRENCY_CHOICES
+from decimal import Decimal
 
 class ShuttleConfig(models.Model):
     price_per_passenger = models.DecimalField(max_digits=10, decimal_places=2, default=60.00)
@@ -68,3 +80,21 @@ class Shuttle(models.Model):
         cc_fee_percentage = payment_settings.cc_fee_percentage if payment_settings else Decimal('7.00')  # Fallback
 
         super(Shuttle, self).save(*args, **kwargs)
+
+
+# --- ShuttleDailyCost Model ---
+class ShuttleDailyCost(models.Model):
+    parent = models.ForeignKey('ShuttleDay', on_delete=models.CASCADE)
+    driver = models.ForeignKey(Driver, on_delete=models.CASCADE)
+    number_plate = models.CharField(max_length=20, blank=True, null=True)
+    driver_fee = models.DecimalField(max_digits=10, decimal_places=2)
+    currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES)
+    driver_fee_in_euros = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+
+    def save(self, *args, **kwargs):
+        rate = get_exchange_rate(self.currency)
+        self.driver_fee_in_euros = (self.driver_fee / rate).quantize(Decimal('0.01'))
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.parent.date} - {self.driver.name} - {self.driver_fee} {self.currency}"

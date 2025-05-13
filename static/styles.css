@@ -459,7 +459,7 @@ table tbody tr:hover {
     box-shadow: inset 0px 0px 10px rgba(153, 118, 3, 0.94);
 } */
 .orange-job {
-    background-color: #8fed8f;
+    background-color: orange; 
     box-shadow: inset 0px 0px 10px rgba(42, 179, 8, 0.944);
 }
 
@@ -1023,4 +1023,43 @@ input[type="checkbox"][name$="-DELETE"] {
 
 .more-menu a:hover {
     background-color: #f0f0f0;
+}
+
+/* Classic Tabs Styles */
+.tabs {
+    margin-top: 20px;
+}
+
+.tab-buttons {
+    display: flex;
+    border-bottom: 2px solid #ccc;
+    margin-bottom: 15px;
+}
+
+.tab-buttons button {
+    padding: 10px 20px;
+    background-color: #f1f1f1;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    font-weight: bold;
+    color: #333;
+}
+
+.tab-buttons button.active {
+    background-color: #007bff;
+    color: white;
+}
+
+.tab-buttons button:not(:last-child) {
+    border-right: 1px solid #ccc;
+}
+
+.tab-content {
+    display: none;
+    padding: 10px 0;
+}
+
+.tab-content.active {
+    display: block;
 }
