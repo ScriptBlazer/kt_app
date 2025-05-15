@@ -26,7 +26,7 @@ LOGGING = {
             'formatter': 'verbose',
         },
         'console': {
-            'class': 'logging.StreamHandler',
+            'stream': 'ext://sys.stdout',
             'formatter': 'verbose',
         },
     },
