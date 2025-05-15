@@ -30,6 +30,20 @@
         <p class="mobile-message">Please switch to desktop view to see this page.</p>
     </div>
 
+    <style>
+        .orange-bg {
+            background-color: orange !important;
+        }
+        .red-bg {
+            background-color: red !important;
+        }
+        .arrow {
+            margin-left: 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+
     <!-- Balances Content -->
     <div id="balances-content">
         <div class="calc">
@@ -49,83 +63,57 @@
                         {% for name, data in individuals.items %}
                             <h4 class="toggle-header" data-section-id="{{ name|slugify }}-{{ forloop.counter }}-section">
                                 {{ name }}
-                                {% if data.owes_kt > 0 %}
-                                    <span class="badge badge-orange">Owes KT</span>
-                                {% elif data.kt_owes > 0 %}
-                                    <span class="badge badge-red">KT Owes</span>
+                                {% if data.status == 'owes' %}
+                                    <span class="badge badge-red">OWES KT: {{ data.net_balance|floatformat:2|intcomma }}</span>
+                                {% elif data.status == 'owed' %}
+                                    <span class="badge badge-orange">KT OWES: {{ data.net_balance|floatformat:2|intcomma }}</span>
                                 {% else %}
-                                    <span class="badge badge-green">Balanced</span>
+                                    <span class="badge badge-green">BALANCED</span>
                                 {% endif %}
                                 <span id="{{ name|slugify }}-{{ forloop.counter }}-section-arrow">▼</span>
                             </h4>
                             <div id="{{ name|slugify }}-{{ forloop.counter }}-section" style="display: none;">
-                                <div>
-                                    <p><strong>Currency Totals:</strong></p>
-                                    {% for currency, amount in data.currency_totals.items %}
-                                        <p>{{ currency }}: {{ amount|floatformat:2|intcomma }}</p>
-                                    {% endfor %}
-                                    <p>
-                                        {% if data.kt_owes > 0 %}
-                                            <span style="color: red;">KT Owes: {{ data.kt_owes|floatformat:2|intcomma }}</span>
-                                        {% elif data.owes_kt > 0 %}
-                                            <span style="color: rgb(217, 145, 11);">Owes KT: {{ data.owes_kt|floatformat:2|intcomma }}</span>
-                                        {% else %}
-                                            <span style="color: green;">Balanced</span>
-                                        {% endif %}
-                                    </p>
-                                    <button class="button button-orange" style="margin-bottom: 10px;">Settle</button>
+                                <div class="balance-summary">
+                                    <div class="balance-row">
+                                        <span class="balance-label">KT owes:</span>
+                                        <span class="balance-value kt-owes">€{{ data.kt_owes|floatformat:2|intcomma }}</span>
+                                    </div>
+                                    <div class="balance-row">
+                                        <span class="balance-label">Owes KT:</span>
+                                        <span class="balance-value owes-kt">€{{ data.owes_kt|floatformat:2|intcomma }}</span>
+                                    </div>
+                                    <div class="balance-row net-balance">
+                                        <span class="balance-label">Net balance:</span>
+                                        <span class="balance-value {% if data.net_balance > 0 %}positive{% elif data.net_balance < 0 %}negative{% else %}zero{% endif %}">
+                                            €{{ data.net_balance|floatformat:2|intcomma }}
+                                        </span>
+                                    </div>
                                 </div>
                                 
-                                <!-- Table for listing jobs and payments -->
-                                <table class="table">
+                                <!-- Table for listing transactions -->
+                                <table class="transactions-table">
                                     <thead>
                                         <tr>
-                                            <th>Job Date</th>
+                                            <th>Date</th>
                                             <th>Customer Name</th>
-                                            <th>Job Type</th>
-                                            <th>Payment Amount</th>
-                                            <th>Payment Type</th>
-                                            <th>Agent Fee</th>
-                                            <th>Owes</th>
+                                            <th>Amount</th>
+                                            <th>Type</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {% for record in data.records %}
-                                            <tr>
-                                                <td>{{ record.job_date|date:"Y-m-d" }}</td>
-                                                <td>{{ record.customer_name|default:"N/A" }}</td>
-                                                <td>
-                                                    {% if record.job_type == 'job' %}
-                                                        Driving
-                                                    {% elif record.job_type == 'shuttle' %}
-                                                        Shuttle
-                                                    {% elif record.job_type == 'payment' %}
-                                                        Payment
-                                                    {% else %}
-                                                        {{ record.job_type|default:"N/A" }}
-                                                    {% endif %}
+                                            <tr class="transaction-row {% if record.direction == 'incoming' %}orange-bg{% else %}red-bg{% endif %}">
+                                                <td>{{ record.date|date:"Y-m-d" }}</td>
+                                                <td>{{ record.customer_name }}</td>
+                                                <td class="amount">
+                                                    {% if record.currency == 'EUR' %}€{% elif record.currency == 'HUF' %}Ft{% elif record.currency == 'USD' %}${% else %}{{ record.currency }}{% endif %}
+                                                    {{ record.amount|floatformat:2|intcomma }}
                                                 </td>
                                                 <td>
-                                                    {% if record.payment_amount %}
-                                                        {{ record.payment_amount|floatformat:2|intcomma }}
-                                                    {% else %}
-                                                        N/A
-                                                    {% endif %}
-                                                </td>
-                                                <td>{{ record.payment_type|default:"N/A" }}</td>
-                                                <td>
-                                                    {% if record.agent_fee %}
-                                                        €{{ record.agent_fee|floatformat:2|intcomma }}
-                                                    {% else %}
-                                                        N/A
-                                                    {% endif %}
-                                                </td>
-                                                <td>
-                                                    {% if record.owes %}
-                                                        {{ record.owes|floatformat:2|intcomma }}
-                                                    {% else %}
-                                                        N/A
-                                                    {% endif %}
+                                                    {% if record.job_type == 'Payment' %}<i class="fas fa-money-bill"></i>Payment{% endif %}
+                                                    {% if record.job_type == 'Driving' %}<i class="fas fa-car"></i>Driving{% endif %}
+                                                    {% if record.job_type == 'Shuttle' %}<i class="fas fa-bus"></i>Shuttle{% endif %}
+                                                    {% if record.job_type == 'Hotel' %}<i class="fas fa-hotel"></i>Hotel{% endif %}
                                                 </td>
                                             </tr>
                                         {% endfor %}
