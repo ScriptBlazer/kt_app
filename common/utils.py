@@ -44,12 +44,15 @@ def fetch_and_cache_exchange_rate(currency):
     url = f'https://v6.exchangerate-api.com/v6/{api_key}/latest/{currency}'
 
     try:
+        logger.info(f"Making API call to fetch exchange rate for {currency}")
         response = requests.get(url)
+        logger.info(f"API response status code: {response.status_code}")
         response.raise_for_status()
         data = response.json()
 
         if 'conversion_rates' in data and 'EUR' in data['conversion_rates']:
             rate = Decimal(data['conversion_rates']['EUR'])
+            logger.info(f"Successfully fetched exchange rate for {currency}: {rate}")
 
             # Update or create the exchange rate in the database
             exchange_rate, created = ExchangeRate.objects.update_or_create(
@@ -57,12 +60,17 @@ def fetch_and_cache_exchange_rate(currency):
                 defaults={'rate': rate},
             )
             if created:
-                logger.debug(f"Created new exchange rate for {currency}: {rate}")
+                logger.info(f"Created new exchange rate for {currency}: {rate}")
             else:
-                logger.debug(f"Updated exchange rate for {currency}: {rate}")
+                logger.info(f"Updated exchange rate for {currency}: {rate}")
 
+            # Cache the rate for 24 hours
+            cache_key = f'exchange_rate_{currency}'
+            cache.set(cache_key, rate, timeout=86400)  # 24 hours in seconds
+            
             return rate
         else:
+            logger.error(f'Invalid response structure or missing EUR rate for {currency}')
             raise ValueError(f'Invalid response structure or missing EUR rate for {currency}')
 
     except requests.RequestException as e:

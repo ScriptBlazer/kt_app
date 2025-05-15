@@ -15,6 +15,7 @@ from django.db.models import Prefetch
 import pytz
 import json
 import logging
+from django.utils import timezone
 
 logger = logging.getLogger('kt')
 
@@ -498,12 +499,35 @@ def balances(request):
     staff = Staff.objects.all()
     jobs = Job.objects.select_related('agent_name')
 
+    # Initialize categories with more detailed structure
     categories = {
-        'Agents': {agent.name: {'records': [], 'currency_totals': {}, 'kt_owes': Decimal('0.00'), 'owes_kt': Decimal('0.00')} for agent in agents},
-        'Drivers': {driver.name: {'records': [], 'currency_totals': {}, 'kt_owes': Decimal('0.00'), 'owes_kt': Decimal('0.00')} for driver in drivers},
-        'Staff': {staff.name: {'records': [], 'currency_totals': {}, 'kt_owes': Decimal('0.00'), 'owes_kt': Decimal('0.00')} for staff in staff},
+        'Agents': {agent.name: {
+            'records': [],
+            'currency_totals': {},
+            'kt_owes': Decimal('0.00'),  # KT owes to this person
+            'owes_kt': Decimal('0.00'),  # This person owes to KT
+            'net_balance': Decimal('0.00'),  # Net balance (kt_owes - owes_kt)
+            'status': 'balanced'  # Status: 'owes', 'owed', or 'balanced'
+        } for agent in agents},
+        'Drivers': {driver.name: {
+            'records': [],
+            'currency_totals': {},
+            'kt_owes': Decimal('0.00'),
+            'owes_kt': Decimal('0.00'),
+            'net_balance': Decimal('0.00'),
+            'status': 'balanced'
+        } for driver in drivers},
+        'Staff': {staff.name: {
+            'records': [],
+            'currency_totals': {},
+            'kt_owes': Decimal('0.00'),
+            'owes_kt': Decimal('0.00'),
+            'net_balance': Decimal('0.00'),
+            'status': 'balanced'
+        } for staff in staff},
     }
 
+    # Process payments (outgoing money)
     for payment in payments:
         person_name, category = None, None
 
@@ -516,38 +540,122 @@ def balances(request):
 
         if person_name and category:
             payment_amount = payment.payment_amount or Decimal('0.00')
-
+            
+            # Record the payment
             categories[category][person_name]['records'].append({
                 'type': 'payment',
-                'job_date': payment.job.job_date if payment.job else None,
-                'customer_name': payment.job.customer_name if payment.job else None,
-                'job_type': 'Payment',
-                'payment_amount': payment_amount,
-                'payment_type': payment.payment_type,
-                'agent_fee': None,
-                'owes': payment_amount  # They owe KT this amount
+                'date': payment.job.job_date if payment.job else timezone.now(),
+                'amount': payment_amount,
+                'currency': payment.payment_currency,
+                'customer_name': payment.job.customer_name if payment.job else \
+                              payment.shuttle.customer_name if payment.shuttle else \
+                              payment.hotel.customer_name if payment.hotel else \
+                              'Unknown',
+                'direction': 'outgoing',
+                'job_type': 'Driving' if payment.job else \
+                           'Shuttle' if payment.shuttle else \
+                           'Hotel' if payment.hotel else \
+                           'Payment'
             })
+            
+            # Update totals
+            categories[category][person_name]['owes_kt'] += payment_amount
+            categories[category][person_name]['net_balance'] -= payment_amount
 
-            categories[category][person_name]['kt_owes'] += payment_amount
-
+    # Process jobs (incoming money)
     for job in jobs:
-        agent = job.agent_name
-        if agent:
-            agent_fee, _ = calculate_agent_fee_and_profit(job)
-            agent_name = agent.name
+        # Get the payment recipient
+        payment_recipient = None
+        if job.driver:
+            payment_recipient = 'driver'
+        elif job.agent_name:
+            payment_recipient = 'agent'
 
-            if agent_name in categories['Agents']:
-                categories['Agents'][agent_name]['records'].append({
-                    'type': 'job',
-                    'job_date': job.job_date,
-                    'customer_name': job.customer_name,
-                    'job_type': 'Driving',  # Replaced 'Job' with 'Driving'
-                    'payment_amount': None,
-                    'payment_type': None,
-                    'agent_fee': agent_fee,
-                    'owes': agent_fee  # KT owes agent this fee
-                })
-                categories['Agents'][agent_name]['owes_kt'] += agent_fee
+        # Calculate amounts based on payment recipient
+        if payment_recipient == 'driver':
+            if job.driver_fee:
+                # Driver keeps driver fee, gives rest to KT
+                kt_amount = job.job_price - job.driver_fee
+                if kt_amount > 0:
+                    # Record KT amount
+                    if job.driver.name in categories['Drivers']:
+                        categories['Drivers'][job.driver.name]['records'].append({
+                            'type': 'job',
+                            'date': job.job_date,
+                            'amount': kt_amount,
+                            'currency': job.job_currency,
+                            'description': f'Driving job for {job.customer_name}',
+                            'direction': 'incoming',
+                            'job_type': 'Driving'
+                        })
+                        categories['Drivers'][job.driver.name]['owes_kt'] += kt_amount
+                        categories['Drivers'][job.driver.name]['net_balance'] += kt_amount
+            else:
+                # Driver owes KT the full amount
+                if job.driver.name in categories['Drivers']:
+                    categories['Drivers'][job.driver.name]['records'].append({
+                        'type': 'job',
+                        'date': job.job_date,
+                        'amount': job.job_price,
+                        'currency': job.job_currency,
+                        'description': f'Driving job for {job.customer_name}',
+                        'direction': 'incoming',
+                        'job_type': 'Driving'
+                    })
+                    categories['Drivers'][job.driver.name]['owes_kt'] += job.job_price
+                    categories['Drivers'][job.driver.name]['net_balance'] += job.job_price
+
+        elif payment_recipient == 'agent':
+            agent = job.agent_name
+            if agent:
+                agent_fee, _ = calculate_agent_fee_and_profit(job)
+                agent_name = agent.name
+
+                if agent_name in categories['Agents']:
+                    # Record agent fee
+                    categories['Agents'][agent_name]['records'].append({
+                        'type': 'job',
+                        'date': job.job_date,
+                        'amount': agent_fee,
+                        'currency': job.job_currency,
+                        'description': f'Driving job for {job.customer_name}',
+                        'direction': 'incoming',
+                        'job_type': 'Driving'
+                    })
+                    categories['Agents'][agent_name]['owes_kt'] += agent_fee
+                    categories['Agents'][agent_name]['net_balance'] += agent_fee
+
+                    # Calculate KT amount (job price - agent fee)
+                    kt_amount = job.job_price - agent_fee
+                    if kt_amount > 0:
+                        # Record KT amount
+                        categories['Agents'][agent_name]['records'].append({
+                            'type': 'job',
+                            'date': job.job_date,
+                            'amount': kt_amount,
+                            'currency': job.job_currency,
+                            'description': f'Driving job for {job.customer_name}',
+                            'direction': 'incoming',
+                            'job_type': 'Driving'
+                        })
+                        categories['Agents'][agent_name]['owes_kt'] += kt_amount
+                        categories['Agents'][agent_name]['net_balance'] += kt_amount
+
+    # Calculate status for each person
+    for category in categories.values():
+        for person in category.values():
+            if person['net_balance'] > 0:
+                person['status'] = 'owed'
+            elif person['net_balance'] < 0:
+                person['status'] = 'owes'
+            else:
+                person['status'] = 'balanced'
+
+    # Sort records by date for each person
+    for category in categories.values():
+        for person in category.values():
+            # Convert all dates to datetime.date objects before sorting
+            person['records'].sort(key=lambda x: x['date'].date() if hasattr(x['date'], 'date') else x['date'], reverse=True)
 
     context = {
         'categories': categories,
