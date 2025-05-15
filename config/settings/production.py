@@ -25,6 +25,10 @@ LOGGING = {
             'filename': LOG_FILE_PATH,
             'formatter': 'verbose',
         },
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
     },
     'formatters': {
         'verbose': {
@@ -34,11 +38,11 @@ LOGGING = {
     },
     'loggers': {
         'django': {
-            'handlers': ['file'],
+            'handlers': ['file', 'console'],
             'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'), 
         },
         'kt': {
-            'handlers': ['file'], 
+            'handlers': ['file', 'console'], 
             'level': 'INFO', 
         },
     },
