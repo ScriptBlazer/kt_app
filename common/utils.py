@@ -78,19 +78,11 @@ def fetch_and_cache_exchange_rate(currency):
         raise ValueError(f'Error fetching exchange rate for {currency}') from e
 
 def get_exchange_rate(currency):
-    """Retrieve the exchange rate for the given currency from the database or API."""
+    """Retrieve the exchange rate for the given currency from the cache, database, or API."""
     if currency == 'EUR':
         return Decimal('1.00')
 
-    # Try retrieving the rate from the database first
-    try:
-        exchange_rate = ExchangeRate.objects.get(currency=currency)
-        logger.debug(f"Using database exchange rate for {currency}: {exchange_rate.rate}")
-        return exchange_rate.rate
-    except ExchangeRate.DoesNotExist:
-        logger.debug(f"No database exchange rate found for {currency}.")
-
-    # Try retrieving the cached rate
+    # Try retrieving the rate from the cache first
     cache_key = f'exchange_rate_{currency}'
     rate = cache.get(cache_key)
 
@@ -98,7 +90,15 @@ def get_exchange_rate(currency):
         logger.debug(f"Using cached exchange rate for {currency}: {rate}")
         return rate
 
-    logger.debug(f"No cached exchange rate found for {currency}. Fetching from API.")
+    # Try retrieving the rate from the database
+    try:
+        exchange_rate = ExchangeRate.objects.get(currency=currency)
+        logger.debug(f"Using database exchange rate for {currency}: {exchange_rate.rate}")
+        return exchange_rate.rate
+    except ExchangeRate.DoesNotExist:
+        logger.debug(f"No database exchange rate found for {currency}.")
+
+    logger.debug(f"No cached or database exchange rate found for {currency}. Fetching from API.")
     # Fetch and cache if not found
     return fetch_and_cache_exchange_rate(currency)
     
