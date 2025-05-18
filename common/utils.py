@@ -93,6 +93,9 @@ def get_exchange_rate(currency):
     # Try retrieving the rate from the database
     try:
         exchange_rate = ExchangeRate.objects.get(currency=currency)
+        if exchange_rate.last_updated < timezone.now() - timedelta(hours=24):
+            logger.info(f"Exchange rate for {currency} is older than 24 hours. Fetching new rate.")
+            return fetch_and_cache_exchange_rate(currency)
         logger.debug(f"Using database exchange rate for {currency}: {exchange_rate.rate}")
         return exchange_rate.rate
     except ExchangeRate.DoesNotExist:
