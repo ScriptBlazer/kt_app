@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 # --- ShuttleDay Model ---
 class ShuttleDay(models.Model):
@@ -50,6 +51,7 @@ class Shuttle(models.Model):
     payment_type = models.CharField(max_length=10, choices=PAYMENT_TYPE_CHOICES, null=True, blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     driver = models.ForeignKey(Driver, on_delete=models.PROTECT, null=True, blank=True)
+    number_plate = models.CharField(max_length=20, null=True, blank=True)
     shuttle_notes = models.TextField(blank=True, null=True)
     cc_fee = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
 
@@ -59,6 +61,11 @@ class Shuttle(models.Model):
     is_confirmed = models.BooleanField(default=False)
     is_completed = models.BooleanField(default=False)
     is_paid = models.BooleanField(default=False)
+
+    # Track who created and last edited the shuttle
+    created_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='shuttles_created')
+    last_modified_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='shuttles_modified')
+    last_modified_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
         # Set the timezone to Budapest
@@ -87,6 +94,7 @@ class ShuttleDailyCost(models.Model):
     parent = models.ForeignKey('ShuttleDay', on_delete=models.CASCADE)
     driver = models.ForeignKey(Driver, on_delete=models.CASCADE)
     number_plate = models.CharField(max_length=20, blank=True, null=True)
+    hours_worked = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     driver_fee = models.DecimalField(max_digits=10, decimal_places=2)
     currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES)
     driver_fee_in_euros = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)

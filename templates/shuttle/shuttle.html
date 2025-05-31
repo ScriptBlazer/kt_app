@@ -51,6 +51,20 @@
                 <li class="job-container {% if shuttle.color == 'red' %}red-job{% elif shuttle.color == 'orange' %}orange-job{% elif shuttle.color == 'green' %}green-job{% else %}white-job{% endif %}">
                     <span class="customer-name">{{ shuttle.customer_name|truncate_words_chars }}</span>
                     <div class="job-info">
+                        <div class="job-tag-container">
+                            <small class="job-added-by-tag">
+                                {% if shuttle.created_by %}
+                                    Added by: {{ shuttle.created_by.get_full_name|default:shuttle.created_by.username }}
+                                {% else %}
+                                    Added by: Unknown
+                                {% endif %}
+                            </small>
+                            {% if shuttle.last_modified_by %}
+                                <small class="job-edited-by-tag">
+                                    Edited by: {{ shuttle.last_modified_by.get_full_name|default:shuttle.last_modified_by.username }}
+                                </small>
+                            {% endif %}
+                        </div>
                         <span class="slim">{{ shuttle.shuttle_date }}</span>
                         <span class="phone">{{ shuttle.shuttle_direction|default_if_none:"No direction" }}</span>
                         <span class="tablet">{{ shuttle.price|floatformat:2|intcomma }} EUR</span>

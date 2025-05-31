@@ -8,7 +8,7 @@
 
     <h2>Add New Expense</h2>
     <br>
-    <form method="POST">
+    <form method="POST" enctype="multipart/form-data">
         {% csrf_token %}
 
         <div class="form-group-inline">
@@ -46,6 +46,10 @@
         <div class="field-wrapper">
             {{ form.expense_notes.label_tag }}<br>
             {{ form.expense_notes }}
+        </div>
+        <div class="field-wrapper">
+            {{ form.expense_image.label_tag }}<br>
+            {{ form.expense_image }}
         </div>
         <p class="nm">*Required fields</p>
 

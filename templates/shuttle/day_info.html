@@ -10,12 +10,13 @@
             <a href="{% url 'home' %}" class="button">Back to Home</a>
             <a href="{% url 'common:services' %}" class="button button-purple">Back to Services</a>
             <a href="{% url 'shuttle:shuttle' %}" class="button button-purple">Back to Shuttle List</a>
+            <button onclick="copyDailyDetails()" class="button button-purple">Copy Daily Details</button>
         </div>
     </div>
     <p id="copy-success" style="display: none; color: green;">Shuttle info copied to clipboard!</p>
     <br>
 
-    <h2>Shuttle Info – {{ date }}</h2>
+    <h2>Shuttle Info – {{ date|date:"j F Y" }}</h2>
 
     <p><strong>Total Passengers:</strong> {{ total_passengers }}</p>
     <p><strong>Total Price:</strong> €{{ total_price|floatformat:2|intcomma }}</p>      
@@ -50,6 +51,7 @@
                     {% endif %}
                 {% endif %}
             </p>
+            <p><strong>Hours Worked:</strong> {{ cost.hours_worked|default:" " }}</p>
         </div>
     {% empty %}
         <p>No driver cost entries for this day.</p>
@@ -73,5 +75,48 @@
         <i class="fas fa-cogs" style="color: purple;"></i>
         <div style="color: purple;">Services</div>
     </a>
+    <a href="#" class="floating-add-button button-purple" onclick="copyDailyDetails()">
+        <i class="fas fa-copy"></i>
+    </a>
 </div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+    function copyDailyDetails() {
+        let dailyDetails = `*Shuttle Info for {{ date|date:"j F Y" }}*
+
+*Total Passengers:* {{ total_passengers }}
+*Total Price:* €{{ total_price|floatformat:2|intcomma }}
+*Total Drivers:* {{ total_drivers }}
+*Total Costs:* €{{ total_costs|floatformat:2|intcomma }}
+
+*Passengers:*
+{% for shuttle in shuttles %}
+{{ shuttle.customer_name|default_if_none:"" }} | {{ shuttle.shuttle_direction|default:"No direction" }} | Passengers: {{ shuttle.no_of_passengers|default_if_none:"" }} | Driver: {{ shuttle.driver|default:"No driver" }}
+{% empty %}
+No passengers for this day.
+{% endfor %}
+
+*Drivers:*
+{% for cost in driver_costs %}
+{{ cost.driver }} | Plate: {{ cost.number_plate|default:"N/A" }} | Fee: €{{ cost.driver_fee_in_euros|default_if_none:"" }}
+{% empty %}
+No driver cost entries for this day.
+{% endfor %}`;
+
+        const tempTextArea = document.createElement('textarea');
+        tempTextArea.value = dailyDetails;
+        document.body.appendChild(tempTextArea);
+
+        tempTextArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempTextArea);
+
+        document.getElementById('copy-success').style.display = 'block';
+        setTimeout(function() {
+            document.getElementById('copy-success').style.display = 'none';
+        }, 2000);
+    }
+</script>
+<script src="{% static 'script.js' %}"></script>
 {% endblock %}

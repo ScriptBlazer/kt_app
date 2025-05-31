@@ -1,11 +1,12 @@
 from django import forms
 from shuttle.models import ShuttleDailyCost
-
+from decimal import Decimal
+from common.utils import get_ordered_people
+from django.db.models.functions import Lower
 from django import forms
 from shuttle.models import Shuttle
 from common.forms import PaidToMixin, PaymentForm
 from people.models import Driver, Agent, Staff
-from common.utils import get_ordered_people
 
 class DriverAssignmentForm(forms.Form):
     date = forms.DateField(widget=forms.HiddenInput())
@@ -26,7 +27,7 @@ class ShuttleForm(PaidToMixin, forms.ModelForm):
         fields = [
             'customer_name', 'customer_number', 'customer_email', 'shuttle_date',
             'shuttle_direction', 'payment_type', 'no_of_passengers', 'shuttle_notes',
-            'paid_to_staff', 'driver', 'is_confirmed'
+            'paid_to_staff', 'driver', 'is_confirmed', 'number_plate'
         ]
         error_messages = {
             'customer_name': {'required': 'Please enter the customer name.'},
@@ -101,7 +102,14 @@ class ShuttleForm(PaidToMixin, forms.ModelForm):
 class ShuttleDailyCostForm(forms.ModelForm):
     class Meta:
         model = ShuttleDailyCost
-        fields = ['driver', 'number_plate', 'driver_fee', 'currency']
+        fields = ['driver', 'number_plate', 'driver_fee', 'currency', 'hours_worked']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Get ordered list of drivers
+        ordered_drivers = Driver.objects.order_by(Lower('name'))
+        self.fields['driver'].queryset = ordered_drivers
 
     def clean(self):
         cleaned_data = super().clean()
@@ -109,10 +117,15 @@ class ShuttleDailyCostForm(forms.ModelForm):
         fee = cleaned_data.get('driver_fee')
         currency = cleaned_data.get('currency')
 
+        # Check if a driver is assigned
         if driver:
-            if not fee:
+            if fee is None:
                 self.add_error('driver_fee', 'Driver fee is required when a driver is assigned.')
             if not currency:
                 self.add_error('currency', 'Currency is required when a driver is assigned.')
+
+        # Ensure fee is set to 0.00 if not provided
+        if fee is None:
+            cleaned_data['driver_fee'] = Decimal('0.00')
 
         return cleaned_data

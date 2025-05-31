@@ -6,6 +6,7 @@ from datetime import time, datetime
 from people.models import Agent, Staff
 from common.forms import PaidToMixin
 from common.utils import get_ordered_people
+from datetime import timedelta
 
 class BedTypeForm(forms.Form):
     bed_type = forms.CharField(widget=forms.HiddenInput())  # Hidden field for bed type ID
@@ -42,15 +43,17 @@ class HotelBookingForm(PaidToMixin, forms.ModelForm):
         ]
 
         # Set default values for check-in and check-out with timezone-awareness
+        # Set default values for check-in and check-out with timezone-awareness
         today = timezone.localtime().date()
         if not self.initial.get('check_in'):
             default_check_in = timezone.make_aware(
                 datetime.combine(today, time(15, 0))
             )
             self.initial['check_in'] = default_check_in.strftime('%Y-%m-%dT%H:%M')
+
         if not self.initial.get('check_out'):
             default_check_out = timezone.make_aware(
-                datetime.combine(today, time(11, 0))
+                datetime.combine(today + timedelta(days=1), time(11, 0))
             )
             self.initial['check_out'] = default_check_out.strftime('%Y-%m-%dT%H:%M')
 

@@ -54,3 +54,11 @@ def currency_symbol(currency_code):
 def get_item(dictionary, key):
     """Retrieve a value from a dictionary using a key."""
     return dictionary.get(key, "")
+
+@register.filter
+def mul(value, arg):
+    """Multiply two numbers."""
+    try:
+        return float(value) * float(arg)
+    except (ValueError, TypeError):
+        return ''

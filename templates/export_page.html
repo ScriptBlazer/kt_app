@@ -33,6 +33,29 @@
 
         <button class="button button-orange" type="submit">Export</button>
     </form>
+    <br><br>
+    <hr>
+
+    <h2>Export Shuttle Bookings</h2>
+    <form method="get" action="{% url 'common:export_shuttles' %}">
+        <label for="shuttle-year">Year:</label>
+        <input type="number" name="year" id="shuttle-year" min="2000" max="2100">
+
+        <label for="shuttle-month">Month:</label>
+        <select name="month" id="shuttle-month">
+            {% for number, name in month_range %}
+            <option value="{{ number }}">{{ name }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="shuttle-format">Format:</label>
+        <select name="format" id="shuttle-format">
+            <option value="xlsx">Excel</option>
+            <option value="csv">CSV</option>
+        </select>
+
+        <button class="button button-orange" type="submit">Export</button>
+    </form>
 
     {% if error_message %}
     <p id="modal-trigger" style="display: none;">{{ error_message }}</p>
@@ -60,3 +83,4 @@
 {% block extra_scripts %}
 <script src="{% static 'script.js' %}"></script>
 {% endblock %}
+

@@ -22,27 +22,6 @@ class CustomTimeField(forms.TimeField):
             raise ValidationError(self.error_messages['invalid'], code='invalid')
 
 
-class FreelancerMixin(forms.Form):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.initialize_freelancer_field()
-
-    def initialize_freelancer_field(self):
-        drivers = Driver.objects.order_by(Lower('name'))
-        agents = Agent.objects.order_by(Lower('name'))
-
-        self.fields['freelancer'] = forms.ChoiceField(
-            required=False,
-            choices=[
-                ('', 'Select an option'),
-                ('Drivers', [(f'driver_{driver.id}', driver.name) for driver in drivers]),
-                ('Agents', [(f'agent_{agent.id}', agent.name) for agent in agents]),
-            ],
-            widget=forms.Select(attrs={'class': 'form-control'}),
-            label="Freelancer"
-        )
-
-
 class JobForm(PaidToMixin, forms.ModelForm):
     driver = forms.ChoiceField(required=False, label="Driver")
 
@@ -63,12 +42,15 @@ class JobForm(PaidToMixin, forms.ModelForm):
         model = Job
         fields = [
             'customer_name', 'customer_number', 'job_date', 'job_time',
-            'job_description', 'no_of_passengers', 'vehicle_type', 'kilometers',
+            'job_description', 'job_notes', 'no_of_passengers', 'vehicle_type', 'kilometers',
             'pick_up_location', 'drop_off_location', 'flight_number', 'payment_type',
             'job_price', 'driver_fee', 
             'number_plate', 'agent_name', 'agent_percentage', 'job_currency', 'driver_currency', 'driver', 'agent_name', 'is_confirmed',
-            'hours_worked',
+            'hours_worked', 'is_freelancer'
         ]
+        widgets = {
+            'job_notes': forms.Textarea(attrs={'class': 'job-notes-box', 'rows': 4, 'cols': 40}),
+        }
         
         error_messages = {
             'customer_name': {'required': 'Please enter the customer name.'},
@@ -85,35 +67,41 @@ class JobForm(PaidToMixin, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(JobForm, self).__init__(*args, **kwargs)
 
-        # Get ordered lists of drivers
+        # Get ordered lists of drivers and agents
         ordered_drivers = Driver.objects.order_by(Lower('name'))
+        ordered_agents = Agent.objects.order_by(Lower('name'))
 
-        # Populate driver field with options for drivers
-        driver_choices = [(f"driver_{driver.id}", driver.name) for driver in ordered_drivers]
-        self.fields['driver'].choices = [('', 'Select an option'), ('Drivers', driver_choices)]
+        # Populate driver field with grouped drivers and agents
+        self.fields['driver'].choices = [
+            ('', 'Select an option'),
+            ('Drivers', [(f"driver_{driver.id}", driver.name) for driver in ordered_drivers]),
+            ('Agents', [(f"agent_{agent.id}", agent.name) for agent in ordered_agents]),
+        ]
 
-        # If editing an existing job, prefill the driver field with the selected value
-        if self.instance.pk and self.instance.driver:
-            self.initial['driver'] = f"driver_{self.instance.driver.id}"
-
-        # Set initial value for driver if editing an existing job
-        if self.instance.pk and self.instance.driver:
-            self.fields['driver'].initial = f"driver_{self.instance.driver.id}"
-
+        if self.instance.pk:
+            if self.instance.driver:
+                self.initial['driver'] = f"driver_{self.instance.driver.id}"
+            elif self.instance.driver_agent:
+                self.initial['driver'] = f"agent_{self.instance.driver_agent.id}"
 
     def clean_driver(self):
-        """Convert the driver field (like 'driver_1') to an actual Driver object."""
         driver_value = self.cleaned_data.get('driver')
-        
+
         if not driver_value:
-            return None  # No driver was selected
+            return None
 
         if driver_value.startswith('driver_'):
             driver_id = driver_value.split('_')[1]
-            try:
-                return Driver.objects.get(id=driver_id)
-            except Driver.DoesNotExist:
-                raise ValidationError('Selected driver does not exist.')
+            driver_obj = Driver.objects.get(id=driver_id)
+            self.cleaned_data['driver_agent'] = None
+            return driver_obj
+
+        elif driver_value.startswith('agent_'):
+            agent_id = driver_value.split('_')[1]
+            agent_obj = Agent.objects.get(id=agent_id)
+            self.cleaned_data['driver'] = None
+            self.cleaned_data['driver_agent'] = agent_obj
+            return None  # Nothing for driver field
 
         raise ValidationError('Invalid driver selection.')
 
@@ -155,9 +143,9 @@ class JobForm(PaidToMixin, forms.ModelForm):
             self.add_error('no_of_passengers', 'There must be at least one passenger.')
 
         # Conditional validation for driver fee and driver currency
-        if driver_fee and not driver_currency:
+        if driver_fee is not None and driver_currency is None:
             self.add_error('driver_currency', 'Driver currency is required if driver fee is provided.')
-        if driver_currency and not driver_fee:
+        if driver_currency and driver_fee is None:
             self.add_error('driver_fee', 'Driver fee is required if driver currency is provided.')
 
         # Conditional validation for agent name and agent percentage
@@ -165,5 +153,8 @@ class JobForm(PaidToMixin, forms.ModelForm):
             self.add_error('agent_percentage', 'Agent percentage is required if agent name is provided.')
         if agent_percentage and not agent_name:
             self.add_error('agent_name', 'Agent name is required if agent percentage is provided.')
+
+        if cleaned_data.get('is_freelancer') and not (cleaned_data.get('driver') or cleaned_data.get('driver_agent')):
+            self.add_error('driver', 'You must assign a driver if marking this as a freelancer job.')
 
         return cleaned_data
