@@ -8,10 +8,13 @@ from django.utils import timezone
 from shuttle.forms import DriverAssignmentForm
 import pytz
 import csv
+from people.models import Driver
 import datetime
 from django.http import HttpResponse
 import openpyxl
 from openpyxl.utils import get_column_letter
+from shuttle.models import Shuttle
+from openpyxl.styles import Font, PatternFill
 
 @login_required
 def admin_page(request):
@@ -184,8 +187,6 @@ def export_jobs(request):
         ]
         ws.append(headers)
 
-        from openpyxl.styles import Font, PatternFill
-
         # Style header row
         header_font = Font(bold=True)
         header_fill = PatternFill(start_color="FFA500", end_color="FFA500", fill_type="solid")  # Orange
@@ -264,6 +265,189 @@ def export_jobs(request):
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         filename = sheet_title + ".xlsx"
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        wb.save(response)
+        return response
+
+    return HttpResponse("Invalid format", status=400)
+
+
+
+@login_required
+def export_shuttles(request):
+    import csv
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill
+    from openpyxl.utils import get_column_letter
+    from django.http import HttpResponse
+
+    month_range = [(0, 'All')] + [(i, datetime.date(1900, i, 1).strftime('%B')) for i in range(1, 13)]
+    now = timezone.now()
+    current_year = now.year
+    current_month = now.month
+
+    # Filters from GET params
+    file_format = request.GET.get('format', 'csv')
+    year = request.GET.get('year')
+    month = request.GET.get('month')
+    filter_driver_id = request.GET.get('filter_driver')
+    filter_direction = request.GET.get('filter_direction')
+    filter_is_paid = request.GET.get('filter_is_paid')
+
+    if request.method == 'GET' and not request.GET.get('format'):
+        drivers = Driver.objects.order_by('name')
+        return render(request, 'export_page.html', {
+            'month_range': month_range,
+            'current_year': current_year,
+            'current_month': current_month,
+            'drivers': drivers,
+        })
+
+    if not year:
+        return render(request, 'export_page.html', {
+            'month_range': month_range,
+            'current_year': current_year,
+            'current_month': current_month,
+            'error_message': 'Please select a year for export.'
+        })
+
+    shuttles = Shuttle.objects.filter(is_confirmed=True).order_by('-shuttle_date')
+
+    try:
+        year_int = int(year)
+        shuttles = shuttles.filter(shuttle_date__year=year_int)
+        if month and month != "0":
+            month_int = int(month)
+            shuttles = shuttles.filter(shuttle_date__month=month_int)
+            sheet_title = f"KT Shuttles {datetime.date(year_int, month_int, 1).strftime('%B %Y')}"
+        else:
+            sheet_title = f"KT Shuttles {year_int}"
+    except ValueError:
+        return HttpResponse("Invalid year or month", status=400)
+
+    if filter_driver_id:
+        shuttles = shuttles.filter(driver_id=filter_driver_id)
+    if filter_direction:
+        shuttles = shuttles.filter(shuttle_direction=filter_direction)
+    if filter_is_paid:
+        if filter_is_paid == '1':
+            shuttles = shuttles.filter(is_paid=True)
+        elif filter_is_paid == '0':
+            shuttles = shuttles.filter(is_paid=False)
+
+    if file_format == 'csv':
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="{sheet_title}.csv"'
+        writer = csv.writer(response)
+        writer.writerow(['Customer Name', 'Customer Number', 'Date', 'Direction', 'No. of Passengers', 'Price', 'Currency', 'Confirmed', 'Paid', 'Completed', 'Driver', 'Payments Summary'])
+
+        for shuttle in shuttles:
+            payments = list(shuttle.payments.all())
+            payments_summary = ''
+            if payments:
+                payment_strs = []
+                for idx, p in enumerate(payments, 1):
+                    paid_to_name = (
+                        p.paid_to_driver.name if p.paid_to_driver else
+                        p.paid_to_agent.name if p.paid_to_agent else
+                        p.paid_to_staff.name if p.paid_to_staff else
+                        'Not specified'
+                    )
+                    amt = f"{p.payment_amount}" if p.payment_amount is not None else ''
+                    curr = p.payment_currency if p.payment_currency else ''
+                    paytype = p.payment_type if p.payment_type else ''
+                    payment_str = f"Payment {idx}: {curr}{amt} ({paytype}, to "
+                    if p.paid_to_driver:
+                        payment_str += f"Driver: {p.paid_to_driver.name}"
+                    elif p.paid_to_agent:
+                        payment_str += f"Agent: {p.paid_to_agent.name}"
+                    elif p.paid_to_staff:
+                        payment_str += f"Staff: {p.paid_to_staff.name}"
+                    else:
+                        payment_str += "Not specified"
+                    payment_str += ")"
+                    payment_strs.append(payment_str)
+                payments_summary = ' | '.join(payment_strs)
+
+            writer.writerow([
+                shuttle.customer_name,
+                shuttle.customer_number,
+                shuttle.shuttle_date,
+                shuttle.shuttle_direction,
+                shuttle.no_of_passengers,
+                shuttle.price,
+                shuttle.price_currency if hasattr(shuttle, 'price_currency') else 'EUR',
+                shuttle.is_confirmed,
+                shuttle.is_paid,
+                shuttle.is_completed,
+                shuttle.driver.name if shuttle.driver else '',
+                payments_summary
+            ])
+        return response
+
+    elif file_format == 'xlsx':
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = sheet_title[:31]
+        headers = ['Customer Name', 'Customer Number', 'Date', 'Direction', 'No. of Passengers', 'Price', 'Currency', 'Confirmed', 'Paid', 'Completed', 'Driver', 'Payments Summary']
+        ws.append(headers)
+
+        header_font = Font(bold=True)
+        header_fill = PatternFill(start_color="FFA500", end_color="FFA500", fill_type="solid")
+        for cell in ws[1]:
+            cell.font = header_font
+            cell.fill = header_fill
+        ws.freeze_panes = "A2"
+        last_column = get_column_letter(len(headers))
+        ws.auto_filter.ref = f"A1:{last_column}1"
+
+        for shuttle in shuttles:
+            payments = list(shuttle.payments.all())
+            payments_summary = ''
+            if payments:
+                payment_strs = []
+                for idx, p in enumerate(payments, 1):
+                    amt = f"{p.payment_amount}" if p.payment_amount is not None else ''
+                    curr = p.payment_currency if p.payment_currency else ''
+                    paytype = p.payment_type if p.payment_type else ''
+                    payment_str = f"Payment {idx}: {curr}{amt} ({paytype}, to "
+                    if p.paid_to_driver:
+                        payment_str += f"Driver: {p.paid_to_driver.name}"
+                    elif p.paid_to_agent:
+                        payment_str += f"Agent: {p.paid_to_agent.name}"
+                    elif p.paid_to_staff:
+                        payment_str += f"Staff: {p.paid_to_staff.name}"
+                    else:
+                        payment_str += "Not specified"
+                    payment_str += ")"
+                    payment_strs.append(payment_str)
+                payments_summary = ' | '.join(payment_strs)
+
+            ws.append([
+                shuttle.customer_name,
+                shuttle.customer_number,
+                shuttle.shuttle_date,
+                shuttle.shuttle_direction,
+                shuttle.no_of_passengers,
+                shuttle.price,
+                shuttle.price_currency if hasattr(shuttle, 'price_currency') else 'EUR',
+                shuttle.is_confirmed,
+                shuttle.is_paid,
+                shuttle.is_completed,
+                shuttle.driver.name if shuttle.driver else '',
+                payments_summary
+            ])
+
+        for col_num, column_title in enumerate(headers, 1):
+            column_letter = get_column_letter(col_num)
+            max_length = len(column_title)
+            for row in ws.iter_rows(min_col=col_num, max_col=col_num):
+                for cell in row:
+                    if cell.value:
+                        max_length = max(max_length, len(str(cell.value)))
+            ws.column_dimensions[column_letter].width = max_length + 2
+
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename="{sheet_title}.xlsx"'
         wb.save(response)
         return response
 

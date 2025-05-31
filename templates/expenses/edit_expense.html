@@ -8,7 +8,7 @@
 
     <h2>Edit Expense</h2>
     <br>
-    <form method="POST">
+    <form method="POST" enctype="multipart/form-data">
         {% csrf_token %}
 
         <div class="form-group-inline">
@@ -47,6 +47,42 @@
             {{ form.expense_notes.label_tag }}<br>
             {{ form.expense_notes }}
         </div>
+        <div class="field-wrapper">
+            {{ form.expense_image.label_tag }}<br>
+            {% if form.instance.expense_image %}
+                <img src="{{ form.instance.expense_image.url }}" alt="Expense Image" style="max-width: 300px; display: block; margin-bottom: 10px;">
+                <p><strong>Remove Image:</strong> 
+                    <input class="sbig" type="checkbox" name="{{ form.remove_image.html_name }}" id="{{ form.remove_image.id_for_label }}" {% if form.remove_image.value %}checked{% endif %}>
+                </p>
+                <p><strong>Upload a new image to replace the existing one:</strong></p>
+            {% endif %}
+            <input type="file" name="images" id="id_images" multiple>
+
+            <div class="field-wrapper" style="display: flex; flex-wrap: wrap; gap: 20px;">
+                {% for img in expense.images.all %}
+                    <div class="image-container" style="width: 150px; display: flex; flex-direction: column; align-items: center; text-align: center;">
+                        <div style="height: 150px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid #ddd; border-radius: 5px;">
+                            <img src="{{ img.image.url }}" alt="Expense Image" style="max-height: 100%; max-width: 100%; object-fit: contain;">
+                        </div>
+                        <a href="{% url 'expenses:delete_expense_image' img.id %}" class="button small button-orange" style="margin-top: 10px;">Delete Image</a>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% if form.errors %}
+        <div class="form-errors">
+            <ul>
+            {% for field in form %}
+                {% for error in field.errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+                <li>{{ error }}</li>
+            {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
         <p class="nm">*Required fields</p>
 
         

@@ -21,9 +21,10 @@
     <p><strong>Customer Name:</strong> {{ shuttle.customer_name|default_if_none:"" }}</p>
     <p><strong>Customer Number:</strong> {{ shuttle.customer_number|default_if_none:"" }}</p>
     <p><strong>Customer Email:</strong> {{ shuttle.customer_email|default_if_none:"N/A" }}</p>
-    <p><strong>Driver:</strong> {{ shuttle.driver|default_if_none:"" }}</p>
     <p><strong>No. of Passengers:</strong> {{ shuttle.no_of_passengers|default_if_none:"" }}</p>
     <p><strong>Price:</strong> €{{ shuttle.price|intcomma|default_if_none:"" }}</p>
+    <p><strong>Driver:</strong> {{ shuttle.driver|default_if_none:"" }}</p>
+    <p><strong>Number Plate:</strong> {{ shuttle.number_plate|default_if_none:"" }}</p>
     <p><strong>Notes:</strong> {{ shuttle.shuttle_notes|default_if_none:"-" }}</p>
 
     <br><br>
@@ -150,6 +151,8 @@
 *Shuttle Date:* {{ shuttle.shuttle_date|default_if_none:""|escapejs }}
 *Shuttle Direction:* {{ shuttle.get_shuttle_direction_display|default_if_none:""|escapejs }}
 *No of Passengers:* {{ shuttle.no_of_passengers|default_if_none:""|escapejs }}
+*Driver:* {{ shuttle.driver|default_if_none:""|escapejs }}
+*Number Plate:* {{ shuttle.number_plate|default_if_none:""|escapejs }}
 *Price:* €{{ shuttle.price|default_if_none:""|escapejs }}`;
 
         // Check if the notes are not empty and add it if available

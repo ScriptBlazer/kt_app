@@ -275,9 +275,10 @@ class HotelBookingAdditionalTests(TestCase):
         """Test default check-in and check-out times are set if not provided."""
         form = HotelBookingForm()
         today = timezone.localtime().date()
+
         default_check_in = timezone.make_aware(datetime.combine(today, time(15, 0)))
-        default_check_out = timezone.make_aware(datetime.combine(today, time(11, 0)))
-        
+        default_check_out = timezone.make_aware(datetime.combine(today + timedelta(days=1), time(11, 0)))
+
         self.assertEqual(form.initial['check_in'], default_check_in.strftime('%Y-%m-%dT%H:%M'))
         self.assertEqual(form.initial['check_out'], default_check_out.strftime('%Y-%m-%dT%H:%M'))
 

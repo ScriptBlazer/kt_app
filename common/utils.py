@@ -112,9 +112,9 @@ def assign_job_color(job, now):
     
     Color logic:
     - For Jobs:
-      - White: Until the driver is assigned.
-      - Orange: If the driver is assigned.
-      - Green: If the job is completed.
+      - White: Until a driver (or agent acting as driver) is assigned.
+      - Orange: If the driver (or agent acting as driver) is assigned.
+      - Green: If the job is completed or paid.
       - Red: If the job is more than one day old, assigned, and unpaid.
     - For Hotels:
       - White: Until the booking is confirmed.
@@ -127,10 +127,15 @@ def assign_job_color(job, now):
     is_shuttle = hasattr(job, 'shuttle_date')
     is_job = hasattr(job, 'driver') and not is_shuttle
     is_confirmed = getattr(job, 'is_confirmed', False)
-    driver = getattr(job, 'driver', None) if is_job else None
+    # driver = getattr(job, 'driver', None) if is_job else None
     job_date = getattr(job, 'job_date', None) or getattr(job, 'shuttle_date', None) or getattr(job, 'check_in', None)
     is_paid = getattr(job, 'is_paid', False)
     is_completed = getattr(job, 'is_completed', False)
+
+    driver_assigned = False
+    if is_job:
+        driver_assigned = bool(getattr(job, 'driver', None) or getattr(job, 'driver_agent', None))
+
 
     # Convert job_date to date if it is a datetime object
     if isinstance(job_date, datetime.datetime):
@@ -145,10 +150,10 @@ def assign_job_color(job, now):
     # logger.debug(f"Is Paid: {is_paid}")
     # logger.debug(f"Is Completed: {is_completed}")
 
-    # Job-specific logic: remains white until driver is assigned
+    # Job-specific logic: remains white until driver/agent is assigned
     if is_job:
-        if not driver:
-            logger.debug("Assigned color: white (job without driver)")
+        if not driver_assigned:
+            logger.debug("Assigned color: white (job without driver/agent)")
             return 'white'
     elif is_shuttle:
         if not is_confirmed:

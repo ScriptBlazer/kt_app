@@ -141,8 +141,13 @@ def add_job(request):
             with transaction.atomic():
                 job = job_form.save(commit=False)
                 job.is_confirmed = job_form.cleaned_data.get('is_confirmed', False)
+                job.is_freelancer = job_form.cleaned_data.get('is_freelancer', False)
                 job.created_by = request.user
                 job.created_at = timezone.now().astimezone(hungary_tz)
+
+                # Assign driver or agent based on cleaned_data
+                job.driver = job_form.cleaned_data.get('driver')
+                job.driver_agent = job_form.cleaned_data.get('driver_agent')
                 job.save()
                 for form in payment_formset:
                     if form.cleaned_data and not form.cleaned_data.get('DELETE'):
@@ -188,6 +193,11 @@ def edit_job(request, job_id):
                     job.last_modified_by = request.user
                     job.last_modified_at = timezone.now().astimezone(hungary_tz)
                     job.is_confirmed = job_form.cleaned_data.get('is_confirmed', False)
+                    job.is_freelancer = job_form.cleaned_data.get('is_freelancer', False)
+
+                    # Assign driver or agent based on cleaned_data
+                    job.driver = job_form.cleaned_data.get('driver')
+                    job.driver_agent = job_form.cleaned_data.get('driver_agent')
                     job.save()
 
                     for form in payment_formset:
@@ -239,6 +249,9 @@ def view_job(request, job_id):
     kilometers = job.kilometers or Decimal('0.00')
     total_with_cc_fee = job.job_price + job.cc_fee if job.payment_type == 'Card' else None
 
+    subtotal = sum([p.payment_amount_in_euros or Decimal('0.00') for p in payments])
+
+
     drivers = Driver.objects.order_by('name')
     agents = Agent.objects.order_by('name')
 
@@ -269,6 +282,7 @@ def view_job(request, job_id):
         'agents': agents,
         'freelancer_name': freelancer_name,
         'selected_freelancer': job.freelancer,
+        'subtotal': subtotal,
     })
 
 @login_required
@@ -306,10 +320,9 @@ def update_job_status(request, job_id):
     error_message = None
 
     is_freelancer = 'is_freelancer' in request.POST
-    freelancer = request.POST.get('freelancer', '')
 
-    if is_freelancer and not freelancer:
-        error_message = 'You must select a freelancer (driver or agent) if the job is marked as a freelancer job.'
+    if is_freelancer and not (job.driver or job.driver_agent):
+        error_message = 'You must assign a driver to mark this job as a freelancer job.'
 
     # Retrieve the intended new statuses from the POST request
     is_confirmed = 'is_confirmed' in request.POST
@@ -386,7 +399,8 @@ def update_job_status(request, job_id):
         job.is_paid = is_paid
         job.is_completed = is_completed
         job.is_freelancer = is_freelancer
-        job.freelancer = freelancer
+        # job.freelancer = freelancer  # Removed as per refactor
+        pass
         job.save()
         return redirect('jobs:home')
 

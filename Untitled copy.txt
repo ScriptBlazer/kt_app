@@ -1,0 +1,3 @@
+/qr1 https://www.bbc.com 302
+/menu https://www.nytimes.com 302
+/about https://www.google.com 302

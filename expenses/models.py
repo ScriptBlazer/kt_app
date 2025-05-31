@@ -4,6 +4,9 @@ from django.utils import timezone
 import pytz
 from decimal import Decimal
 from common.utils import get_exchange_rate, CURRENCY_CHOICES
+# Additional imports for ExpenseImage validation and compression
+from django.core.exceptions import ValidationError
+from PIL import Image
 
 class Expense(models.Model):
     EXPENSE_TYPES = [
@@ -27,6 +30,7 @@ class Expense(models.Model):
     expense_date = models.DateField()
     expense_time = models.TimeField()
     expense_notes = models.TextField(blank=True, null=True)
+    expense_image = models.ImageField(upload_to='expense_images/', null=True, blank=True)
 
     def save(self, *args, **kwargs):
         # Convert current time to Budapest timezone if not set
@@ -50,3 +54,9 @@ class Expense(models.Model):
             if rate is None:
                 raise ValueError(f"Exchange rate for {self.expense_currency} is not available.")
             self.expense_amount_in_euros = (self.expense_amount * rate).quantize(Decimal('0.01'))
+
+
+class ExpenseImage(models.Model):
+    expense = models.ForeignKey(Expense, related_name='images', on_delete=models.CASCADE)
+    image = models.ImageField(upload_to='expense_images/')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
