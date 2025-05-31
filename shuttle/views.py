@@ -5,7 +5,6 @@ from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
 from django.forms import inlineformset_factory
 from django.forms import modelformset_factory
-
 from django.db.models import Sum
 from django.db import transaction
 from django.utils import timezone
@@ -101,7 +100,7 @@ def shuttle_enquiries(request):
     now_budapest = timezone.now().astimezone(budapest_tz)
 
     # Filter for unconfirmed shuttles
-    shuttles = Shuttle.objects.filter(is_confirmed=False)
+    shuttles = Shuttle.objects.filter(is_confirmed=False).order_by('shuttle_date')
 
     # Assign color based on conditions
     for shuttle in shuttles:
@@ -125,6 +124,9 @@ def add_passengers(request):
         if form.is_valid() and payment_formset.is_valid():
             shuttle = form.save(commit=False)
             shuttle.is_confirmed = form.cleaned_data.get('is_confirmed', False)
+            shuttle.created_by = request.user
+            shuttle.last_modified_by = request.user
+            shuttle.last_modified_at = timezone.now()
             shuttle.save()
 
             for payment_form in payment_formset:
@@ -196,7 +198,10 @@ def edit_passengers(request, shuttle_id):
             with transaction.atomic():  # Ensure atomicity
                 shuttle = form.save(commit=False)
                 shuttle.is_confirmed = form.cleaned_data.get('is_confirmed', False)
+                shuttle.last_modified_by = request.user
+                shuttle.last_modified_at = timezone.now()
                 shuttle.save()
+                
 
                 for payment_form in payment_formset:
                     if payment_form.cleaned_data.get("DELETE") and payment_form.instance.pk:
@@ -370,8 +375,10 @@ def view_day_info(request, date):
     shuttles = Shuttle.objects.filter(shuttle_date=date).order_by('customer_name')
     driver_costs = ShuttleDailyCost.objects.filter(parent=parent)
 
+    date_obj = datetime.datetime.strptime(date, "%Y-%m-%d").date()
+
     context = {
-        'date': date,
+        'date': date_obj,
         'shuttles': shuttles,
         'driver_costs': driver_costs,
         'total_passengers': shuttles.aggregate(Sum('no_of_passengers'))['no_of_passengers__sum'] or 0,

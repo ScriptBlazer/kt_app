@@ -26,6 +26,27 @@
     <p><strong>Date:</strong> {{ expense.expense_date|date:"F j, Y"|default_if_none:"" }}</p>
     <p><strong>Time:</strong> {{ expense.expense_time|time_format|default_if_none:"" }}</p>
     <p><strong>Notes:</strong> {{ expense.expense_notes|default_if_none:"-" }}</p>
+    {% if expense.images.all %}
+        <p><strong>Images:</strong></p>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+            {% for img in expense.images.all %}
+                <div style="width: 150px; cursor: pointer;" onclick="this.classList.toggle('expanded');">
+                    <img src="{{ img.image.url }}" alt="Expense Image" style="max-width: 100%; border: 1px solid #ccc; transition: all 0.3s ease;">
+                </div>
+            {% endfor %}
+        </div>
+        <style>
+            .expanded {
+                position: relative;
+                z-index: 10;
+            }
+
+            .expanded img {
+                max-width: 500px !important;
+                max-height: 500px !important;
+            }
+        </style>
+    {% endif %}
 
     <div class="button-group">
         <a href="{% url 'expenses:edit_expense' expense.id %}" class="button button-orange">Edit</a>

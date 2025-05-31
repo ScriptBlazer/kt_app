@@ -66,7 +66,9 @@
     </p>
     <p><strong>Driver Name:</strong> 
         {% if job.driver %}
-            {{ job.driver.name }}
+            {{ job.driver.name }} (Driver)
+        {% elif job.driver_agent %}
+            {{ job.driver_agent.name }} (Agent)
         {% else %}
             Not assigned
         {% endif %}
@@ -75,9 +77,28 @@
     <p><strong>Hours Worked:</strong> {{ job.hours_worked|default_if_none:"" }}</p>
     <p><strong>Agent Name:</strong> {{ job.agent_name.name|default_if_none:"" }}</p>
     <p><strong>Agent Fee:</strong> {% if job.agent_percentage %}{{ job.agent_percentage }}%{% endif %}</p>
-    {% if freelancer_name and freelancer_name != "-" %}
+    <!-- {% if freelancer_name and freelancer_name != "-" %}
         <p><strong>Freelancer:</strong> {{ freelancer_name }}</p>
-    {% endif %}
+    {% endif %} -->
+    <p>
+        <strong>Subtotal:</strong>
+        {% if job.subtotal %}
+            €{{ job.subtotal|intcomma }} 
+            (Job price: €{{ job.job_price_in_euros|intcomma }} - Driver fee: €{{ job.driver_fee_in_euros|intcomma }} - Agent fee: 
+            {% if job.agent_percentage == '5' %}
+                €{{ job.job_price_in_euros|mul:0.05|floatformat:2|intcomma }}
+            {% elif job.agent_percentage == '10' %}
+                €{{ job.job_price_in_euros|mul:0.10|floatformat:2|intcomma }}
+            {% elif job.agent_percentage == '50' %}
+                €{{ job.job_price_in_euros|floatformat:2|intcomma }} - €{{ job.driver_fee_in_euros|floatformat:2|intcomma }} x 50%
+            {% else %}
+                €0.00
+            {% endif %}
+            )
+        {% else %}
+            Not available
+        {% endif %}
+    </p>
     <br>
     <!-- Payments Section -->
     <h3>Payments</h3>
@@ -152,33 +173,7 @@
         <p><strong>Freelancer Job:</strong> 
             <input class="sbig" type="checkbox" id="is_freelancer" name="is_freelancer" {% if job.is_freelancer %}checked{% endif %}>
         </p>
-        
-        <div class="form-group" id="freelancer-dropdown" style="{% if not job.is_freelancer %}display: none;{% endif %}">
-            <label for="freelancer"><strong>Select Freelancer:</strong></label><br>
-            <select name="freelancer" id="freelancer" class="form-control">
-                {% if selected_freelancer %}
-                    {% with selected_label=freelancer_name %}
-                        <option value="{{ selected_freelancer }}" selected>{{ selected_label }}</option>
-                    {% endwith %}
-                {% else %}
-                    <option value="" selected>Select...</option>
-                {% endif %}
-                <optgroup label="Drivers">
-                    {% for driver in drivers %}
-                        <option value="driver_{{ driver.id }}"{% if selected_freelancer == "driver_"|add:driver.id|stringformat:"s" %} selected{% endif %}>
-                            {{ driver.name }}
-                        </option>
-                    {% endfor %}
-                </optgroup>
-                <optgroup label="Agents">
-                    {% for agent in agents %}
-                        <option value="agent_{{ agent.id }}"{% if selected_freelancer == "agent_"|add:agent.id|stringformat:"s" %} selected{% endif %}>
-                            {{ agent.name }}
-                        </option>
-                    {% endfor %}
-                </optgroup>
-            </select>
-        </div>
+    
     
         <button type="submit" class="button">Update Status</button>
     </form>

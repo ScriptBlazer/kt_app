@@ -37,6 +37,42 @@
     </div>
     <br>
 
+    <form method="get" action="{% url 'expenses:expenses' %}" style="margin-bottom: 20px;" class="filter-form">
+
+        <label for="filter_driver">Driver:</label>
+        <select name="filter_driver" id="filter_driver">
+            <option value="">All drivers</option>
+            {% for driver in drivers %}
+                <option value="{{ driver.id }}" {% if driver.id|stringformat:"s" == filter_driver_id %}selected{% endif %}>{{ driver.name }}</option>
+            {% endfor %}
+        </select>
+
+        <div class="form-group-inline">
+            <div class="field-wrapper">
+                <label for="filter_month">Month:</label>
+                <select name="filter_month" id="filter_month">
+                    <option value="">All months</option>
+                    {% for m, m_name in months %}
+                        <option value="{{ m }}" {% if m == filter_month %}selected{% endif %}>{{ m_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="field-wrapper">
+                <label for="filter_year">Year:</label>
+                <select name="filter_year" id="filter_year">
+                    <option value="">All years</option>
+                    {% for y in years %}
+                        <option value="{{ y }}" {% if y == filter_year %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <button type="submit" class="button button-orange">Apply Filter</button>
+        <a href="{% url 'expenses:expenses' %}" class="button button-orange">Clear Filters</a>
+    </form>
+    <br>
+
     {% for expense_type in expense_types %}
         <h3 class="expense-header toggle-header" data-section-id="{{ expense_type|slugify }}-section">
             {{ expense_type|format_expense_type }} Expenses <span id="{{ expense_type|slugify }}-section-arrow">▼</span>

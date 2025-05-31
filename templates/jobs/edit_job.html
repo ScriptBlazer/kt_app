@@ -12,10 +12,13 @@
             <p><strong>Confirm Job:</strong> 
                 <input class="sbig" type="checkbox" id="id_is_confirmed" name="is_confirmed" {% if job_form.initial.is_confirmed %}checked{% endif %}>
             </p>
+            <p><strong>Freelancer Job:</strong> 
+                <input class="sbig" type="checkbox" id="id_is_freelancer" name="is_freelancer" {% if job_form.initial.is_freelancer %}checked{% endif %}>
+            </p>
         </div>
     <form method="post" id="job-form">
         {% csrf_token %}
-        <!-- Job Form Fields -->
+        <!-- Main Job Fields (above tabs) -->
         <div class="form-group">
             {{ job_form.customer_name.label_tag }}*<br>
             {{ job_form.customer_name }}
@@ -58,6 +61,10 @@
             {{ job_form.job_description.label_tag }}<br>
             {{ job_form.job_description }}
         </div>
+        <div class="form-group">
+            {{ job_form.job_notes.label_tag }}<br>
+            {{ job_form.job_notes }}
+        </div>
         <div class="form-group-inline">
             <div class="field-wrapper">
                 {{ job_form.no_of_passengers.label_tag }}*<br>
@@ -68,14 +75,6 @@
                 {{ job_form.vehicle_type }}
             </div>
         </div>
-
-        <!-- Pricing and Payment Fields -->
-        <!-- <div class="form-group-inline">
-            <div class="field-wrapper">
-                {{ job_form.payment_type.label_tag }}<br>
-                {{ job_form.payment_type }}
-            </div>
-        </div> -->
         <div class="form-group-inline">
             <div class="field-wrapper">
                 {{ job_form.job_price.label_tag }}*<br>
@@ -83,20 +82,9 @@
             </div>
             <div class="field-wrapper">
                 {{ job_form.job_currency.label_tag }}*<br>
-                {{ job_form.job_currency }} 
+                {{ job_form.job_currency }}
             </div>
         </div>
-        <div class="form-group-inline">
-            <div class="field-wrapper">
-                {{ job_form.driver_fee.label_tag }}<br>
-                {{ job_form.driver_fee }}
-            </div>
-            <div class="field-wrapper">
-                {{ job_form.driver_currency.label_tag }}<br>
-                {{ job_form.driver_currency }}
-            </div>
-        </div>
-
         <!-- Tabs Section -->
         <div class="tabs">
             <div class="tab-buttons">
@@ -125,6 +113,16 @@
                     <div class="field-wrapper">
                         {{ job_form.number_plate.label_tag }}<br>
                         {{ job_form.number_plate }}
+                    </div>
+                </div>
+                <div class="form-group-inline">
+                    <div class="field-wrapper">
+                        {{ job_form.driver_fee.label_tag }}<br>
+                        {{ job_form.driver_fee }}
+                    </div>
+                    <div class="field-wrapper">
+                        {{ job_form.driver_currency.label_tag }}<br>
+                        {{ job_form.driver_currency }}
                     </div>
                 </div>
                 <div class="form-group">
