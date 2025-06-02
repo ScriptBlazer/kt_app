@@ -23,6 +23,8 @@ LOGGING = {
         'file': {
             'class': 'logging.FileHandler',
             'filename': LOG_FILE_PATH,
+            'maxBytes': 100 * 1024 * 1024,
+            'backupCount': 5,
             'formatter': 'verbose',
         },
     },
