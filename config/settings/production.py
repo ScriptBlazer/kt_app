@@ -21,9 +21,9 @@ LOGGING = {
     'disable_existing_loggers': False,
     'handlers': {
         'file': {
-            'class': 'logging.FileHandler',
+            'class': 'logging.handlers.RotatingFileHandler',
             'filename': LOG_FILE_PATH,
-            'maxBytes': 100 * 1024 * 1024,
+            'maxBytes': 104857600,
             'backupCount': 5,
             'formatter': 'verbose',
         },
