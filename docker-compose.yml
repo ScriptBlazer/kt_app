@@ -24,7 +24,7 @@ services:
     restart: unless-stopped
     volumes:
       - static-data:/app/staticfiles
-      - /home/ubuntu/kt-app/media:/app/media
+      - ./media:/app/media
     env_file:
       - .env
     depends_on:
@@ -45,7 +45,7 @@ services:
     volumes:
       - caddy-data:/data
       - static-data:/app/staticfiles:ro
-      - /home/ubuntu/kt-app/media:/app/media:ro
+      - ./media:/app/media:ro
       - ./Caddyfile:/etc/caddy/Caddyfile
     ports:
       - 80:80
