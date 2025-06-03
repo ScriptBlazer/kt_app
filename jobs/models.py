@@ -1,6 +1,6 @@
 from django.db import models
 from decimal import Decimal
-from common.utils import get_exchange_rate, CURRENCY_CHOICES, AGENT_FEE_CHOICES, PAYMENT_TYPE_CHOICES, calculate_cc_fee
+from common.utils import get_exchange_rate, CURRENCY_CHOICES, AGENT_FEE_CHOICES, PAYMENT_TYPE_CHOICES, VEHICLE_CHOICES, calculate_cc_fee
 from common.payment_settings import PaymentSettings
 from people.models import Agent, Driver
 import logging
@@ -42,12 +42,7 @@ class Job(models.Model):
     driver = models.ForeignKey(Driver, on_delete=models.PROTECT, null=True, blank=True)
     driver_agent = models.ForeignKey(Agent, on_delete=models.PROTECT, null=True, blank=True, related_name='jobs_as_driver')
     number_plate = models.CharField(max_length=20, null=True, blank=True)
-    vehicle_type = models.CharField(max_length=10, choices=[
-        ('Car', 'Car'),
-        ('Minivan', 'Minivan'),
-        ('Van', 'Van'),
-        ('Bus', 'Bus')
-    ])
+    vehicle_type = models.CharField(max_length=10, choices=VEHICLE_CHOICES, null=True, blank=True)
 
     # Agent Information
     agent_name = models.ForeignKey(Agent, null=True, blank=True, on_delete=models.PROTECT, related_name='jobs_as_agent')

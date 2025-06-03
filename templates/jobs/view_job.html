@@ -13,10 +13,12 @@
             <a href="{% url 'jobs:enquiries' %}" class="button">Back to Enquiries</a>
             <a href="{% url 'jobs:past_jobs' %}" class="button">Back to Past Jobs</a>
             <button onclick="copyJobDetails()" class="button">Copy Job Details</button>
+            <a href="javascript:void(0);" onclick="copyJobLink({{ job.id }})" class="button">Copy Client Link</a>
         </div>
     </div>
     <!-- Success Message -->
-    <p id="copy-success" style="display: none; color: green;">Job details copied to clipboard!</p>
+    <!-- <p id="copy-success" style="display: none; color: green;">Job details copied to clipboard!</p> -->
+    <p id="copy-success" style="display: none; color: green;">Client link copied to clipboard!</p>
     <br>
     <h2>View Job</h2>
     <p><strong>Customer Name:</strong> {{ job.customer_name|default_if_none:"" }}</p>
@@ -202,8 +204,14 @@
         <div style="color: purple;">Services</div>
     </a>
 
+    <!-- <a href="{% url 'jobs:client_job_view' job.id %}" class="button">View for Client</a>
+
     <a href="#" class="floating-add-button" onclick="copyJobDetails()">
         <i class="fas fa-copy"></i>
+    </a> -->
+
+    <a href="javascript:void(0);" onclick="copyJobLink({{ job.id }})" class="floating-add-button">
+        <i class="fas fa-paper-plane"></i>
     </a>
 </div>
 
@@ -269,5 +277,20 @@
             dropdown.style.display = this.checked ? 'block' : 'none';
         });
     });
+</script>
+<script>
+    function copyJobLink(jobId) {
+        const link = `http://kt.samberko.co.uk/jobs/job/${jobId}/details/`;
+        navigator.clipboard.writeText(link)
+            .then(() => {
+                const msg = document.getElementById('copy-success');
+                msg.textContent = 'Client link copied to clipboard!';
+                msg.style.display = 'block';
+                setTimeout(() => {
+                    msg.style.display = 'none';
+                }, 2000);
+            })
+            .catch(err => console.error('Failed to copy:', err));
+    }
 </script>
 {% endblock %}

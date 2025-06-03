@@ -420,3 +420,7 @@ def shuttle_daily_costs(request, date):
         'date': date,
         'error_message': error_message,
     })
+
+def client_view_shuttle(request, shuttle_id):
+    shuttle = get_object_or_404(Shuttle, pk=shuttle_id)
+    return render(request, 'shuttle/client_view_shuttle.html', {'shuttle': shuttle})

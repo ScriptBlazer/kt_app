@@ -15,7 +15,8 @@
         </div>
     </div>
     <!-- Success Message -->
-    <p id="copy-success" style="display: none; color: green;">Shuttle details copied to clipboard!</p>
+    <!-- <p id="copy-success" style="display: none; color: green;">Shuttle details copied to clipboard!</p> -->
+    <p id="copy-success" style="display: none; color: green;">Link copied to clipboard!</p>
     <br>
     <h2>View Passengers</h2>
     <p><strong>Customer Name:</strong> {{ shuttle.customer_name|default_if_none:"" }}</p>
@@ -126,9 +127,14 @@
         <div style="color: purple;">Services</div>
     </a>
 
-    <a href="#" class="floating-add-button button-purple" onclick="copyShuttleDetails()">
+    <!-- <a href="#" class="floating-add-button button-purple" onclick="copyShuttleDetails()">
         <i class="fas fa-copy"></i>
+    </a> -->
+
+    <a href="javascript:void(0);" onclick="copyShuttleLink({{ shuttle.id }})" class="floating-add-button">
+        <i class="fas fa-paper-plane"></i>
     </a>
+
 </div>
 
 
@@ -183,4 +189,19 @@
     }
 </script>
 <script src="{% static 'script.js' %}"></script>
+<script>
+    function copyShuttleLink(shuttleId) {
+        const link = `http://kt.samberko.co.uk//shuttle/${shuttleId}/client/`;
+        navigator.clipboard.writeText(link)
+            .then(() => {
+                const msg = document.getElementById('copy-success');
+                msg.textContent = 'Shuttle link copied to clipboard!';
+                msg.style.display = 'block';
+                setTimeout(() => {
+                    msg.style.display = 'none';
+                }, 2000);
+            })
+            .catch(err => console.error('Failed to copy:', err));
+    }
+</script>
 {% endblock %}

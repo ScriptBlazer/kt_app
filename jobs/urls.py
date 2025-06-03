@@ -12,4 +12,6 @@ urlpatterns = [
     path('view/<int:job_id>/', views.view_job, name='view_job'),  
     path('delete/<int:job_id>/', views.delete_job, name='delete_job'), 
     path('jobs/update_status/<int:job_id>/', views.update_job_status, name='update_job_status'),
+    path('ajax/get-customer/', views.get_customer, name='get_customer'),
+    path('job/<int:job_id>/details/', views.client_job_view, name='client_job_view'),
 ]
