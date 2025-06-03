@@ -12,7 +12,7 @@
 <body>
     <div class="container">
         <h1>Your Trip Details</h1>
-
+        <h3>Kerestir Travel</h3>
         <div class="timeline">
         {% if job.customer_name %}
         <div class="timeline-step">
@@ -112,6 +112,14 @@
 
     <p class="footer">Kerestir Travel &copy; 2024</p>
 </div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const steps = document.querySelectorAll(".timeline-step");
+        steps.forEach((step, index) => {
+            step.style.setProperty("--i", index + 1);
+        });
+    });
+</script>
 
 </body>
 </html>

@@ -11,85 +11,86 @@
 <body>
     <div class="container">
         <h1>Your Shuttle Booking</h1>
+        <h3>Kerestir Travel</h3>
         <div class="timeline">
             {% if shuttle.customer_name %}
-            <div class="timeline-step" style="--i:1;">
+            <div class="timeline-step">
                 <div class="dot"></div>
                 <div class="card"><strong>Customer Name:</strong> {{ shuttle.customer_name }}</div>
             </div>
             {% endif %}
 
             {% if shuttle.customer_number %}
-            <div class="timeline-step" style="--i:2;">
+            <div class="timeline-step">
                 <div class="dot"></div>
                 <div class="card"><strong>Customer Number:</strong> {{ shuttle.customer_number }}</div>
             </div>
             {% endif %}
 
             {% if shuttle.customer_email %}
-            <div class="timeline-step" style="--i:3;">
+            <div class="timeline-step">
                 <div class="dot"></div>
                 <div class="card"><strong>Email:</strong> {{ shuttle.customer_email }}</div>
             </div>
             {% endif %}
 
             {% if shuttle.shuttle_date %}
-            <div class="timeline-step" style="--i:4;">
+            <div class="timeline-step">
                 <div class="dot"></div>
                 <div class="card"><strong>Date:</strong> {{ shuttle.shuttle_date }}</div>
             </div>
             {% endif %}
 
             {% if shuttle.shuttle_direction %}
-            <div class="timeline-step" style="--i:5;">
+            <div class="timeline-step">
                 <div class="dot"></div>
-                <div class="card"><strong>Shuttle Direction:</strong> {{ shuttle.shuttle_direction }}</div>
+                <div class="card"><strong>Shuttle Direction:</strong> {{ shuttle.get_shuttle_direction_display }}</div>
             </div>
             {% endif %}
 
             {% if shuttle.no_of_passengers %}
-            <div class="timeline-step" style="--i:6;">
+            <div class="timeline-step">
                 <div class="dot"></div>
                 <div class="card"><strong>Passengers:</strong> {{ shuttle.no_of_passengers }}</div>
             </div>
             {% endif %}
 
             {% if shuttle.driver %}
-            <div class="timeline-step" style="--i:7;">
+            <div class="timeline-step">
                 <div class="dot"></div>
                 <div class="card"><strong>Driver:</strong> {{ shuttle.driver.name }}</div>
             </div>
             {% endif %}
 
             {% if shuttle.number_plate %}
-            <div class="timeline-step" style="--i:8;">
+            <div class="timeline-step">
                 <div class="dot"></div>
                 <div class="card"><strong>Number Plate:</strong> {{ shuttle.number_plate }}</div>
             </div>
             {% endif %}
 
             {% if shuttle.shuttle_type %}
-            <div class="timeline-step" style="--i:9;">
+            <div class="timeline-step">
                 <div class="dot"></div>
                 <div class="card"><strong>Trip Type:</strong> {{ shuttle.shuttle_type }}</div>
             </div>
             {% endif %}
 
             {% if shuttle.price %}
-                <div class="timeline-step" style="--i:10;">
+                <div class="timeline-step">
                     <div class="dot"></div>
                     <div class="card"><strong>Total Price:</strong> €{{ shuttle.price|intcomma|default_if_none:"" }}</div>
                 </div>
             {% endif %}
 
             {% if shuttle.shuttle_notes %}
-            <div class="timeline-step" style="--i:11;">
+            <div class="timeline-step">
                 <div class="dot"></div>
                 <div class="card"><strong>Notes:</strong> {{ shuttle.shuttle_notes }}</div>
             </div>
             {% endif %}
 
-            <div class="timeline-step" style="--i:12;">
+            <div class="timeline-step">
                 <div class="dot"></div>
                 <div class="card"><strong>Status:</strong> 
                     {% if shuttle.is_confirmed %}
@@ -103,5 +104,13 @@
 
         <p class="footer">Kerestir Travel &copy; 2024</p>
     </div>
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const steps = document.querySelectorAll(".timeline-step");
+        steps.forEach((step, index) => {
+            step.style.setProperty("--i", index + 1);
+        });
+    });
+</script>
 </body>
 </html>

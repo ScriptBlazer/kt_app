@@ -23,6 +23,7 @@
     <p><strong>Customer Name:</strong> {{ shuttle.customer_name|default_if_none:"" }}</p>
     <p><strong>Customer Number:</strong> {{ shuttle.customer_number|default_if_none:"" }}</p>
     <p><strong>Customer Email:</strong> {{ shuttle.customer_email|default_if_none:"N/A" }}</p>
+    <p><strong>Shuttle Direction:</strong> {{ shuttle.get_shuttle_direction_display }}</p>
     <p><strong>No. of Passengers:</strong> {{ shuttle.no_of_passengers|default_if_none:"" }}</p>
     <p><strong>Price:</strong> €{{ shuttle.price|intcomma|default_if_none:"" }}</p>
     <p><strong>Driver:</strong> {{ shuttle.driver|default_if_none:"" }}</p>
