@@ -93,8 +93,16 @@
                 <p><strong>Total Price:</strong> €{{ group.total_price|floatformat:2|intcomma }}</p>
 
                 <!-- Shuttle Info Button -->
-                <div class="assign-driver-form-container">
-                    <a href="{% url 'shuttle:view_day_info' group.date %}" class="button button-purple">Shuttle Info</a>
+                <div class="button-group">
+                    <!-- Daily Costs -->
+                    <div class="assign-driver-form-container">
+                        <a href="{% url 'shuttle:daily_costs' group.date %}" class="button button-purple">Daily Costs</a>
+                    </div>
+
+                    <!-- Shuttle Info -->
+                    <div class="assign-driver-form-container">
+                        <a href="{% url 'shuttle:view_day_info' group.date %}" class="button button-purple">Shuttle Info</a>
+                    </div>
                 </div>
 
                 <ul>

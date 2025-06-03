@@ -69,7 +69,10 @@
             </div>
             <button type="button" id="add-payment" class="button button-orange">Add Another</button>
         </div>
-        <button type="submit" class="button button-purple">Save</button>
+        <div class="button-group">
+            <button type="submit" class="button button-purple">Save</button>
+            <a href="{% url 'shuttle:shuttle' %}" class="button cancel-button">Cancel</a>
+        </div>
     </form>
 </div>
 <!-- Modal Structure -->
