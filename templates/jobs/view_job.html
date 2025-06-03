@@ -12,8 +12,8 @@
             <a href="{% url 'home' %}" class="button">Back to Home</a>
             <a href="{% url 'jobs:enquiries' %}" class="button">Back to Enquiries</a>
             <a href="{% url 'jobs:past_jobs' %}" class="button">Back to Past Jobs</a>
-            <button onclick="copyJobDetails()" class="button">Copy Job Details</button>
-            <a href="javascript:void(0);" onclick="copyJobLink({{ job.id }})" class="button">Copy Client Link</a>
+            <!-- <button onclick="copyJobDetails()" class="button">Copy Job Details</button> -->
+            <a href="javascript:void(0);" onclick="copyJobLink({{ job.id }})" class="button">Client Link</a>
         </div>
     </div>
     <!-- Success Message -->
