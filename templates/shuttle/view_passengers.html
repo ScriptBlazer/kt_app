@@ -11,7 +11,8 @@
         <div class="left-buttons">
             <a href="{% url 'shuttle:shuttle' %}" class="button button-purple">Back to Shuttle List</a>
             <a href="{% url 'shuttle:enquiries' %}" class="button button-purple">Back to Enquiries</a>
-            <button onclick="copyShuttleDetails()" class="button button-purple">Copy Passenger Details</button>
+            <!-- <button onclick="copyShuttleDetails()" class="button button-purple">Copy Passenger Details</button> -->
+            <a href="javascript:void(0);" onclick="copyShuttleLink({{ shuttle.id }})" class="button button-purple">Client Link</a>
         </div>
     </div>
     <!-- Success Message -->
@@ -131,7 +132,7 @@
         <i class="fas fa-copy"></i>
     </a> -->
 
-    <a href="javascript:void(0);" onclick="copyShuttleLink({{ shuttle.id }})" class="floating-add-button">
+    <a href="javascript:void(0);" onclick="copyShuttleLink({{ shuttle.id }})" class="floating-add-button button-purple">
         <i class="fas fa-paper-plane"></i>
     </a>
 
@@ -191,7 +192,7 @@
 <script src="{% static 'script.js' %}"></script>
 <script>
     function copyShuttleLink(shuttleId) {
-        const link = `http://kt.samberko.co.uk//shuttle/${shuttleId}/client/`;
+        const link = `http://kt.samberko.co.uk/shuttle/${shuttleId}/client/`;
         navigator.clipboard.writeText(link)
             .then(() => {
                 const msg = document.getElementById('copy-success');
