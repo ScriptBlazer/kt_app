@@ -21,6 +21,9 @@ import logging
 import pytz
 from common.utils import assign_job_color
 import datetime
+from django.http import JsonResponse
+from django.views.decorators.http import require_GET
+from django.utils.html import escape
 
 logger = logging.getLogger('kt')
 
@@ -406,3 +409,40 @@ def update_job_status(request, job_id):
 
     # Return error message if any validation failed
     return render(request, 'jobs/view_job.html', {'job': job, 'error_message': error_message}, status=400)
+
+
+@login_required
+@require_GET
+def get_customer(request):
+    field = request.GET.get('field')
+    query = request.GET.get('term', '')
+    
+    if field == 'name' and len(query) >= 3:
+        results = (Job.objects
+            .filter(customer_name__icontains=query)
+            .values_list('customer_name', flat=True)
+            .distinct()[:10])
+    elif field == 'number' and len(query) >= 5:
+        results = (Job.objects
+            .filter(customer_number__icontains=query)
+            .values_list('customer_number', flat=True)
+            .distinct()[:10])
+    elif field == 'pickup' and len(query) >= 3:
+        results = (Job.objects
+            .filter(pick_up_location__icontains=query)
+            .values_list('pick_up_location', flat=True)
+            .distinct()[:10])
+    elif field == 'dropoff' and len(query) >= 3:
+        results = (Job.objects
+            .filter(drop_off_location__icontains=query)
+            .values_list('drop_off_location', flat=True)
+            .distinct()[:10])
+    else:
+        results = []
+
+    return JsonResponse(list(results), safe=False)
+
+
+def client_job_view(request, job_id):
+    job = get_object_or_404(Job, pk=job_id)
+    return render(request, 'jobs/client_view_job.html', {'job': job})

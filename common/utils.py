@@ -38,6 +38,13 @@ PAYMENT_TYPE_CHOICES = [
     ('Quick Pay', 'Quick Pay')
 ]
 
+VEHICLE_CHOICES = [
+    ('Car', 'Car'),
+    ('Minivan', 'Minivan'),
+    ('Van', 'Van'),
+    ('Bus', 'Bus')
+]
+
 def fetch_and_cache_exchange_rate(currency):
     """Fetch the exchange rate from the API and store it in the database."""
     api_key = settings.EXCHANGE_RATE_API_KEY
