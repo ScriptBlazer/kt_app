@@ -1,0 +1,67 @@
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Driver Shuttle Summary</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'client-link-styles.css' %}">
+</head>
+<body>
+    <div class="container">
+        <h1>Shuttle Info – {{ date|date:"j F Y" }}</h1>
+        <h3>Kerestir Travel</h3>
+        <div class="timeline">
+
+            <div class="timeline-step">
+                <div class="dot"></div>
+                <div class="card"><strong>Total Passengers:</strong> {{ total_passengers }}</div>
+            </div>
+
+            <!-- <div class="timeline-step">
+                <div class="dot"></div>
+                <div class="card"><strong>Total Price:</strong> €{{ total_price|floatformat:2|intcomma }}</div>
+            </div> -->
+
+            <!-- <div class="timeline-step">
+                <div class="dot"></div>
+                <div class="card"><strong>Total Drivers:</strong> {{ total_drivers }}</div>
+            </div> -->
+
+            <br>
+            <hr>
+            <h3>Passengers</h3>
+
+            {% for shuttle in shuttles %}
+                <div class="timeline-step">
+                    <div class="dot"></div>
+                    <div class="card">
+                        <p><strong>Customer Name:</strong> {{ shuttle.customer_name }}</p>
+                        <p><strong>Shuttle Direction:</strong> {{ shuttle.shuttle_direction }}</p>
+                        <p><strong>No of Passengers:</strong> {{ shuttle.no_of_passengers }}</p>
+                        {% if shuttle.driver %}
+                            <p><strong>Driver:</strong> {{ shuttle.driver }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            {% empty %}
+                <div class="timeline-step">
+                    <div class="dot"></div>
+                    <div class="card">No passengers for this day.</div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <p class="footer">Kerestir Travel &copy; 2024</p>
+    </div>
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const steps = document.querySelectorAll(".timeline-step");
+        steps.forEach((step, index) => {
+            step.style.setProperty("--i", index + 1);
+        });
+    });
+    </script>
+</body>
+</html>

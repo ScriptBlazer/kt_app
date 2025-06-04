@@ -10,10 +10,12 @@
             <a href="{% url 'home' %}" class="button">Back to Home</a>
             <a href="{% url 'common:services' %}" class="button button-purple">Back to Services</a>
             <a href="{% url 'shuttle:shuttle' %}" class="button button-purple">Back to Shuttle List</a>
-            <button onclick="copyDailyDetails()" class="button button-purple">Copy Daily Details</button>
+            <!-- <button onclick="copyDailyDetails()" class="button button-purple">Copy Daily Details</button> -->
+            <button onclick="copyDriverLink('{{ date }}')" class="button button-purple">Copy Driver Link</button>
         </div>
     </div>
-    <p id="copy-success" style="display: none; color: green;">Shuttle info copied to clipboard!</p>
+    <!-- <p id="copy-success" style="display: none; color: green;">Shuttle info copied to clipboard!</p> -->
+    <p id="copy-success" style="display: none; color: green;"></p>
     <br>
 
     <h2>Shuttle Info – {{ date|date:"j F Y" }}</h2>
@@ -75,8 +77,9 @@
         <i class="fas fa-cogs" style="color: purple;"></i>
         <div style="color: purple;">Services</div>
     </a>
-    <a href="#" class="floating-add-button button-purple" onclick="copyDailyDetails()">
-        <i class="fas fa-copy"></i>
+    
+    <a href="javascript:void(0);" onclick="copyShuttleLink('{{ date }}')" class="floating-add-button button-purple">
+        <i class="fas fa-paper-plane"></i>
     </a>
 </div>
 {% endblock %}
@@ -119,4 +122,19 @@ No driver cost entries for this day.
     }
 </script>
 <script src="{% static 'script.js' %}"></script>
+<script>
+    function copyShuttleLink(shuttleDate) {
+        const link = `http://kt.samberko.co.uk/shuttle/day_info/${shuttleDate}/summary/`;
+        navigator.clipboard.writeText(link)
+            .then(() => {
+                const msg = document.getElementById('copy-success');
+                msg.textContent = 'Shuttle summary link copied!';
+                msg.style.display = 'block';
+                setTimeout(() => {
+                    msg.style.display = 'none';
+                }, 2000);
+            })
+            .catch(err => console.error('Failed to copy:', err));
+    }
+</script>
 {% endblock %}

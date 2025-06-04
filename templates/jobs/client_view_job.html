@@ -94,7 +94,10 @@
         {% if job.job_description %}
         <div class="timeline-step">
             <div class="dot"></div>
-            <div class="card"><strong>Job Description:</strong> {{ job.job_description }}</div>
+            <div class="card">
+                <strong>Job Description:</strong>
+                <div style="white-space: pre-wrap;">{{ job.job_description }}</div>
+            </div>
         </div>
         {% endif %}
 
@@ -108,6 +111,16 @@
                     {% endif %}
                 </div>
             </div>
+        </div>
+
+        <div class="info-note">
+            <p>Thanks for booking with <strong>Kerestir Travel</strong><br>
+            The driver you have booked can be canceled up to 24 hours before the scheduled time. After that, a 50% cancellation fee will apply.</p>
+
+            <p dir="rtl" style="margin-top: 1em;">
+                תודה שהזמנתם עם <strong>קערעסטיר טראוועל</strong><br>
+                ניתן לבטל את הנהג שהוזמן עד 24 שעות לפני המועד המתוכנן. לאחר מכן, תחול על הביטול עלות של 50%
+            </p>
         </div>
 
     <p class="footer">Kerestir Travel &copy; 2024</p>
