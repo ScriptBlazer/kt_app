@@ -17,6 +17,7 @@ from common.models import Payment
 from people.models import Staff
 from common.forms import PaymentForm
 import calendar
+from datetime import date
 import datetime
 import pytz
 import logging
@@ -424,3 +425,31 @@ def shuttle_daily_costs(request, date):
 def client_view_shuttle(request, shuttle_id):
     shuttle = get_object_or_404(Shuttle, pk=shuttle_id)
     return render(request, 'shuttle/client_view_shuttle.html', {'shuttle': shuttle})
+
+
+def shuttle_summary_view(request, date):
+    # Parse date in format "July 26, 2025"
+    try:
+        target_date = datetime.datetime.strptime(date, "%B %d, %Y").date()
+    except ValueError:
+        return render(request, "404.html", status=404)
+
+    shuttles = Shuttle.objects.filter(shuttle_date=target_date)
+    driver_costs = ShuttleDailyCost.objects.filter(parent__date=target_date)
+
+    total_passengers = sum(s.no_of_passengers or 0 for s in shuttles)
+    total_price = sum(s.price or 0 for s in shuttles)
+    total_drivers = driver_costs.values('driver').distinct().count()
+    total_costs = sum(cost.driver_fee_in_euros or 0 for cost in driver_costs)
+
+    context = {
+        'date': target_date,
+        'shuttles': shuttles,
+        'driver_costs': driver_costs,
+        'total_passengers': total_passengers,
+        'total_price': total_price,
+        'total_drivers': total_drivers,
+        'total_costs': total_costs,
+    }
+
+    return render(request, 'shuttle/driver_link.html', context)

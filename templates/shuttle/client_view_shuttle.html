@@ -13,6 +13,18 @@
         <h1>Your Shuttle Booking</h1>
         <h3>Kerestir Travel</h3>
         <div class="timeline">
+
+            <div class="info-note">
+                <p>The shuttle leaves at 10:00 a.m. from outside the Carmel Restaurant in the Jewish Quarter.<br>
+                It arrives in Kerestir between 12:00 and 12:30.<br>
+                It stops at the Guesthouses for food and at the cemetery to pray.<br>
+                It departs Kerestir at 3:30 p.m. and arrives back in Budapest between 17:30 and 18:00.</p>
+
+                <p dir="rtl">השאטל יוצא בשעה 10:00 בבוקר מחוץ למסעדת כרמל ברחוב קוזינצי 32 ברובע היהודי.<br>
+                ומגיע לקערעסטיר בין השעה 12:00 - 12:30.<br>
+                השאטל עושה עצירה גם בהכנסות אורחים לאכול וגם בציון להתפלל.<br>
+                ויוצא מקערעסטיר בשעה 15:30 ומגיע לבודפשט בין השעה 17:30 - 18:00.</p>
+            </div>
             {% if shuttle.customer_name %}
             <div class="timeline-step">
                 <div class="dot"></div>
@@ -86,7 +98,10 @@
             {% if shuttle.shuttle_notes %}
             <div class="timeline-step">
                 <div class="dot"></div>
-                <div class="card"><strong>Notes:</strong> {{ shuttle.shuttle_notes }}</div>
+                <div class="card">
+                    <strong>Notes:</strong>
+                    <div style="white-space: pre-wrap;">{{ shuttle.shuttle_notes }}</div>
+                </div>
             </div>
             {% endif %}
 
@@ -100,7 +115,19 @@
                     {% endif %}
                 </div>
             </div>
+
+            <div class="info-note">
+                <p>Thanks for booking with <strong>Kerestir Travel</strong><br>
+                The shuttle service can be canceled up to 48 hours before the scheduled time. After that, the full cost will be charged for cancellations.</p>
+
+                <p dir="rtl" style="margin-top: 1em;">
+                    תודה שהזמנתם עם <strong>קערעסטיר טראוועל</strong><br>
+                    ניתן לבטל את שירות ההסעה עד 48 שעות לפני המועד המתוכנן. לאחר מכן, תחול על הביטול עלות מלאה
+                </p>
+            </div>
         </div>
+
+
 
         <p class="footer">Kerestir Travel &copy; 2024</p>
     </div>
