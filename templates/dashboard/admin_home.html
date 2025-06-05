@@ -1,0 +1,70 @@
+{% extends 'base/base_admin.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+
+  <div class="buttons">
+      <div class="left-buttons">
+          <a href="{% url 'home' %}" class="button">Back to Home</a>
+          <a href="{% url 'common:admin' %}" class="button button-orange">Back to Admin</a>
+      </div>
+  </div>
+  <h1>Admin Dashboard</h1>
+
+  <br>
+
+  <!-- Add New User -->
+  <a href="{% url 'dashboard:add_user' %}">
+    <button type="button" class="button button-orange">Add New User</button>
+  </a>
+
+
+  <!-- Current Users -->
+  <h2>Existing Users</h2>
+  <ul>
+    {% for user in users %}
+      <li>
+        {{ user.username }}
+        <div class="button-group">
+          <a href="{% url 'dashboard:edit_user' user.id %}" class="button button-orange">Edit</a>
+          <a href="{% url 'dashboard:delete_user' user.id %}" class="button button-red">Delete</a>
+        </div>
+      </li>
+    {% empty %}
+      <li>No users found.</li>
+    {% endfor %}
+  </ul>
+
+  <hr>
+
+  <!-- Edit Credit Card Fee -->
+  <h2>Update Credit Card Fee</h2>
+  <form method="post">
+    {% csrf_token %}
+    {{ payment_form.as_p }}
+    <button type="submit" name="update_payment" class="button button-orange">Update Fee</button>
+  </form>
+
+  <hr>
+
+  <!-- Edit Shuttle Price -->
+  <h2>Update Shuttle Price</h2>
+  <form method="post">
+    {% csrf_token %}
+    {{ shuttle_form.as_p }}
+    <button type="submit" name="update_shuttle" class="button button-orange">Update Price</button>
+  </form>
+</div>
+
+<div class="mobile-bottom-nav">
+    <a href="{% url 'home' %}" class="mobile-nav-item">
+        <i class="fas fa-home" style="color: #007bff;"></i>
+        <div style="color: #007bff;">Home</div>
+    </a>
+    <a href="{% url 'common:admin' %}" class="mobile-nav-item">
+        <i class="fas fa-user-shield" style="color: orange;"></i>
+        <div style="color: orange;">Admin</div>
+    </a>
+</div>
+{% endblock %}

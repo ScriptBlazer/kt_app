@@ -19,6 +19,7 @@ urlpatterns = [
     path('hotels/', include('hotels.urls', namespace='hotels')),
     path('common/', include('common.urls', namespace='common')),
     path('', jobs_views.home, name='home'),
+    path('dashboard/', include('dashboard.urls', namespace='dashboard')),
 ]
 
 if settings.DEBUG:

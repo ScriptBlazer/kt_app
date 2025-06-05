@@ -1,0 +1,16 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container delete">
+    <h1 style="color: red;">FINAL CONFIRMATION!</h1>
+    <h2>Are you ABSOLUTELY SURE you want to delete the user <strong>{{ user_to_delete.username }}</strong> ({{ user_to_delete.email }})?</h2>
+    <h3 style="color: red;">This action is irreversible and will permanently delete all data related to this user!</h3>
+
+    <form method="post">
+        {% csrf_token %}
+        <a href="{% url 'dashboard:home' %}" class="button button-orange">Cancel</a>
+        <button type="submit" class="button cancel-button">DELETE USER NOW</button>
+    </form>
+</div>
+{% endblock %}
