@@ -281,7 +281,7 @@
 </script>
 <script>
     function copyJobLink(publicId) {
-        const link = `app.kerestirtravel.com/jobs/job/${publicId}/details/`;
+        const link = `http://app.kerestirtravel.com/jobs/job/${publicId}/details/`;
         navigator.clipboard.writeText(link)
             .then(() => {
                 const msg = document.getElementById('copy-success');
