@@ -1,0 +1,47 @@
+{% extends 'base/base_admin.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <div class="left-buttons">
+        <a href="{% url 'dashboard:home' %}" class="button button-orange">Back to Dashboard</a>
+    </div>
+    <h1>Add New User</h1>
+
+    <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+            <p>
+                {{ field.label_tag }}<br>
+                {{ field }}<br>
+
+                {% if field.help_text %}
+                <ul class="advisory-text">
+                    <li>{{ field.help_text }}</li>
+                </ul>
+                {% endif %}
+
+                {% for error in field.errors %}
+                <span class="error-text">{{ error }}</span><br>
+                {% endfor %}
+            </p>
+            {% endfor %}
+        <button type="submit" class="button button-orange">Create User</button>
+    </form>
+</div>
+
+<div class="mobile-bottom-nav">
+    <a href="{% url 'home' %}" class="mobile-nav-item">
+        <i class="fas fa-home" style="color: #007bff;"></i>
+        <div style="color: #007bff;">Home</div>
+    </a>
+    <a href="{% url 'dashboard:home' %}" class="mobile-nav-item">
+        <i class="fas fa-tachometer-alt" style="color: orange;"></i>
+        <div style="color: orange;">Dashboard</div>
+    </a>
+    <a href="{% url 'common:admin' %}" class="mobile-nav-item">
+        <i class="fas fa-user-shield" style="color: orange;"></i>
+        <div style="color: orange;">Admin</div>
+    </a>
+</div>
+{% endblock %}

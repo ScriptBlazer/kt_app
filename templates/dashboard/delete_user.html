@@ -1,0 +1,15 @@
+{% extends 'base/base_admin.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container delete">
+    <h2>Delete User</h2>
+    <form method="post">
+        {% csrf_token %}
+        <h3>Are you sure you want to delete the user <strong>{{ user_to_delete.username }}</strong> ({{ user_to_delete.email }})?</h3>
+        <h2>This action cannot be undone!</h2>
+        <a href="{% url 'dashboard:home' %}" class="button button-orange">Cancel</a>
+        <button type="submit" class="button cancel-button">Confirm Delete</button>
+    </form>
+</div>
+{% endblock %}
