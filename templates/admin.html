@@ -16,7 +16,9 @@
             <a href="{% url 'billing:balances' %}" class="button button-orange">Balances</a>
             <a href="{% url 'common:export_jobs' %}" class="button button-orange">Export</a>
         </div>
-        <a href="/admin/" class="button button-red">Console</a>
+        <!-- <a href="/admin/" class="button button-red">Console</a> -->
+        <!-- <a href="{% url 'dashboard:home' %}" class="button button-red">Dashboard</a> -->
+        <a href="{% url 'dashboard:home' %}" class="button button-orange">Dashboard</a>
     </div>
     <h1>Live Jobs</h1>
 
@@ -62,7 +64,7 @@
     <a href="{% url 'billing:totals' %}" style="color: orange;">Totals</a>
     <a href="{% url 'billing:balances' %}" style="color: orange;">Balances</a>
     <a href="{% url 'common:export_jobs' %}" style="color: orange;">Export</a>
-    <a href="/admin/" style="color: orange;">Console</a>
+    <a href="{% url 'dashboard:home' %}" style="color: orange;">Dashboard</a>
 </div>
 
 <script>

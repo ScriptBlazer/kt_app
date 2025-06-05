@@ -182,6 +182,7 @@ li {
     /* width: 100%; */
     min-height: 60px;
 }
+
 .smaller li{
     width: 95%;
 }
@@ -787,6 +788,35 @@ input[type="checkbox"][name$="-DELETE"] {
 
 .mobile-nav-item div {
     color: #007bff;
+}
+
+.advisory-text {
+    font-size: 0.9em;
+    color: #666666;
+    font-weight: normal;
+    margin-top: 0px;
+    margin-bottom: 20px;
+    list-style: none;
+    padding-left: 0;
+}
+
+.advisory-text li {
+    background: none;
+    box-shadow: none;
+    padding: 0;
+    margin-top: -25px;
+    margin-bottom: -10px;
+    color: #666666;
+    font-weight: normal;
+    font-size: 0.9em;
+}
+
+/* Error text — bold red */
+.error-text {
+    color: red;
+    font-weight: bold;
+    margin-top: 4px;
+    display: block;
 }
 
 
