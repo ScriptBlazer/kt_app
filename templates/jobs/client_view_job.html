@@ -15,131 +15,135 @@
         <h1>Your Trip Details</h1>
         <!-- <h3>Kerestir Travel</h3> -->
         <div class="timeline">
-        {% if job.customer_name %}
-        <div class="timeline-step">
-            <div class="dot"></div>
-            <div class="card"><strong>Customer Name:</strong> {{ job.customer_name }}</div>
-        </div>
-        {% endif %}
-
-        {% if job.customer_number %}
-        <div class="timeline-step">
-            <div class="dot"></div>
-            <div class="card"><strong>Customer Number:</strong> {{ job.customer_number }}</div>
-        </div>
-        {% endif %}
-
-        {% if job.job_date %}
-        <div class="timeline-step">
-            <div class="dot"></div>
-            <div class="card"><strong>Date:</strong> {{ job.job_date }}</div>
-        </div>
-        {% endif %}
-
-        {% if job.job_time %}
-        <div class="timeline-step">
-            <div class="dot"></div>
-            <div class="card"><strong>Time:</strong> {{ job.job_time|time:"H:i A" }}</div>
-        </div>
-        {% endif %}
-
-        {% if job.pick_up_location %}
-        <div class="timeline-step">
-            <div class="dot"></div>
-            <div class="card"><strong>Pick-up Location:</strong> {{ job.pick_up_location }}</div>
-        </div>
-        {% endif %}
-
-        {% if job.drop_off_location %}
-        <div class="timeline-step">
-            <div class="dot"></div>
-            <div class="card"><strong>Drop-off Location:</strong> {{ job.drop_off_location }}</div>
-        </div>
-        {% endif %}
-
-        {% if job.flight_number %}
-        <div class="timeline-step">
-            <div class="dot"></div>
-            <div class="card"><strong>Flight Number:</strong> {{ job.flight_number }}</div>
-        </div>
-        {% endif %}
-
-        {% if job.no_of_passengers %}
-        <div class="timeline-step">
-            <div class="dot"></div>
-            <div class="card"><strong>No. of Passengers:</strong> {{ job.no_of_passengers }}</div>
-        </div>
-        {% endif %}
-
-        {% if job.vehicle_type %}
-        <div class="timeline-step">
-            <div class="dot"></div>
-            <div class="card"><strong>Vehicle Type:</strong> {{ job.vehicle_type }}</div>
-        </div>
-        {% endif %}
-
-        {% if job.driver %}
-        <div class="timeline-step">
-            <div class="dot"></div>
-            <div class="card"><strong>Driver:</strong> {{ job.driver.name }}</div>
-        </div>
-        {% endif %}
-
-        {% if job.job_price_in_euros %}
-        <div class="timeline-step">
-            <div class="dot"></div>
-            <div class="card"><strong>Job Price:</strong> €{{ job.job_price_in_euros|intcomma }}</div>
-        </div>
-        {% endif %}
-
-        {% if job.job_description %}
-        <div class="timeline-step">
-            <div class="dot"></div>
-            <div class="card">
-                <strong>Job Description:</strong>
-                <div style="white-space: pre-wrap;">{{ job.job_description }}</div>
+            <div class="timeline-step">
+                <div class="dot"></div>
+                <div class="card"><strong>Job ID:</strong> {{ job.public_id }}</div>
             </div>
-        </div>
-        {% endif %}
+            {% if job.customer_name %}
+            <div class="timeline-step">
+                <div class="dot"></div>
+                <div class="card"><strong>Customer Name:</strong> {{ job.customer_name }}</div>
+            </div>
+            {% endif %}
 
-        <div class="timeline-step" style="--i:12;">
-            <div class="dot"></div>
-                <div class="card"><strong>Status:</strong> 
-                    {% if job.is_confirmed %}
-                        ✅ Confirmed
+            {% if job.customer_number %}
+            <div class="timeline-step">
+                <div class="dot"></div>
+                <div class="card"><strong>Customer Number:</strong> {{ job.customer_number }}</div>
+            </div>
+            {% endif %}
+
+            {% if job.job_date %}
+            <div class="timeline-step">
+                <div class="dot"></div>
+                <div class="card"><strong>Date:</strong> {{ job.job_date }}</div>
+            </div>
+            {% endif %}
+
+            {% if job.job_time %}
+            <div class="timeline-step">
+                <div class="dot"></div>
+                <div class="card"><strong>Time:</strong> {{ job.job_time|time:"H:i A" }}</div>
+            </div>
+            {% endif %}
+
+            {% if job.pick_up_location %}
+            <div class="timeline-step">
+                <div class="dot"></div>
+                <div class="card"><strong>Pick-up Location:</strong> {{ job.pick_up_location }}</div>
+            </div>
+            {% endif %}
+
+            {% if job.drop_off_location %}
+            <div class="timeline-step">
+                <div class="dot"></div>
+                <div class="card"><strong>Drop-off Location:</strong> {{ job.drop_off_location }}</div>
+            </div>
+            {% endif %}
+
+            {% if job.flight_number %}
+            <div class="timeline-step">
+                <div class="dot"></div>
+                <div class="card"><strong>Flight Number:</strong> {{ job.flight_number }}</div>
+            </div>
+            {% endif %}
+
+            {% if job.no_of_passengers %}
+            <div class="timeline-step">
+                <div class="dot"></div>
+                <div class="card"><strong>No. of Passengers:</strong> {{ job.no_of_passengers }}</div>
+            </div>
+            {% endif %}
+
+            {% if job.vehicle_type %}
+            <div class="timeline-step">
+                <div class="dot"></div>
+                <div class="card"><strong>Vehicle Type:</strong> {{ job.vehicle_type }}</div>
+            </div>
+            {% endif %}
+
+            {% if job.driver %}
+            <div class="timeline-step">
+                <div class="dot"></div>
+                <div class="card"><strong>Driver:</strong> {{ job.driver.name }}</div>
+            </div>
+            {% endif %}
+
+            {% if job.job_price_in_euros %}
+            <div class="timeline-step">
+                <div class="dot"></div>
+                <div class="card"><strong>Job Price:</strong> €{{ job.job_price_in_euros|intcomma }}</div>
+            </div>
+            {% endif %}
+
+            {% if job.job_description %}
+            <div class="timeline-step">
+                <div class="dot"></div>
+                <div class="card">
+                    <strong>Job Description:</strong>
+                    <div style="white-space: pre-wrap;">{{ job.job_description }}</div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="timeline-step" style="--i:12;">
+                <div class="dot"></div>
+                    <div class="card"><strong>Status:</strong> 
+                        {% if job.is_confirmed %}
+                            ✅ Confirmed
+                        {% else %}
+                            ⏳ Not Confirmed
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="timeline-step" style="--i:13;">
+                <div class="dot"></div>
+                <div class="card"><strong>Payment:</strong> 
+                    {% if job.is_paid %}
+                        ✅ Paid
                     {% else %}
-                        ⏳ Not Confirmed
+                        ❌ Not Paid
                     {% endif %}
                 </div>
             </div>
-        </div>
 
-        <div class="timeline-step" style="--i:13;">
-            <div class="dot"></div>
-            <div class="card"><strong>Payment:</strong> 
-                {% if job.is_paid %}
-                    ✅ Paid
-                {% else %}
-                    ❌ Not Paid
-                {% endif %}
+            <div class="info-note">
+                <p><span class="tnx">Thanks for booking with<br><strong>Kerestir Travel</strong> </span><br>
+                The driver you have booked can be canceled up to 24 hours before the scheduled time. After that, a 50% cancellation fee will apply.</p>
+
+                <p dir="rtl" style="margin-top: 1em;">
+                        <span class="tnx">
+                            תודה שהזמנתם עם<br>
+                            <strong>קערעסטיר טראוועל</strong><br>
+                        </span>
+                    ניתן לבטל את הנהג שהוזמן עד 24 שעות לפני המועד המתוכנן. לאחר מכן, תחול על הביטול עלות של 50%
+                </p>
             </div>
-        </div>
 
-        <div class="info-note">
-            <p><span class="tnx">Thanks for booking with<br><strong>Kerestir Travel</strong> </span><br>
-            The driver you have booked can be canceled up to 24 hours before the scheduled time. After that, a 50% cancellation fee will apply.</p>
-
-            <p dir="rtl" style="margin-top: 1em;">
-                    <span class="tnx">
-                        תודה שהזמנתם עם<br>
-                        <strong>קערעסטיר טראוועל</strong><br>
-                    </span>
-                ניתן לבטל את הנהג שהוזמן עד 24 שעות לפני המועד המתוכנן. לאחר מכן, תחול על הביטול עלות של 50%
-            </p>
-        </div>
-
-    <p class="footer">Kerestir Travel &copy; 2024</p>
-</div>
+        <p class="footer">Kerestir Travel &copy; 2024</p>
+    </div>
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         const steps = document.querySelectorAll(".timeline-step");

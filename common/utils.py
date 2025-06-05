@@ -10,6 +10,7 @@ from django.db.models.functions import Lower
 import pytz
 import datetime
 import logging
+import hashlib
 
 logger = logging.getLogger('kt')
 
@@ -214,3 +215,7 @@ def get_currency_symbol(currency_code):
         'HUF': 'Ft',
     }
     return currency_symbols.get(currency_code, currency_code)  # Fallback to code if symbol not found
+
+
+def scramble_date(date_string):
+    return hashlib.sha256(date_string.encode()).hexdigest()[:12]

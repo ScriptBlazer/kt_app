@@ -11,7 +11,7 @@
             <a href="{% url 'common:services' %}" class="button button-purple">Back to Services</a>
             <a href="{% url 'shuttle:shuttle' %}" class="button button-purple">Back to Shuttle List</a>
             <!-- <button onclick="copyDailyDetails()" class="button button-purple">Copy Daily Details</button> -->
-            <button onclick="copyShuttleLink('{{ date }}')" class="button button-purple">Copy Driver Link</button>
+            <button onclick="copyShuttleLink('{{ scrambled_date }}')" class="button button-purple">Copy Driver Link</button>
         </div>
     </div>
     <!-- <p id="copy-success" style="display: none; color: green;">Shuttle info copied to clipboard!</p> -->
@@ -78,7 +78,7 @@
         <div style="color: purple;">Services</div>
     </a>
     
-    <a href="javascript:void(0);" onclick="copyShuttleLink('{{ date }}')" class="floating-add-button button-purple">
+    <a href="javascript:void(0);" onclick="copyShuttleLink('{{ scrambled_date }}')" class="floating-add-button button-purple">
         <i class="fas fa-paper-plane"></i>
     </a>
 </div>
@@ -123,9 +123,8 @@ No driver cost entries for this day.
 </script>
 <script src="{% static 'script.js' %}"></script>
 <script>
-    function copyShuttleLink(shuttleDate) {
-        const encodedDate = encodeURIComponent(shuttleDate);  // This encodes spaces and commas
-        const link = `http://app.kerestirtravel.com/shuttle/day_info/${encodedDate}/summary/`;
+    function copyShuttleLink(scrambledDate) {
+        const link = `http://app.kerestirtravel.com/shuttle/day_info/${scrambledDate}/summary/`;
         navigator.clipboard.writeText(link)
             .then(() => {
                 const msg = document.getElementById('copy-success');
@@ -137,5 +136,5 @@ No driver cost entries for this day.
             })
             .catch(err => console.error('Failed to copy:', err));
     }
-    </script>
+</script>
 {% endblock %}

@@ -5,10 +5,21 @@ from common.payment_settings import PaymentSettings
 from people.models import Agent, Driver
 import logging
 from django.contrib.auth.models import User
+import secrets
+import string
 
 logger = logging.getLogger('kt')
 
+
+def generate_random_id(length=8):
+    alphabet = string.ascii_letters + string.digits
+    return ''.join(secrets.choice(alphabet) for _ in range(length))
+
 class Job(models.Model):
+
+    # Job IDs
+    public_id = models.CharField(max_length=16, blank=True, editable=False)
+
     # Customer Information
     customer_name = models.CharField(max_length=100)
     customer_number = models.CharField(max_length=30)
@@ -70,7 +81,11 @@ class Job(models.Model):
     subtotal = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
 
     def save(self, *args, **kwargs):
-        # Currency conversion first
+        # Only generate public_id for new jobs
+        if not self.public_id:
+            self.public_id = generate_random_id()
+
+        # Currency conversion
         self.convert_to_euros()
 
         # Get the credit card fee percentage from PaymentSettings
