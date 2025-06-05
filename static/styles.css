@@ -758,8 +758,30 @@ input[type="checkbox"][name$="-DELETE"] {
     display: none;
 }
 
+.floating-add-button-top {
+    padding: 0%;
+    display: flex;
+    position: fixed;
+    bottom: 160px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: #007bff;
+    color: white;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    text-decoration: none;
+}
+
+.material-symbols-outlined {
+  font-size: 40px !important;
+}
+
 .floating-add-button {
-    display: none;
+    display: flex;
     position: fixed;
     bottom: 80px;
     right: 20px;
