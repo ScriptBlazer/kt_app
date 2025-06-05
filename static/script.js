@@ -91,37 +91,30 @@ document.addEventListener("DOMContentLoaded", () => {
   // Handle input for fields that allow commas and dots
   decimalFieldsWithCommaAndDot.forEach((input) => {
     input.addEventListener("input", (e) => {
-      let caretPosition = input.selectionStart; // Save the cursor position
+      let original = input.value;
+      let position = input.selectionStart;
 
-      console.log(`Input detected in ${input.name}:`, e.target.value);
+      // Replace commas with dots
+      let cleaned = original.replace(",", ".");
 
-      // Allow numbers, commas, and dots only
-      let oldValue = e.target.value;
-      e.target.value = e.target.value.replace(/[^0-9.,]/g, "");
+      // Remove invalid characters (only digits and dots)
+      cleaned = cleaned.replace(/[^0-9.]/g, "");
 
-      // Replace multiple commas or dots, only allow one decimal separator
-      const valueWithSingleCommaOrDot = e.target.value.replace(
-        /[,.]/g,
-        (match, index, fullString) => {
-          // Only allow one decimal separator (either dot or comma), and convert comma to dot for standardization
-          if (
-            fullString.indexOf(".") === index ||
-            fullString.indexOf(",") === index
-          ) {
-            return fullString.indexOf(".") === index ? "." : ".";
-          }
-          return "";
-        }
-      );
-
-      e.target.value = valueWithSingleCommaOrDot;
-
-      // Restore the cursor position if no drastic change occurred
-      if (oldValue.length >= e.target.value.length) {
-        setCaretPosition(input, caretPosition); // Restore the cursor position
+      // Allow only one dot
+      const parts = cleaned.split(".");
+      if (parts.length > 2) {
+        cleaned = parts[0] + "." + parts[1];
       }
 
-      console.log(`Validated input for ${input.name}:`, e.target.value);
+      // Only update the value if it has changed
+      if (cleaned !== original) {
+        input.value = cleaned;
+
+        // Adjust the caret to the right position
+        let diff = original.length - cleaned.length;
+        let newPos = position - diff;
+        setCaretPosition(input, Math.max(0, newPos));
+      }
     });
   });
 
