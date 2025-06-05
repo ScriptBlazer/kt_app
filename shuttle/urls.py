@@ -12,6 +12,6 @@ urlpatterns = [
     path('update_status/<int:id>/', views.update_shuttle_status, name='update_shuttle_status'),
     path('daily_costs/<str:date>/', views.shuttle_daily_costs, name='daily_costs'),
     path('day_info/<str:date>/', views.view_day_info, name='view_day_info'),
-    path('<int:shuttle_id>/client/', views.client_view_shuttle, name='client_view_shuttle'),
-    path('day_info/<str:date>/summary/', views.shuttle_summary_view, name='driver_link'),
+    path('<str:lookup>/client/', views.client_view_shuttle, name='client_view_shuttle'),
+    path('day_info/<str:scrambled>/summary/', views.shuttle_summary_view, name='shuttle_summary'),
 ]

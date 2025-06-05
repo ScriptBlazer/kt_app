@@ -13,7 +13,7 @@
             <a href="{% url 'jobs:enquiries' %}" class="button">Back to Enquiries</a>
             <a href="{% url 'jobs:past_jobs' %}" class="button">Back to Past Jobs</a>
             <!-- <button onclick="copyJobDetails()" class="button">Copy Job Details</button> -->
-            <a href="javascript:void(0);" onclick="copyJobLink({{ job.id }})" class="button">Client Link</a>
+            <button onclick="copyJobLink('{{ job.public_id }}')">Copy Link</button>
         </div>
     </div>
     <!-- Success Message -->
@@ -21,6 +21,7 @@
     <p id="copy-success" style="display: none; color: green;">Client link copied to clipboard!</p>
     <br>
     <h2>View Job</h2>
+    <p><strong>Job ID:</strong> {{ job.public_id|default_if_none:"" }}</p>
     <p><strong>Customer Name:</strong> {{ job.customer_name|default_if_none:"" }}</p>
     <p><strong>Customer Number:</strong> {{ job.customer_number|default_if_none:"" }}</p>
     <p><strong>Job Date:</strong> {{ job.job_date|default_if_none:"" }}</p>
@@ -210,7 +211,7 @@
         <i class="fas fa-copy"></i>
     </a> -->
 
-    <a href="javascript:void(0);" onclick="copyJobLink({{ job.id }})" class="floating-add-button">
+    <a href="javascript:void(0);" onclick="copyJobLink('{{ job.public_id }}')" class="floating-add-button">
         <i class="fas fa-paper-plane"></i>
     </a>
 </div>
@@ -279,8 +280,8 @@
     });
 </script>
 <script>
-    function copyJobLink(jobId) {
-        const link = `http://app.kerestirtravel.com/jobs/job/${jobId}/details/`;
+    function copyJobLink(publicId) {
+        const link = `https://app.kerestirtravel.com/:8000/jobs/job/${publicId}/details/`;
         navigator.clipboard.writeText(link)
             .then(() => {
                 const msg = document.getElementById('copy-success');

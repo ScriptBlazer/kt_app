@@ -1,5 +1,17 @@
 from django.db import models
 from django.contrib.auth.models import User
+import secrets
+import string
+from django.db import models
+import pytz
+from django.utils import timezone
+from common.utils import PAYMENT_TYPE_CHOICES, calculate_cc_fee
+from people.models import Staff, Driver
+from decimal import Decimal
+from people.models import Driver
+from common.utils import get_exchange_rate, CURRENCY_CHOICES
+from decimal import Decimal
+
 
 # --- ShuttleDay Model ---
 class ShuttleDay(models.Model):
@@ -8,16 +20,11 @@ class ShuttleDay(models.Model):
     def __str__(self):
         return str(self.date)
 
-from django.db import models
-import pytz
-from django.utils import timezone
-from common.utils import PAYMENT_TYPE_CHOICES, calculate_cc_fee
-from people.models import Staff, Driver
-from decimal import Decimal
-from people.models import Driver
 
-from common.utils import get_exchange_rate, CURRENCY_CHOICES
-from decimal import Decimal
+def generate_random_id(length=8):
+    alphabet = string.ascii_letters + string.digits
+    return ''.join(secrets.choice(alphabet) for _ in range(length))
+
 
 class ShuttleConfig(models.Model):
     price_per_passenger = models.DecimalField(max_digits=10, decimal_places=2, default=60.00)
@@ -42,6 +49,7 @@ class Shuttle(models.Model):
         ('keres_buda', 'Keres - Buda'),
     ]
 
+    public_id = models.CharField(max_length=16, blank=True, editable=False)
     customer_name = models.CharField(max_length=255)
     customer_number = models.CharField(max_length=30)
     customer_email = models.EmailField(blank=True, null=True)
@@ -68,10 +76,12 @@ class Shuttle(models.Model):
     last_modified_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
+        # Generate public_id if missing
+        if not self.public_id:
+            self.public_id = generate_random_id()
+
         # Set the timezone to Budapest
         budapest_tz = pytz.timezone('Europe/Budapest')
-
-        # Convert the date and time to Budapest timezone before saving
         self.date = timezone.now().astimezone(budapest_tz).date()
 
         # Fetch the current price per passenger
@@ -81,10 +91,10 @@ class Shuttle(models.Model):
         # Calculate price: €60 per passenger
         self.price = self.no_of_passengers * price_per_passenger
 
-        # Get the credit card fee percentage from PaymentSettings (assuming it's already migrated)
-        from common.payment_settings import PaymentSettings  # Import here to avoid circular import
+        # Get the credit card fee percentage from PaymentSettings
+        from common.payment_settings import PaymentSettings  # Avoid circular import
         payment_settings = PaymentSettings.objects.first()
-        cc_fee_percentage = payment_settings.cc_fee_percentage if payment_settings else Decimal('7.00')  # Fallback
+        cc_fee_percentage = payment_settings.cc_fee_percentage if payment_settings else Decimal('7.00')
 
         super(Shuttle, self).save(*args, **kwargs)
 

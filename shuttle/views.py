@@ -1,6 +1,7 @@
 from shuttle.models import Shuttle, ShuttleDay, ShuttleDailyCost
 from shuttle.forms import ShuttleForm, DriverAssignmentForm, ShuttleDailyCostForm
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import Http404
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
 from django.forms import inlineformset_factory
@@ -21,6 +22,8 @@ from datetime import date
 import datetime
 import pytz
 import logging
+import re
+from common.utils import scramble_date
 logger = logging.getLogger('kt')
 
 # Set timezone to Budapest
@@ -372,6 +375,7 @@ def update_shuttle_status(request, id):
 
 @login_required
 def view_day_info(request, date):
+    scrambled = scramble_date(str(date))
     parent, _ = ShuttleDay.objects.get_or_create(date=date)
     shuttles = Shuttle.objects.filter(shuttle_date=date).order_by('customer_name')
     driver_costs = ShuttleDailyCost.objects.filter(parent=parent)
@@ -380,6 +384,7 @@ def view_day_info(request, date):
 
     context = {
         'date': date_obj,
+        'scrambled_date': scramble_date(str(date_obj)),
         'shuttles': shuttles,
         'driver_costs': driver_costs,
         'total_passengers': shuttles.aggregate(Sum('no_of_passengers'))['no_of_passengers__sum'] or 0,
@@ -422,17 +427,26 @@ def shuttle_daily_costs(request, date):
         'error_message': error_message,
     })
 
-def client_view_shuttle(request, shuttle_id):
-    shuttle = get_object_or_404(Shuttle, pk=shuttle_id)
+def client_view_shuttle(request, lookup):
+    shuttle = Shuttle.objects.filter(public_id=lookup).first()
+    if not shuttle:
+        return render(request, 'errors/404.html', status=404)
     return render(request, 'shuttle/client_view_shuttle.html', {'shuttle': shuttle})
 
 
-def shuttle_summary_view(request, date):
-    # Parse date in format "July 26, 2025"
-    try:
-        target_date = datetime.datetime.strptime(date, "%B %d, %Y").date()
-    except ValueError:
-        return render(request, "404.html", status=404)
+def shuttle_summary_view(request, scrambled):
+    # Only allow 12-character hex strings
+    if not re.fullmatch(r'[a-f0-9]{12}', scrambled):
+        return render(request, "errors/404.html", status=404)
+
+    all_dates = Shuttle.objects.values_list('shuttle_date', flat=True).distinct()
+    scrambled_map = {
+        scramble_date(str(date)): date for date in all_dates
+    }
+
+    target_date = scrambled_map.get(scrambled)
+    if not target_date:
+        return render(request, "errors/404.html", status=404)
 
     shuttles = Shuttle.objects.filter(shuttle_date=target_date)
     driver_costs = ShuttleDailyCost.objects.filter(parent__date=target_date)
