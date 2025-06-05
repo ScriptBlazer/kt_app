@@ -10,15 +10,16 @@
 </head>
 <body>
     <div class="container">
+        <img src="{% static 'images/kt-logo.png' %}" alt="Kerestir Travel Logo" class="logo">
         <h1>Your Shuttle Booking</h1>
-        <h3>Kerestir Travel</h3>
+        <!-- <h3>Kerestir Travel</h3> -->
         <div class="timeline">
 
             <div class="info-note">
-                <p>The shuttle leaves at 10:00 a.m. from outside the Carmel Restaurant in the Jewish Quarter.<br>
-                It arrives in Kerestir between 12:00 and 12:30.<br>
+                <p>The shuttle leaves at 10:00am from outside the Carmel Restaurant in the Jewish Quarter.<br>
+                It arrives in Kerestir between 12:00pm and 12:30pm.<br>
                 It stops at the Guesthouses for food and at the cemetery to pray.<br>
-                It departs Kerestir at 3:30 p.m. and arrives back in Budapest between 17:30 and 18:00.</p>
+                It departs Kerestir at 3:30pm and arrives back in Budapest between 5:30pm and 6:00pm.</p>
 
                 <p dir="rtl">השאטל יוצא בשעה 10:00 בבוקר מחוץ למסעדת כרמל ברחוב קוזינצי 32 ברובע היהודי.<br>
                 ומגיע לקערעסטיר בין השעה 12:00 - 12:30.<br>
@@ -116,13 +117,26 @@
                 </div>
             </div>
 
-            <div class="info-note">
-                <p>Thanks for booking with <strong>Kerestir Travel</strong><br>
-                The shuttle service can be canceled up to 48 hours before the scheduled time. After that, the full cost will be charged for cancellations.</p>
+            <div class="timeline-step" style="--i:13;">
+                <div class="dot"></div>
+                <div class="card"><strong>Payment:</strong> 
+                    {% if shuttle.is_paid %}
+                        ✅ Paid
+                    {% else %}
+                        ❌ Not Paid
+                    {% endif %}
+                </div>
+            </div>
 
+            <div class="info-note">
+                <p><span class="tnx">Thanks for booking with<br><strong>Kerestir Travel</strong> </span><br>
+                The shuttle service can be canceled up to 48 hours before the scheduled time. After that, the full cost will be charged for cancellations.</p>
                 <p dir="rtl" style="margin-top: 1em;">
-                    תודה שהזמנתם עם <strong>קערעסטיר טראוועל</strong><br>
-                    ניתן לבטל את שירות ההסעה עד 48 שעות לפני המועד המתוכנן. לאחר מכן, תחול על הביטול עלות מלאה
+                    <span class="tnx">
+                        תודה שהזמנתם עם<br>
+                        <strong>קערעסטיר טראוועל</strong><br>
+                    </span>
+                    ניתן לבטל את שירות ההסעה עד 48 שעות לפני המועד המתוכנן. לאחר מכן, תחול על הביטול עלות מלאה.
                 </p>
             </div>
         </div>

@@ -10,8 +10,9 @@
 </head>
 <body>
     <div class="container">
+        <img src="{% static 'images/kt-logo.png' %}" alt="Kerestir Travel Logo" class="logo">
         <h1>Shuttle Info – {{ date|date:"j F Y" }}</h1>
-        <h3>Kerestir Travel</h3>
+        <!-- <h3>Kerestir Travel</h3> -->
         <div class="timeline">
 
             <div class="timeline-step">
@@ -42,6 +43,11 @@
                         <p><strong>No of Passengers:</strong> {{ shuttle.no_of_passengers }}</p>
                         {% if shuttle.driver %}
                             <p><strong>Driver:</strong> {{ shuttle.driver }}</p>
+                        {% endif %}
+                        {% if shuttle.is_paid %}
+                            <p><strong>Payment:</strong> ✅ Paid</p>
+                        {% else %}
+                            <p><strong>Payment:</strong> ❌ Not Paid</p>
                         {% endif %}
                     </div>
                 </div>

@@ -11,7 +11,7 @@
             <a href="{% url 'common:services' %}" class="button button-purple">Back to Services</a>
             <a href="{% url 'shuttle:shuttle' %}" class="button button-purple">Back to Shuttle List</a>
             <!-- <button onclick="copyDailyDetails()" class="button button-purple">Copy Daily Details</button> -->
-            <button onclick="copyDriverLink('{{ date }}')" class="button button-purple">Copy Driver Link</button>
+            <button onclick="copyShuttleLink('{{ date }}')" class="button button-purple">Copy Driver Link</button>
         </div>
     </div>
     <!-- <p id="copy-success" style="display: none; color: green;">Shuttle info copied to clipboard!</p> -->
@@ -124,7 +124,8 @@ No driver cost entries for this day.
 <script src="{% static 'script.js' %}"></script>
 <script>
     function copyShuttleLink(shuttleDate) {
-        const link = `http://kt.samberko.co.uk/shuttle/day_info/${shuttleDate}/summary/`;
+        const encodedDate = encodeURIComponent(shuttleDate);  // This encodes spaces and commas
+        const link = `http://kt.samberko.co.uk/shuttle/day_info/${encodedDate}/summary/`;
         navigator.clipboard.writeText(link)
             .then(() => {
                 const msg = document.getElementById('copy-success');
@@ -136,5 +137,5 @@ No driver cost entries for this day.
             })
             .catch(err => console.error('Failed to copy:', err));
     }
-</script>
+    </script>
 {% endblock %}
