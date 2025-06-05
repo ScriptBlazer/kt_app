@@ -12,7 +12,7 @@
 <body>
     <div class="container">
         <img src="{% static 'images/kt-logo.png' %}" alt="Kerestir Travel Logo" class="logo">
-        <h1>Your Trip Details</h1>
+        <h1>Client  Details</h1>
         <!-- <h3>Kerestir Travel</h3> -->
         <div class="timeline">
             <div class="timeline-step">
@@ -26,12 +26,12 @@
             </div>
             {% endif %}
 
-            {% if job.customer_number %}
+            <!-- {% if job.customer_number %}
             <div class="timeline-step">
                 <div class="dot"></div>
                 <div class="card"><strong>Customer Number:</strong> {{ job.customer_number }}</div>
             </div>
-            {% endif %}
+            {% endif %} -->
 
             {% if job.job_date %}
             <div class="timeline-step">
@@ -134,19 +134,6 @@
                         ❌ Not Paid
                     {% endif %}
                 </div>
-            </div>
-
-            <div class="info-note">
-                <p><span class="tnx">Thanks for booking with<br><strong>Kerestir Travel</strong> </span><br>
-                The driver you have booked can be canceled up to 24 hours before the scheduled time. After that, a 50% cancellation fee will apply.</p>
-
-                <p dir="rtl" style="margin-top: 1em;">
-                        <span class="tnx">
-                            תודה שהזמנתם עם<br>
-                            <strong>קערעסטיר טראוועל</strong><br>
-                        </span>
-                    ניתן לבטל את הנהג שהוזמן עד 24 שעות לפני המועד המתוכנן. לאחר מכן, תחול על הביטול עלות של 50%
-                </p>
             </div>
 
         <p class="footer">Kerestir Travel &copy; 2024</p>

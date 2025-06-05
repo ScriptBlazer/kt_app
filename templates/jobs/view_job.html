@@ -13,7 +13,8 @@
             <a href="{% url 'jobs:enquiries' %}" class="button">Back to Enquiries</a>
             <a href="{% url 'jobs:past_jobs' %}" class="button">Back to Past Jobs</a>
             <!-- <button onclick="copyJobDetails()" class="button">Copy Job Details</button> -->
-            <button onclick="copyJobLink('{{ job.public_id }}')">Copy Link</button>
+            <button onclick="copyJobLinkClient('{{ job.public_id }}')">Copy Link</button>
+            <button onclick="copyJobLinkDriver('{{ job.public_id }}')">Copy Link Driver</button>
         </div>
     </div>
     <!-- Success Message -->
@@ -200,6 +201,7 @@
         <i class="fas fa-question-circle"></i>
         <div>Enquiries</div>
     </a>
+
     <a href="{% url 'common:services' %}" class="mobile-nav-item">
         <i class="fas fa-cogs" style="color: purple;"></i>
         <div style="color: purple;">Services</div>
@@ -211,7 +213,11 @@
         <i class="fas fa-copy"></i>
     </a> -->
 
-    <a href="javascript:void(0);" onclick="copyJobLink('{{ job.public_id }}')" class="floating-add-button">
+    <a href="javascript:void(0);" onclick="copyJobLinkDriver('{{ job.public_id }}')" class="floating-add-button-top">
+       <span class="material-symbols-outlined">search_hands_free</span>
+    </a>
+
+    <a href="javascript:void(0);" onclick="copyJobLinkClient('{{ job.public_id }}')" class="floating-add-button">
         <i class="fas fa-paper-plane"></i>
     </a>
 </div>
@@ -280,7 +286,22 @@
     });
 </script>
 <script>
-    function copyJobLink(publicId) {
+    function copyJobLinkDriver(publicId) {
+        const link = `http://app.kerestirtravel.com/jobs/job/${publicId}/driver-details/`;
+        navigator.clipboard.writeText(link)
+            .then(() => {
+                const msg = document.getElementById('copy-success');
+                msg.textContent = 'Driver link copied to clipboard!';
+                msg.style.display = 'block';
+                setTimeout(() => {
+                    msg.style.display = 'none';
+                }, 2000);
+            })
+            .catch(err => console.error('Failed to copy:', err));
+    }
+
+    
+    function copyJobLinkClient(publicId) {
         const link = `http://app.kerestirtravel.com/jobs/job/${publicId}/details/`;
         navigator.clipboard.writeText(link)
             .then(() => {

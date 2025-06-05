@@ -4,6 +4,7 @@ from django.utils import timezone
 from django.db.models import Q
 from django.db import transaction
 from jobs.models import Job
+from django.shortcuts import render
 from shuttle.models import Shuttle
 from hotels.models import HotelBooking
 from common.models import Payment
@@ -454,9 +455,6 @@ def get_customer(request):
     return JsonResponse(list(results), safe=False)
 
 
-from django.shortcuts import render
-from jobs.models import Job
-
 def client_job_view(request, lookup):
     # Only allow access via public_id — block numeric IDs
     if lookup.isdigit():
@@ -468,3 +466,16 @@ def client_job_view(request, lookup):
         return render(request, "errors/404.html", status=404)
 
     return render(request, 'jobs/client_view_job.html', {'job': job})
+
+
+def client_view_job_driver(request, public_id):
+    # Only allow access via public_id — block numeric IDs
+    if public_id.isdigit():
+        return render(request, "errors/404.html", status=404)
+
+    try:
+        job = Job.objects.get(public_id=public_id)
+    except Job.DoesNotExist:
+        return render(request, "errors/404.html", status=404)
+
+    return render(request, 'jobs/client_view_job_driver.html', {'job': job})
