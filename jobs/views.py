@@ -18,6 +18,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden
 from decimal import Decimal
 import logging
+from django.http import Http404
 import pytz
 from common.utils import assign_job_color
 import datetime
@@ -96,19 +97,29 @@ def past_jobs(request):
 
     try:
         if query:
-            past_jobs = Job.objects.filter(
+            filters = (
                 Q(customer_name__icontains=query) |  
                 Q(customer_number__icontains=query) |
                 Q(job_description__icontains=query) |
-                Q(pick_up_location__icontains=query),
-                Q(job_date__lt=now),
-                Q(is_confirmed=True)
+                Q(pick_up_location__icontains=query) |
+                Q(public_id__icontains=query)
+            )
+            try:
+                query_int = int(query)
+                filters |= Q(id=query_int)
+            except ValueError:
+                pass
+
+            past_jobs = Job.objects.filter(
+                filters,
+                job_date__lt=now,
+                is_confirmed=True
             ).order_by('-job_date')
         else:
             # Fetch only confirmed past jobs
             past_jobs = Job.objects.filter(
-                Q(job_date__lt=now) &
-                Q(is_confirmed=True) 
+                job_date__lt=now,
+                is_confirmed=True 
             ).order_by('-job_date')
 
         logger.info(f"Found {past_jobs.count()} past jobs.")
@@ -443,6 +454,17 @@ def get_customer(request):
     return JsonResponse(list(results), safe=False)
 
 
-def client_job_view(request, job_id):
-    job = get_object_or_404(Job, pk=job_id)
+from django.shortcuts import render
+from jobs.models import Job
+
+def client_job_view(request, lookup):
+    # Only allow access via public_id — block numeric IDs
+    if lookup.isdigit():
+        return render(request, "errors/404.html", status=404)
+
+    try:
+        job = Job.objects.get(public_id=lookup)
+    except Job.DoesNotExist:
+        return render(request, "errors/404.html", status=404)
+
     return render(request, 'jobs/client_view_job.html', {'job': job})
