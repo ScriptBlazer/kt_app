@@ -193,7 +193,7 @@
 <script src="{% static 'script.js' %}"></script>
 <script>
     function copyShuttleLink(shuttleId) {
-        const link = `http://kt.samberko.co.uk/shuttle/${shuttleId}/client/`;
+        const link = `http://app.kerestirtravel.com/shuttle/${shuttleId}/client/`;
         navigator.clipboard.writeText(link)
             .then(() => {
                 const msg = document.getElementById('copy-success');

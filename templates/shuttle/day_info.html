@@ -125,7 +125,7 @@ No driver cost entries for this day.
 <script>
     function copyShuttleLink(shuttleDate) {
         const encodedDate = encodeURIComponent(shuttleDate);  // This encodes spaces and commas
-        const link = `http://kt.samberko.co.uk/shuttle/day_info/${encodedDate}/summary/`;
+        const link = `http://app.kerestirtravel.com/shuttle/day_info/${encodedDate}/summary/`;
         navigator.clipboard.writeText(link)
             .then(() => {
                 const msg = document.getElementById('copy-success');
