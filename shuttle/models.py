@@ -10,7 +10,7 @@ from people.models import Staff, Driver
 from decimal import Decimal
 from people.models import Driver
 from common.utils import get_exchange_rate, CURRENCY_CHOICES
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 
 
 # --- ShuttleDay Model ---
@@ -111,7 +111,8 @@ class ShuttleDailyCost(models.Model):
 
     def save(self, *args, **kwargs):
         rate = get_exchange_rate(self.currency)
-        self.driver_fee_in_euros = (self.driver_fee / rate).quantize(Decimal('0.01'))
+        rate_decimal = Decimal(str(rate))
+        self.driver_fee_in_euros = (self.driver_fee / rate_decimal).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
         super().save(*args, **kwargs)
 
     def __str__(self):
