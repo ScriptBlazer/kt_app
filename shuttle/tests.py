@@ -1,7 +1,7 @@
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.utils import timezone
-from shuttle.models import Shuttle, ShuttleConfig
+from shuttle.models import Shuttle, ShuttleConfig, ShuttleDay, ShuttleDailyCost
 from shuttle.forms import ShuttleForm
 from django.db.models import Sum
 from django.contrib.auth.models import User
@@ -9,7 +9,8 @@ from people.models import Driver
 import pytz
 from unittest.mock import patch
 import datetime
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
+from datetime import date
 
 class ShuttleModelTest(TestCase):
 
@@ -449,3 +450,149 @@ class ShuttleAdditionalTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['total_passengers'], 2)
         self.assertEqual(response.context['total_price'], 120.00)
+
+
+
+class ViewDayInfoTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username='testuser', password='testpass')
+        self.date = date(2025, 6, 11)
+
+        # Create a driver for ShuttleDailyCost
+        self.driver = Driver.objects.create(name='Test Driver')
+
+        # Confirmed shuttle
+        self.shuttle_confirmed = Shuttle.objects.create(
+            customer_name='John Doe',
+            shuttle_date=self.date,
+            is_confirmed=True,
+            no_of_passengers=3,
+            price=Decimal('120.00')
+        )
+
+        # Unconfirmed shuttle
+        self.shuttle_unconfirmed = Shuttle.objects.create(
+            customer_name='Jane Doe',
+            shuttle_date=self.date,
+            is_confirmed=False,
+            no_of_passengers=4,
+            price=Decimal('200.00')
+        )
+
+    @patch('common.utils.fetch_and_cache_exchange_rate', return_value=1)
+    def test_redirect_if_not_logged_in(self, _):
+        response = self.client.get(reverse('shuttle:view_day_info', args=[str(self.date)]))
+        self.assertNotEqual(response.status_code, 200)
+        self.assertIn('/login/', response.url)
+
+    @patch('common.utils.fetch_and_cache_exchange_rate', return_value=1)
+    def test_view_day_info_logged_in(self, _):
+        # Create ShuttleDay and cost with currency to avoid triggering the real exchange API
+        parent, _ = ShuttleDay.objects.get_or_create(date=self.date)
+        ShuttleDailyCost.objects.create(
+            parent=parent,
+            driver=self.driver,
+            currency='eur',
+            driver_fee=Decimal('60.00'),
+        )
+
+        self.client.login(username='testuser', password='testpass')
+        response = self.client.get(reverse('shuttle:view_day_info', args=[str(self.date)]))
+        self.assertEqual(response.status_code, 200)
+
+        context = response.context
+        self.assertEqual(context['total_passengers'], 3)
+        self.assertEqual(context['total_drivers'], 1)
+        expected_price = self.shuttle_confirmed.no_of_passengers * Decimal('60.00')
+        self.assertEqual(context['total_price'], expected_price)
+
+    @patch('common.utils.fetch_and_cache_exchange_rate', return_value=1)
+    def test_unconfirmed_shuttles_not_included(self, _):
+        parent, _ = ShuttleDay.objects.get_or_create(date=self.date)
+        ShuttleDailyCost.objects.create(
+            parent=parent,
+            driver=self.driver,
+            currency='eur',
+            driver_fee=Decimal('60.00'), 
+        )
+
+        self.client.login(username='testuser', password='testpass')
+        response = self.client.get(reverse('shuttle:view_day_info', args=[str(self.date)]))
+        shuttle_names = [s.customer_name for s in response.context['shuttles']]
+        self.assertNotIn('Jane Doe', shuttle_names)
+        self.assertIn('John Doe', shuttle_names)
+
+
+
+class ShuttleDailyCostsViewTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username='testuser', password='testpass')
+        self.driver = Driver.objects.create(name='Test Driver')
+        self.date = '2025-06-12'
+        self.url = reverse('shuttle:daily_costs', args=[self.date])
+
+    def test_redirect_if_not_logged_in(self):
+        response = self.client.get(self.url)
+        self.assertNotEqual(response.status_code, 200)
+        self.assertIn('/login/', response.url)
+
+    @patch('common.utils.fetch_and_cache_exchange_rate', return_value=1.2)
+    def test_get_daily_cost_formset_as_logged_in_user(self, _):
+        self.client.login(username='testuser', password='testpass')
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'shuttle/daily_costs.html')
+        self.assertIn('formset', response.context)
+        self.assertEqual(str(response.context['date']), self.date)
+
+    @patch('common.utils.fetch_and_cache_exchange_rate', return_value=1.2)
+    def test_post_valid_daily_cost(self, _):
+        self.client.login(username='testuser', password='testpass')
+        parent = ShuttleDay.objects.get_or_create(date=self.date)[0]
+
+        post_data = {
+            'shuttledailycost_set-TOTAL_FORMS': '1',
+            'shuttledailycost_set-INITIAL_FORMS': '0',
+            'shuttledailycost_set-MIN_NUM_FORMS': '0',
+            'shuttledailycost_set-MAX_NUM_FORMS': '1000',
+
+            'shuttledailycost_set-0-id': '',
+            'shuttledailycost_set-0-driver': self.driver.id,
+            'shuttledailycost_set-0-currency': 'EUR',
+            'shuttledailycost_set-0-driver_fee': '60',
+            'shuttledailycost_set-0-DELETE': '',
+        }
+
+        response = self.client.post(self.url, data=post_data)
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(ShuttleDailyCost.objects.filter(parent=parent, driver=self.driver).exists())
+
+    @patch('common.utils.fetch_and_cache_exchange_rate', return_value=1.2)
+    def test_post_invalid_daily_cost(self, _):
+        self.client.login(username='testuser', password='testpass')
+        ShuttleDay.objects.get_or_create(date=self.date)  # Ensure parent exists
+
+        post_data = {
+            'shuttledailycost_set-TOTAL_FORMS': '1',
+            'shuttledailycost_set-INITIAL_FORMS': '0',
+            'shuttledailycost_set-MIN_NUM_FORMS': '0',
+            'shuttledailycost_set-MAX_NUM_FORMS': '1000',
+            'shuttledailycost_set-0-driver': '',  # <- this will trigger validation error
+            'shuttledailycost_set-0-currency': 'GBP',
+            'shuttledailycost_set-0-driver_fee': '60.00',
+            'shuttledailycost_set-0-id': '',
+            'shuttledailycost_set-0-DELETE': '',
+        }
+
+        response = self.client.post(self.url, data=post_data)
+
+        if hasattr(response, 'context') and response.context and 'formset' in response.context:
+            print("Formset errors:", response.context['formset'].errors)
+        else:
+            print(f"Status code: {response.status_code}")
+            print("No context or formset found – response likely redirected.")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Please correct the form errors.")

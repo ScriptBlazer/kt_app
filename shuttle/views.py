@@ -50,8 +50,8 @@ def shuttle(request):
 
     # Aggregate shuttles
     shuttles_this_month = Shuttle.objects.filter(shuttle_date__range=(first_day_of_month, last_day_of_month), is_confirmed=True)
-    all_shuttles = Shuttle.objects.filter(is_confirmed=True)
-    upcoming_shuttles = Shuttle.objects.filter(shuttle_date__gte=now_budapest.date(), is_confirmed=True).order_by('shuttle_date')
+    confirmed_shuttles = Shuttle.objects.filter(is_confirmed=True)
+    upcoming_confirmed_shuttles = Shuttle.objects.filter(shuttle_date__gte=now_budapest.date(), is_confirmed=True).order_by('shuttle_date')
     past_shuttles = Shuttle.objects.filter(shuttle_date__lt=now_budapest.date(), is_confirmed=True).order_by('-shuttle_date')
 
     # Total calculations
@@ -62,7 +62,7 @@ def shuttle(request):
         }
 
     monthly_totals = calculate_totals(shuttles_this_month)
-    overall_totals = calculate_totals(all_shuttles)
+    overall_totals = calculate_totals(confirmed_shuttles)
 
     # Shuttle grouping function
     def group_shuttles_by_date(shuttles):
@@ -82,13 +82,13 @@ def shuttle(request):
         return grouped
 
     # Assign colors and group shuttles
-    for shuttle in upcoming_shuttles:
+    for shuttle in upcoming_confirmed_shuttles:
         shuttle.color = assign_job_color(shuttle, now_budapest)
     for shuttle in past_shuttles:
         shuttle.color = assign_job_color(shuttle, now_budapest)
 
     context = {
-        'upcoming_shuttles_grouped': group_shuttles_by_date(upcoming_shuttles),
+        'upcoming_shuttles_grouped': group_shuttles_by_date(upcoming_confirmed_shuttles),
         'past_shuttles_grouped': group_shuttles_by_date(past_shuttles),
         'total_passengers': overall_totals['total_passengers'],
         'total_price': overall_totals['total_price'],
@@ -375,9 +375,9 @@ def update_shuttle_status(request, id):
 
 @login_required
 def view_day_info(request, date):
-    scrambled = scramble_date(str(date))
+    # scrambled = scramble_date(str(date))
     parent, _ = ShuttleDay.objects.get_or_create(date=date)
-    shuttles = Shuttle.objects.filter(shuttle_date=date).order_by('customer_name')
+    shuttles = Shuttle.objects.filter(is_confirmed=True, shuttle_date=date).order_by('customer_name')
     driver_costs = ShuttleDailyCost.objects.filter(parent=parent)
 
     date_obj = datetime.datetime.strptime(date, "%Y-%m-%d").date()
