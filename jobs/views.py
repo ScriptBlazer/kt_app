@@ -192,7 +192,6 @@ def enquiries(request):
 #         'month_range': [(i, datetime.date(1900, i, 1).strftime('%B')) for i in range(1, 13)],
 #     })
 
-from django.utils.timezone import make_aware, is_naive
 
 @login_required
 def past_jobs(request):
