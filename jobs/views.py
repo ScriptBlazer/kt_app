@@ -26,6 +26,9 @@ import datetime
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
 from django.utils.html import escape
+from itertools import chain
+from operator import attrgetter
+from django.utils.timezone import make_aware, is_naive
 
 logger = logging.getLogger('kt')
 
@@ -52,27 +55,70 @@ def get_filtered_jobs(now_hungary, recent=False):
         ).order_by('job_date', 'job_time')
 
 
+# @login_required
+# def home(request):
+#     now_hungary = timezone.now().astimezone(hungary_tz)
+#     logger.info(f"Current time in Budapest: {now_hungary}")
+
+#     # Fetch jobs using the helper function
+#     upcoming_jobs = get_filtered_jobs(now_hungary)
+#     recent_jobs = get_filtered_jobs(now_hungary, recent=True)
+
+#     # Assign colors
+#     for job in upcoming_jobs:
+#         job.color = assign_job_color(job, now_hungary)
+#         logger.debug(f"Assigned color {job.color} to upcoming job {job.id}")
+#     for job in recent_jobs:
+#         job.color = assign_job_color(job, now_hungary)
+#         logger.debug(f"Assigned color {job.color} to recent job {job.id}")
+
+#     return render(request, 'index.html', {
+#         'recent_jobs': recent_jobs,
+#         'upcoming_jobs': upcoming_jobs,
+#     })
+
 @login_required
 def home(request):
     now_hungary = timezone.now().astimezone(hungary_tz)
-    logger.info(f"Current time in Budapest: {now_hungary}")
 
-    # Fetch jobs using the helper function
-    upcoming_jobs = get_filtered_jobs(now_hungary)
-    recent_jobs = get_filtered_jobs(now_hungary, recent=True)
+    # Upcoming driving jobs
+    all_upcoming_jobs = Job.objects.filter(
+        (Q(job_date__gt=now_hungary.date()) |
+         (Q(job_date=now_hungary.date()) & Q(job_time__gt=now_hungary.time()))) &
+        Q(is_confirmed=True)
+    ).order_by('job_date', 'job_time')
 
-    # Assign colors
-    for job in upcoming_jobs:
+    for job in all_upcoming_jobs:
         job.color = assign_job_color(job, now_hungary)
-        logger.debug(f"Assigned color {job.color} to upcoming job {job.id}")
-    for job in recent_jobs:
-        job.color = assign_job_color(job, now_hungary)
-        logger.debug(f"Assigned color {job.color} to recent job {job.id}")
 
-    return render(request, 'index.html', {
-        'recent_jobs': recent_jobs,
-        'upcoming_jobs': upcoming_jobs,
-    })
+    # Upcoming shuttles
+    all_upcoming_shuttles = Shuttle.objects.filter(
+        Q(shuttle_date__gte=now_hungary.date()) &
+        Q(is_confirmed=True)
+    ).order_by('shuttle_date')
+
+    for shuttle in all_upcoming_shuttles:
+        shuttle.color = assign_job_color(shuttle, now_hungary)
+
+    # Upcoming hotel bookings
+    all_upcoming_hotels = HotelBooking.objects.filter(
+        Q(check_in__gte=now_hungary) &
+        Q(is_confirmed=True)
+    ).order_by('check_in')
+
+    for hotel in all_upcoming_hotels:
+        hotel.color = assign_job_color(hotel, now_hungary)
+
+    context = {
+        'upcoming_jobs': all_upcoming_jobs[:3],
+        'older_jobs': all_upcoming_jobs[3:],
+        'upcoming_shuttles': all_upcoming_shuttles[:3],
+        'older_shuttles': all_upcoming_shuttles[3:],
+        'upcoming_hotels': all_upcoming_hotels[:3],
+        'older_hotels': all_upcoming_hotels[3:],
+    }
+
+    return render(request, 'index.html', context)
 
 @login_required
 def enquiries(request):
@@ -91,58 +137,131 @@ def enquiries(request):
     }
     return render(request, 'jobs/enquiries.html', context)
 
+# @login_required
+# def past_jobs(request):
+#     now = timezone.now().astimezone(hungary_tz)
+#     query = request.GET.get('q', '') 
+
+#     try:
+#         time_filter = (
+#             Q(job_date__lt=now.date()) |
+#             (Q(job_date=now.date()) & Q(job_time__lt=now.time()))
+#         )
+
+#         if query:
+#             filters = (
+#                 Q(customer_name__icontains=query) |  
+#                 Q(customer_number__icontains=query) |
+#                 Q(job_description__icontains=query) |
+#                 Q(pick_up_location__icontains=query) |
+#                 Q(public_id__icontains=query)
+#             )
+#             try:
+#                 query_int = int(query)
+#                 filters |= Q(id=query_int)
+#             except ValueError:
+#                 pass
+
+#             past_jobs = Job.objects.filter(
+#                 filters,
+#                 time_filter,
+#                 is_confirmed=True
+#             ).order_by('-job_date', '-job_time')
+#         else:
+#             past_jobs = Job.objects.filter(
+#                 time_filter,
+#                 is_confirmed=True 
+#             ).order_by('-job_date', '-job_time')
+    
+#     except Exception as e:
+#         logger.error(f"Error fetching past jobs: {e}")
+#         return render(request, 'errors/error_page.html', {'error_message': 'An error occurred fetching past jobs.'})
+
+#     # Add pagination (10 jobs per page)
+#     paginator = Paginator(past_jobs, 10)  # Show 10 jobs per page
+#     page_number = request.GET.get('page')
+#     page_obj = paginator.get_page(page_number)
+
+#     # Assign colors to past jobs
+#     for job in page_obj:
+#         job.color = assign_job_color(job, now) 
+
+#     return render(request, 'jobs/past_jobs.html', {
+#         'past_jobs': page_obj,  # Send paginated jobs
+#         'query': query,
+#         'month_range': [(i, datetime.date(1900, i, 1).strftime('%B')) for i in range(1, 13)],
+#     })
+
+
 @login_required
 def past_jobs(request):
-    now = timezone.now()
-    query = request.GET.get('q', '') 
+    now = timezone.now().astimezone(hungary_tz)
+    query = request.GET.get('q', '')
+
+    job_filter = (
+        Q(job_date__lt=now.date()) |
+        (Q(job_date=now.date()) & Q(job_time__lt=now.time()))
+    )
+    shuttle_filter = Q(shuttle_date__lt=now.date())
+    hotel_filter = Q(check_in__lt=now)
 
     try:
+        job_queryset = Job.objects.filter(job_filter, is_confirmed=True)
+        shuttle_queryset = Shuttle.objects.filter(shuttle_filter, is_confirmed=True)
+        hotel_queryset = HotelBooking.objects.filter(hotel_filter, is_confirmed=True)
+
         if query:
             filters = (
-                Q(customer_name__icontains=query) |  
-                Q(customer_number__icontains=query) |
+                Q(customer_name__icontains=query) |
+                Q(customer_number__icontains=query)
+            )
+            job_queryset = job_queryset.filter(
+                filters |
                 Q(job_description__icontains=query) |
                 Q(pick_up_location__icontains=query) |
                 Q(public_id__icontains=query)
             )
-            try:
-                query_int = int(query)
-                filters |= Q(id=query_int)
-            except ValueError:
-                pass
+            shuttle_queryset = shuttle_queryset.filter(filters)
+            hotel_queryset = hotel_queryset.filter(filters)
 
-            past_jobs = Job.objects.filter(
-                filters,
-                job_date__lt=now,
-                is_confirmed=True
-            ).order_by('-job_date')
-        else:
-            # Fetch only confirmed past jobs
-            past_jobs = Job.objects.filter(
-                job_date__lt=now,
-                is_confirmed=True 
-            ).order_by('-job_date')
+        for job in job_queryset:
+            job.type = 'job'
+            job.date_sort = make_aware(datetime.datetime.combine(job.job_date, job.job_time), timezone=hungary_tz)
+            job.color = assign_job_color(job, now)
 
-        logger.info(f"Found {past_jobs.count()} past jobs.")
-    
+        for shuttle in shuttle_queryset:
+            shuttle.type = 'shuttle'
+            shuttle.date_sort = make_aware(datetime.datetime.combine(shuttle.shuttle_date, datetime.time.min), timezone=hungary_tz)
+            shuttle.color = assign_job_color(shuttle, now)
+
+        for hotel in hotel_queryset:
+            hotel.type = 'hotel'
+            hotel_date = hotel.check_in
+            if is_naive(hotel_date):
+                hotel_date = make_aware(hotel_date, timezone=hungary_tz)
+            hotel.date_sort = hotel_date
+            hotel.color = assign_job_color(hotel, now)
+
+        combined = sorted(
+            chain(job_queryset, shuttle_queryset, hotel_queryset),
+            key=attrgetter('date_sort'),
+            reverse=True
+        )
+
+        paginator = Paginator(combined, 10)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+
     except Exception as e:
-        logger.error(f"Error fetching past jobs: {e}")
+        logger.error(f"[PAST JOBS ERROR] {e}")
         return render(request, 'errors/error_page.html', {'error_message': 'An error occurred fetching past jobs.'})
 
-    # Add pagination (10 jobs per page)
-    paginator = Paginator(past_jobs, 10)  # Show 10 jobs per page
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-
-    # Assign colors to past jobs
-    for job in page_obj:
-        job.color = assign_job_color(job, now) 
-
     return render(request, 'jobs/past_jobs.html', {
-        'past_jobs': page_obj,  # Send paginated jobs
+        'past_jobs': page_obj,
         'query': query,
         'month_range': [(i, datetime.date(1900, i, 1).strftime('%B')) for i in range(1, 13)],
     })
+
 
 @login_required
 def add_job(request):
