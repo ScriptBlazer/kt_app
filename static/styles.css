@@ -844,7 +844,7 @@ input[type="checkbox"][name$="-DELETE"] {
 }
 
 .floating-job-dropdown {
-    position: absolute;
+    position: fixed;
     bottom: 130px;
     right: 20px;
     background: white;
