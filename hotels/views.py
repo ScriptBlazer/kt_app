@@ -114,7 +114,8 @@ def add_guests(request):
                         quantity=quantity
                     )
 
-            return redirect('hotels:hotel_bookings')
+            # return redirect('hotels:hotel_bookings')
+            return redirect('home')
     else:
         form = HotelBookingForm()
 
@@ -178,7 +179,9 @@ def edit_guests(request, guest_id):
                         quantity=quantity
                     )
 
-            return redirect('hotels:hotel_bookings')
+            # return redirect('hotels:hotel_bookings')
+            return redirect('home')
+        
     else:
         form = HotelBookingForm(instance=guest)
 
@@ -211,7 +214,8 @@ def delete_guests(request, guest_id):
     if request.method == 'POST':
         try:
             guest.delete()
-            return redirect('hotels:hotel_bookings')
+            # return redirect('hotels:hotel_bookings')
+            return redirect('home')
         except Exception as e:
             return render(request, 'hotels/delete_guests.html', {'guest': guest, 'error': str(e)})
     
@@ -253,4 +257,5 @@ def update_guest_status(request, guest_id):
     logger.debug("Guest booking saved successfully.")
 
     # Redirect to 'Past Bookings' if successful
-    return redirect(reverse('hotels:past_bookings'))
+    # return redirect(reverse('hotels:past_bookings'))
+    return redirect('home')

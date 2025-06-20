@@ -20,7 +20,7 @@
     <br><br>
     <h2>Past Jobs</h2>
 
-    <ul>
+    <!-- <ul>
         {% for job in past_jobs %}
             <li class="job-container {% if job.color == 'red' %}red-job{% elif job.color == 'orange' %}orange-job{% elif job.color == 'green' %}green-job{% else %}white-job{% endif %}">
                 <div class="job-tag-container">
@@ -52,6 +52,73 @@
         {% empty %}
             <li>No past jobs.</li>
         {% endfor %}
+    </ul> -->
+
+    <ul>
+    {% for item in past_jobs %}
+        <li class="job-container {% if item.color == 'red' %}red-job{% elif item.color == 'orange' %}orange-job{% elif item.color == 'green' %}green-job{% else %}white-job{% endif %}">
+            <div class="job-tag-container">
+                <span class="job-added-by-tag">
+                    {% if item.created_by %}
+                        Added by: {{ item.created_by.get_full_name|default:item.created_by.username }}
+                    {% else %}
+                        Added by: Unknown
+                    {% endif %}
+                </span>
+                {% if item.last_modified_by %}
+                    <span class="job-edited-by-tag">
+                        Edited by: {{ item.last_modified_by.get_full_name|default:item.last_modified_by.username }}
+                    </span>
+                {% endif %}
+            </div>
+
+            <span class="customer-name">{{ item.customer_name|truncate_words_chars }}</span>
+
+            <div class="job-info">
+                {% if item.type == 'job' %}
+                    <span class="slim">{{ item.job_date }}</span>
+                    <span class="phone">{{ item.job_time|time_format }}</span>
+                    <span class="phone">{{ item.job_price }} {{ item.job_currency }}</span>
+                    <span class="phone">{{ item.pick_up_location|truncate_words_chars }}</span>
+                {% elif item.type == 'shuttle' %}
+                    <span class="slim">{{ item.shuttle_date }}</span>
+                    <span class="phone">{{ item.shuttle_direction|default_if_none:"No direction" }}</span>
+                    <span class="phone">{{ item.price|floatformat:2 }} EUR</span>
+                    <span class="phone">{{ item.no_of_passengers }} Passengers</span>
+                {% elif item.type == 'hotel' %}
+                    <span class="slim">{{ item.check_in|date:"d M Y" }}</span>
+                    <span class="phone">{{ item.no_of_people }} guests</span>
+                    <span class="phone">Pays {{ item.customer_pays }} {{ item.customer_pays_currency }}</span>
+                    <span class="phone">Hotel {{ item.hotel_price }} {{ item.hotel_price_currency }}</span>
+                {% endif %}
+            </div>
+
+            <div class="button-group">
+                {% if item.type == 'job' %}
+                    <a href="{% url 'jobs:edit_job' item.id %}" class="button phone">Edit</a>
+                    <a href="{% url 'jobs:view_job' item.id %}" class="button">View</a>
+                {% elif item.type == 'shuttle' %}
+                    <a href="{% url 'shuttle:edit_passengers' item.id %}" class="button phone button-purple">Edit</a>
+                    <a href="{% url 'shuttle:view_passengers' item.id %}" class="button button-purple">View</a>
+                {% elif item.type == 'hotel' %}
+                    <a href="{% url 'hotels:edit_guests' item.id %}" class="button phone button-purple">Edit</a>
+                    <a href="{% url 'hotels:view_guests' item.id %}" class="button button-purple">View</a>
+                {% endif %}
+            </div>
+
+            <div class="job-type-icon">
+                {% if item.type == 'job' %}
+                    <i class="fas fa-car" title="Driving Job" style="color: #007bff;"></i>
+                {% elif item.type == 'shuttle' %}
+                    <i class="fas fa-shuttle-van" title="Shuttle" style="color: purple;"></i>
+                {% elif item.type == 'hotel' %}
+                    <i class="fas fa-hotel" title="Hotel Booking" style="color: purple;"></i>
+                {% endif %}
+            </div>
+        </li>
+    {% empty %}
+        <li>No past jobs.</li>
+    {% endfor %}
     </ul>
 
     <!-- Pagination Controls -->

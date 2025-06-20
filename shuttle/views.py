@@ -157,7 +157,8 @@ def add_passengers(request):
                     payment.shuttle = shuttle
                     payment.save()
 
-            return redirect('shuttle:shuttle')
+            # return redirect('shuttle:shuttle')
+            return redirect('home')
 
     else:
         form = ShuttleForm()
@@ -234,7 +235,8 @@ def edit_passengers(request, shuttle_id):
                         payment.shuttle = shuttle
                         payment.save()
 
-            return redirect('shuttle:shuttle')
+            # return redirect('shuttle:shuttle')
+            return redirect('home')
 
     else:
         form = ShuttleForm(instance=shuttle)
@@ -278,7 +280,8 @@ def delete_passengers(request, shuttle_id):
     # Allow deletion if the job is not confirmed or if the user is a superuser
     if request.method == 'POST':
         shuttle.delete()
-        return redirect('shuttle:shuttle')
+        # return redirect('shuttle:shuttle')
+        return redirect('home')
 
     return render(request, 'shuttle/delete_passengers.html', {'shuttle': shuttle})
 
@@ -364,7 +367,8 @@ def update_shuttle_status(request, id):
         shuttle.is_paid = is_paid
         shuttle.is_completed = is_completed
         shuttle.save()
-        return redirect('shuttle:shuttle')
+        # return redirect('shuttle:shuttle')
+        return redirect('home')
 
     # Return error message if any validation failed
     return render(request, 'shuttle/view_passengers.html', {
