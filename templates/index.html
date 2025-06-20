@@ -62,7 +62,7 @@
     </ul>
 
     {% if older_jobs %}
-    <h4 class="toggle-header" data-section-id="older-jobs">More Upcoming Jobs <span id="older-jobs-arrow">▼</span></h4>
+    <h4 class="toggle-header" data-section-id="older-jobs">More Driving Jobs <span id="older-jobs-arrow">▼</span></h4>
     <ul id="older-jobs" style="display: none;">
         {% for job in older_jobs %}
         <li class="job-container {% if job.color == 'red' %}red-job{% elif job.color == 'orange' %}orange-job{% elif job.color == 'green' %}green-job{% else %}white-job{% endif %}">
@@ -96,6 +96,7 @@
     </ul>
     {% endif %}
 
+    <br>
     <h2>Upcoming Shuttles</h2>
     <ul>
         {% for shuttle in upcoming_shuttles %}
@@ -131,7 +132,7 @@
         {% endfor %}
     </ul>
     {% if older_shuttles %}
-    <h4 class="toggle-header" data-section-id="older-shuttles">More Shuttles <span id="older-shuttles-arrow">▼</span></h4>
+    <h4 class="toggle-header" data-section-id="older-shuttles">More Shuttle Passengers <span id="older-shuttles-arrow">▼</span></h4>
     <ul id="older-shuttles" style="display: none;">
         {% for shuttle in older_shuttles %}
             <li class="job-container {% if shuttle.color == 'red' %}red-job{% elif shuttle.color == 'orange' %}orange-job{% elif shuttle.color == 'green' %}green-job{% else %}white-job{% endif %}">
@@ -165,6 +166,7 @@
     </ul>
     {% endif %}
 
+    <br>
     <h2>Upcoming Hotel Bookings</h2>
     <ul>
         {% for hotel in upcoming_hotels %}
