@@ -1,20 +1,4 @@
 services:
-  db:
-    image: docker.io/bitnami/postgresql:16
-    container_name: kt-db
-    restart: unless-stopped
-    environment:
-      POSTGRESQL_USERNAME: $POSTGRES_USER
-      POSTGRESQL_PASSWORD: $POSTGRES_PASSWORD
-      POSTGRESQL_DATABASE: $POSTGRES_DATABASE
-    volumes:
-      - postgres-data:/bitnami/postgresql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DATABASE"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
 
   web:
     image: scriptblazer/kt-app:${DOCKER_TAG}
@@ -28,14 +12,17 @@ services:
       - ./django_logs.log:/app/django_logs.log
     env_file:
       - .env
-    depends_on:
-      - db
     healthcheck:
       test: "curl --fail -s http://127.0.0.1:8000/liveness || exit 1"
       interval: 10s
       timeout: 5s
       retries: 3
       start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "7"
 
   caddy:
     image: caddy:latest
@@ -75,14 +62,11 @@ services:
       POSTGRES_EXTRA_OPTS: -Z1 --schema=public --blobs
       SCHEDULE: "@daily"
       BACKUP_ON_START: true
-      BACKUP_KEEP_DAYS: 7
+      BACKUP_KEEP_DAYS: 14
       BACKUP_KEEP_WEEKS: 4
       BACKUP_KEEP_MONTHS: 6
       HEALTHCHECK_PORT: 8080
-    depends_on:
-      - db
 
 volumes:
-  postgres-data:
   static-data:
   caddy-data:
