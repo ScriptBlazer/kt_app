@@ -13,7 +13,7 @@ from django.core.exceptions import ValidationError
 
 class HotelBookingTests(TestCase):
 
-    @patch('hotels.models.get_exchange_rate', return_value=Decimal('1.2'))
+    @patch('common.models.get_exchange_rate', return_value=Decimal('1.2'))
     def setUp(self, mock_get_exchange_rate):
         # Create a non-superuser and log them in
         self.user = User.objects.create_user(username='testuser', password='12345')
@@ -56,7 +56,7 @@ class HotelBookingTests(TestCase):
             quantity=2
         )
 
-    @patch('hotels.models.get_exchange_rate', return_value=Decimal('1.2'))
+    @patch('common.models.get_exchange_rate', return_value=Decimal('1.2'))
     def test_assign_multiple_bed_types(self, mock_get_exchange_rate):
         """Test that multiple bed types can be assigned to a booking."""
         HotelBookingBedType.objects.create(hotel_booking=self.booking, bed_type=self.bed_type_double, quantity=1)
@@ -66,7 +66,7 @@ class HotelBookingTests(TestCase):
         self.assertEqual(booking_bed_types.first().bed_type, self.bed_type_single)
         self.assertEqual(booking_bed_types.last().bed_type, self.bed_type_double)
 
-    @patch('hotels.models.get_exchange_rate', return_value=Decimal('1.2'))
+    @patch('common.models.get_exchange_rate', return_value=Decimal('1.2'))
     def test_validate_bed_type_quantity(self, mock_get_exchange_rate):
         """Test that a booking must have at least one bed type with quantity > 0."""
         form_data = {
@@ -88,7 +88,7 @@ class HotelBookingTests(TestCase):
         self.assertFalse(form.is_valid())
         self.assertIn('At least one bed type must have a quantity greater than zero.', str(form.errors))
 
-    @patch('hotels.models.get_exchange_rate', return_value=Decimal('1.2'))
+    @patch('common.models.get_exchange_rate', return_value=Decimal('1.2'))
     def test_credit_card_fee_calculation(self, mock_get_exchange_rate):
         """Test that the credit card fee is calculated correctly based on customer_pays."""
         self.booking.payment_type = 'Card'
@@ -98,7 +98,7 @@ class HotelBookingTests(TestCase):
         expected_fee = Decimal('100.00') * Decimal('7.00') / Decimal('100')
         self.assertEqual(self.booking.cc_fee, expected_fee)
 
-    @patch('hotels.models.get_exchange_rate', return_value=Decimal('1.2'))
+    @patch('common.models.get_exchange_rate', return_value=Decimal('1.2'))
     def test_no_credit_card_fee_for_cash(self, mock_get_exchange_rate):
         """Test that no credit card fee is applied for non-card payments."""
         self.booking.payment_type = 'Cash'
@@ -107,7 +107,7 @@ class HotelBookingTests(TestCase):
         self.booking.refresh_from_db()
         self.assertEqual(self.booking.cc_fee, Decimal('0.00'))
 
-    @patch('hotels.models.get_exchange_rate', return_value=Decimal('1.2'))
+    @patch('common.models.get_exchange_rate', return_value=Decimal('1.2'))
     def test_add_guest_view(self, mock_get_exchange_rate):
         """Test that a guest can be successfully added."""
         form_data = {
@@ -152,7 +152,7 @@ class HotelBookingTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertTrue(HotelBooking.objects.filter(customer_name='Jane Doe').exists())
 
-    @patch('hotels.models.get_exchange_rate', return_value=Decimal('1.2'))
+    @patch('common.models.get_exchange_rate', return_value=Decimal('1.2'))
     def test_edit_guest_view(self, mock_get_exchange_rate):
         """Test editing guest details."""
         form_data = {
@@ -198,7 +198,7 @@ class HotelBookingTests(TestCase):
         updated_booking = HotelBooking.objects.get(id=self.booking.id)
         self.assertEqual(updated_booking.no_of_people, 3)
 
-    @patch('hotels.models.get_exchange_rate', return_value=Decimal('1.2'))
+    @patch('common.models.get_exchange_rate', return_value=Decimal('1.2'))
     def test_convert_price_to_eur(self, mock_get_exchange_rate):
         """Test the price conversion to euros for both hotel_price and customer_pays."""
         self.booking.hotel_price_currency = 'GBP'
@@ -212,7 +212,7 @@ class HotelBookingTests(TestCase):
         self.assertEqual(self.booking.hotel_price_in_euros, expected_price_in_eur)
         self.assertEqual(self.booking.customer_pays_in_euros, expected_price_in_eur)
 
-    @patch('hotels.models.get_exchange_rate', return_value=Decimal('1.2'))
+    @patch('common.models.get_exchange_rate', return_value=Decimal('1.2'))
     def test_delete_guest_superuser(self, mock_get_exchange_rate):
         """Test that a superuser can delete a guest."""
         # Log in as a superuser
@@ -225,7 +225,7 @@ class HotelBookingTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertFalse(HotelBooking.objects.filter(id=self.booking.id).exists())
 
-    @patch('hotels.models.get_exchange_rate', return_value=Decimal('1.2'))
+    @patch('common.models.get_exchange_rate', return_value=Decimal('1.2'))
     def test_delete_guest_non_superuser(self, mock_get_exchange_rate):
         """Test that a non-superuser cannot delete a guest."""
         # Log in as a non-superuser
@@ -238,7 +238,7 @@ class HotelBookingTests(TestCase):
         self.assertEqual(response.status_code, 403)
         self.assertTrue(HotelBooking.objects.filter(id=self.booking.id).exists())
 
-    @patch('hotels.models.get_exchange_rate', return_value=Decimal('1.2'))
+    @patch('common.models.get_exchange_rate', return_value=Decimal('1.2'))
     def test_delete_guest_view_non_superuser(self, mock_get_exchange_rate):
         """Test that the delete guest page renders a 403 for non-superusers."""
         # Log in as a non-superuser
@@ -250,7 +250,7 @@ class HotelBookingTests(TestCase):
         # Ensure the non-superuser sees a 403 forbidden page
         self.assertEqual(response.status_code, 403)
 
-    @patch('hotels.models.get_exchange_rate', return_value=Decimal('1.2'))
+    @patch('common.models.get_exchange_rate', return_value=Decimal('1.2'))
     def test_delete_guest_view_superuser(self, mock_get_exchange_rate):
         """Test that the delete guest page renders correctly for superusers."""
         # Log in as a superuser
@@ -266,7 +266,7 @@ class HotelBookingTests(TestCase):
 
 class HotelBookingAdditionalTests(TestCase):
 
-    @patch('hotels.models.get_exchange_rate', return_value=Decimal('1.2'))
+    @patch('common.models.get_exchange_rate', return_value=Decimal('1.2'))
     def setUp(self, mock_get_exchange_rate):
         # Initial setup with a mock exchange rate
         self.agent = Agent.objects.create(name="Test Agent")
@@ -293,7 +293,7 @@ class HotelBookingAdditionalTests(TestCase):
             is_paid=True
         )
 
-    @patch('hotels.models.get_exchange_rate', return_value=Decimal('1.2'))
+    @patch('common.models.get_exchange_rate', return_value=Decimal('1.2'))
     def test_default_check_in_check_out_time(self, mock_get_exchange_rate):
         """Test default check-in and check-out times are set if not provided."""
         form = HotelBookingForm()
@@ -305,7 +305,7 @@ class HotelBookingAdditionalTests(TestCase):
         self.assertEqual(form.initial['check_in'], default_check_in.strftime('%Y-%m-%dT%H:%M'))
         self.assertEqual(form.initial['check_out'], default_check_out.strftime('%Y-%m-%dT%H:%M'))
 
-    @patch('hotels.models.get_exchange_rate', return_value=Decimal('1.2'))
+    @patch('common.models.get_exchange_rate', return_value=Decimal('1.2'))
     def test_invalid_check_out_before_check_in(self, mock_get_exchange_rate):
         """Test form validation fails if check-out is before check-in."""
         form_data = {
@@ -324,7 +324,7 @@ class HotelBookingAdditionalTests(TestCase):
         self.assertFalse(form.is_valid())
         self.assertIn('Check-out date must be after check-in date.', str(form.errors))
 
-    @patch('hotels.models.get_exchange_rate', return_value=Decimal('1.2'))
+    @patch('common.models.get_exchange_rate', return_value=Decimal('1.2'))
     def test_assign_job_color_logic(self, mock_get_exchange_rate):
         """Test that job color is assigned correctly based on booking status."""
         # Ensuring all conditions for 'green' are met based on the logic for color assignment
@@ -336,7 +336,7 @@ class HotelBookingAdditionalTests(TestCase):
         color = assign_job_color(self.booking, timezone.now())
         self.assertEqual(color, 'green')  # Expected color for confirmed bookings
 
-    @patch('hotels.models.get_exchange_rate', return_value=Decimal('1.2'))
+    @patch('common.models.get_exchange_rate', return_value=Decimal('1.2'))
     def test_form_paid_to_choices(self, mock_get_exchange_rate):
         """Test paid_to choices include Agents and Staff."""
         form = HotelBookingForm()
@@ -344,7 +344,7 @@ class HotelBookingAdditionalTests(TestCase):
         
         self.assertIn(('Agents', [(f'agent_{self.agent.id}', self.agent.name)]), choices)
 
-    @patch('hotels.models.get_exchange_rate', return_value=Decimal('1.2'))
+    @patch('common.models.get_exchange_rate', return_value=Decimal('1.2'))
     def test_credit_card_fee_reset_on_payment_type_change(self, mock_get_exchange_rate):
         """Ensure cc_fee is reset when payment type is changed from Card to Cash."""
         self.booking.payment_type = "Card"
@@ -355,7 +355,7 @@ class HotelBookingAdditionalTests(TestCase):
         self.booking.save()
         self.assertEqual(self.booking.cc_fee, Decimal('0.00'))
 
-    @patch('hotels.models.get_exchange_rate', return_value=Decimal('1.2'))
+    @patch('common.models.get_exchange_rate', return_value=Decimal('1.2'))
     def test_pagination_of_unconfirmed_bookings(self, mock_get_exchange_rate):
         """Test unconfirmed bookings are paginated correctly."""
         # Ensure superuser exists
