@@ -28,9 +28,9 @@
             <li class="job-container {% if booking.color == 'red' %}red-job{% elif booking.color == 'orange' %}orange-job{% elif booking.color == 'green' %}green-job{% else %}white-job{% endif %}">
                 <span class="customer-name">{{ booking.customer_name|truncate_words_chars }}</span>
                 <div class="job-info">
-                    <span>{{ booking.check_in|date:"d M Y" }}</span>
+                    <span class="slim">{{ booking.check_in|date:"d M Y" }}</span>
                     <span class="phone"> {{ booking.no_of_people }}</span>
-                    <span>{{ booking.customer_pays }} {{ booking.customer_pays_currency }}</span>
+                    <span class="tablet">{{ booking.customer_pays }} {{ booking.customer_pays_currency }}</span>
                     <span class="phone"> {{ booking.hotel_price }} {{ booking.hotel_price_currency }}</span>
                 </div>
                 <div class="button-group">

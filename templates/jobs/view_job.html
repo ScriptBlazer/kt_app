@@ -30,7 +30,7 @@
     <p><strong>Pick-up Location:</strong> {{ job.pick_up_location|default_if_none:"" }}</p>
     <p><strong>Drop-off Location:</strong> {{ job.drop_off_location|default_if_none:"" }}</p>
     <p><strong>flight Number:</strong> {{ job.flight_number|default_if_none:"" }}</p>
-    <p><strong>Job Description:</strong> {{ job.job_description|default_if_none:"" }}</p>
+    <p><strong>Job Description:</strong> <div style="white-space: pre-wrap;">{{ job.job_description|default_if_none:"" }}</div></p>
     <p><strong>No of Passengers:</strong> {{ job.no_of_passengers|default_if_none:"" }}</p>
     <p><strong>Vehicle Type:</strong> {{ job.vehicle_type|default_if_none:"" }}</p>
     <p><strong>Kilometers:</strong> {{ calculation.kilometers|default_if_none:"" }}</p>
@@ -275,7 +275,7 @@
     }
 </script>
 <script src="{% static 'script.js' %}"></script>
-<script>
+<!-- <script>
     document.addEventListener('DOMContentLoaded', function () {
         const checkbox = document.getElementById('is_freelancer');
         const dropdown = document.getElementById('freelancer-dropdown');
@@ -284,7 +284,7 @@
             dropdown.style.display = this.checked ? 'block' : 'none';
         });
     });
-</script>
+</script> -->
 <script>
     function copyJobLinkDriver(publicId) {
         const link = `http://app.kerestirtravel.com/jobs/job/${publicId}/driver-details/`;

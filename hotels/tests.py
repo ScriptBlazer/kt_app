@@ -36,6 +36,7 @@ class HotelBookingTests(TestCase):
             check_in=timezone.now() + timezone.timedelta(days=1),
             check_out=timezone.now() + timezone.timedelta(days=2),
             no_of_people=2,
+            hotel_name="Hilton Budapest",
             rooms=1,
             no_of_beds=2,
             hotel_tier=3,
@@ -76,6 +77,7 @@ class HotelBookingTests(TestCase):
             'no_of_people': 1,
             'rooms': 1,
             'hotel_price': '150',
+            "hotel_name": "Hilton Budapest",
             'hotel_price_currency': 'GBP',
             'customer_pays': '150',
             'customer_pays_currency': 'GBP',
@@ -116,6 +118,7 @@ class HotelBookingTests(TestCase):
             'no_of_people': 2,
             'rooms': 1,
             'hotel_price': '150',
+            "hotel_name": "Hilton Budapest",
             'hotel_price_currency': 'GBP',
             'customer_pays': '150',
             'customer_pays_currency': 'GBP',
@@ -131,6 +134,15 @@ class HotelBookingTests(TestCase):
             'bed_type_7': 0,
             'bed_type_8': 0,
             'bed_type_9': 0,
+
+            'payment-TOTAL_FORMS': '1',
+            'payment-INITIAL_FORMS': '0',
+            'payment-MIN_NUM_FORMS': '0',
+            'payment-MAX_NUM_FORMS': '1000',
+            'payment-0-payment_amount': '100',
+            'payment-0-payment_currency': 'USD',
+            'payment-0-payment_type': 'Cash',
+            'payment-0-paid_to_agent': self.agent.pk,  # ✅ or staff/driver depending on your test
         }
         response = self.client.post(reverse('hotels:add_guests'), data=form_data)
 
@@ -152,6 +164,7 @@ class HotelBookingTests(TestCase):
             'rooms': 1,
             'hotel_price': '120',
             'hotel_price_currency': 'GBP',
+            "hotel_name": "Hilton Budapest",
             'customer_pays': '120',
             'customer_pays_currency': 'GBP',
             'payment_type': 'Cash',
@@ -166,6 +179,15 @@ class HotelBookingTests(TestCase):
             'bed_type_7': 0,
             'bed_type_8': 0,
             'bed_type_9': 0,
+
+            'payment-TOTAL_FORMS': '1',
+            'payment-INITIAL_FORMS': '0',
+            'payment-MIN_NUM_FORMS': '0',
+            'payment-MAX_NUM_FORMS': '1000',
+            'payment-0-payment_amount': '100',
+            'payment-0-payment_currency': 'USD',
+            'payment-0-payment_type': 'Cash',
+            'payment-0-paid_to_agent': self.agent.pk,  # ✅ or staff/driver depending on your test
         }
         response = self.client.post(reverse('hotels:edit_guests', args=[self.booking.id]), data=form_data)
 
@@ -257,6 +279,7 @@ class HotelBookingAdditionalTests(TestCase):
             check_in=timezone.now() + timedelta(days=1),
             check_out=timezone.now() + timedelta(days=2),
             no_of_people=2,
+            hotel_name="Hilton Budapest",
             rooms=1,
             no_of_beds=1,
             hotel_price=Decimal('100.00'),
@@ -291,6 +314,7 @@ class HotelBookingAdditionalTests(TestCase):
             'check_out': timezone.now() + timedelta(days=1),  # Earlier than check-in
             'no_of_people': 1,
             'rooms': 1,
+            "hotel_name": "Hilton Budapest",
             'hotel_price': '100',
             'hotel_price_currency': 'EUR',
             'customer_pays': '100',
@@ -347,6 +371,7 @@ class HotelBookingAdditionalTests(TestCase):
                 customer_number="123456789",
                 check_in=check_in,
                 check_out=check_out,
+                hotel_name="Hilton Budapest",
                 no_of_people=1,
                 rooms=1,
                 hotel_price_currency="GBP",

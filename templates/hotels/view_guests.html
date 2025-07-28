@@ -18,8 +18,16 @@
     <!-- Success Message -->
     <p id="copy-success" style="display: none; color: green;">Guest details copied to clipboard!</p>
     <h2>View Guest</h2>
+    <p><strong>Job ID:</strong> {{ guest.public_id|default_if_none:"" }}</p>
     <p><strong>Guest Name:</strong> {{ guest.customer_name }}</p>
     <p><strong>Guest Number:</strong> {{ guest.customer_number }}</p>
+    <p><strong>Hotel Name:</strong> {{ guest.hotel_name }}</p>
+    {% if guest.hotel_branch %}
+        <p><strong>Hotel Branch:</strong> {{ guest.hotel_branch }}</p>
+    {% endif %}
+    {% if guest.booking_ref %}
+        <p><strong>Booking Reference:</strong> {{ guest.booking_ref }}</p>
+    {% endif %}
     <p><strong>Check-in Date:</strong> {{ guest.check_in|date:"l, d F Y" }} {{ guest.check_in|time:"H:i" }}</p>
     <p><strong>Check-out Date:</strong> {{ guest.check_out|date:"l, d F Y" }} {{ guest.check_out|time:"H:i" }}</p>
     <p><strong>No. of People:</strong> {{ guest.no_of_people }}</p>
@@ -30,7 +38,9 @@
             {{ bed.quantity }} {{ bed.bed_type.name }}{% if not forloop.last %}, {% endif %}
         {% endfor %}
     </p>
-    <p><strong>Hotel Tier:</strong> {{ guest.get_hotel_tier_display }}</p>
+    {% if guest.hotel_tier %}
+        <p><strong>Hotel Tier:</strong> {{ guest.get_hotel_tier_display }}</p>
+    {% endif %}
     <p><strong>Customer Pays:</strong>
         €{{ guest.customer_pays_in_euros|intcomma|default_if_none:"" }} 
         {% if guest.customer_pays_currency != 'EUR' %} 
@@ -62,7 +72,57 @@
     </p>
     <p><strong>Agent:</strong> {{ guest.agent }}</p>
     <p><strong>Agent Fee:</strong> {% if guest.agent_percentage %}{{ guest.agent_percentage }}%{% endif %}</p>
-    <p><strong>Special Requests:</strong> {{ guest.special_requests|default:"No special requests" }}</p>
+    <p><strong>Special Requests:</strong> <div style="white-space: pre-wrap;"> {{ guest.special_requests|default:"No special requests" }}</div></p>
+
+
+    <br>
+    <!-- Payments Section -->
+    <h3>Payments</h3>
+    <div class="payments-list">
+        {% for payment in payments %}
+            <p>
+                <strong>Payment {{ forloop.counter }}:</strong> 
+                Amount: 
+                {% if payment.payment_currency == 'HUF' %}
+                    Ft {{ payment.payment_amount }}
+                {% else %}
+                    {{ payment.payment_currency|currency_symbol }}{{ payment.payment_amount }}
+                {% endif %}
+                | Payment Type: {{ payment.payment_type }} | 
+                Paid To: 
+                {% if payment.paid_to_agent %}
+                    Agent: {{ payment.paid_to_agent.name }}
+                {% elif payment.paid_to_driver %}
+                    Driver: {{ payment.paid_to_driver.name }}
+                {% elif payment.paid_to_staff %}
+                    Staff: {{ payment.paid_to_staff.name }}
+                {% else %}
+                    Not specified
+                {% endif %}
+                
+                {% if payment.payment_type == 'Card' %}
+                    | <strong>Credit Card Fee:</strong> 
+                    {% if payment.payment_currency == 'HUF' %}
+                        Ft {{ payment.cc_fee|intcomma }}
+                    {% else %}
+                        {{ payment.payment_currency|currency_symbol }}{{ payment.cc_fee|intcomma }}
+                    {% endif %}
+                    | <strong>Total with Fee:</strong> 
+                    {% if payment.payment_currency == 'HUF' %}
+                        Ft {{ payment.total_with_cc_fee|intcomma }}
+                    {% else %}
+                        {{ payment.payment_currency|currency_symbol }}{{ payment.total_with_cc_fee|intcomma }}
+                    {% endif %}
+                {% endif %}
+                | <strong>Amount in Euros:</strong> 
+                {% if payment.payment_amount_in_euros %}
+                    €{{ payment.payment_amount_in_euros|intcomma }}
+                {% else %}
+                    Not available
+                {% endif %}
+            </p>
+        {% endfor %}
+    </div>
     <br>
 
     <form method="POST" action="{% url 'hotels:update_guest_status' guest.id %}">
@@ -74,6 +134,11 @@
 
         <p><strong>Customer Paid:</strong> 
             <input class="sbig" type="checkbox" id="is_paid" name="is_paid" {% if guest.is_paid %}checked{% endif %}>
+        </p>
+
+
+        <p><strong>Freelancer Job:</strong> 
+            <input class="sbig" type="checkbox" id="is_freelancer" name="is_freelancer" {% if guest.is_freelancer %}checked{% endif %}>
         </p>
     
         <!-- {% if user.is_superuser %}
@@ -128,7 +193,7 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script>
+<!-- <script>
     function copyGuestDetails() {
         // Gather the guest details you want to copy
         let guestDetails = `*Name:* {{ guest.customer_name|default_if_none:"" }}
@@ -168,6 +233,6 @@
             document.getElementById('copy-success').style.display = 'none';
         }, 2000);
     }
-</script>
+</script> -->
 <script src="{% static 'script.js' %}"></script>
 {% endblock %}

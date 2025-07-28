@@ -29,7 +29,7 @@
     <p><strong>Price:</strong> €{{ shuttle.price|intcomma|default_if_none:"" }}</p>
     <p><strong>Driver:</strong> {{ shuttle.driver|default_if_none:"" }}</p>
     <p><strong>Number Plate:</strong> {{ shuttle.number_plate|default_if_none:"" }}</p>
-    <p><strong>Notes:</strong> {{ shuttle.shuttle_notes|default_if_none:"-" }}</p>
+    <p><strong>Notes:</strong> <div style="white-space: pre-wrap;">{{ shuttle.shuttle_notes|default_if_none:"-" }}</div></p>
 
     <br><br>
     <!-- Payments Section -->

@@ -101,13 +101,13 @@
             
             <button type="button" id="add-payment">Add Payment</button>
         </div>
-        <input type="hidden" name="payment-TOTAL_FORMS" value="{{ payment_formset.total_form_count }}">
+        
         <br><br>
         <p class="nm">*Required fields</p>
 
         <div class="button-group">
             <button type="submit" class="button button-purple">Save Changes</button>
-            <a href="{% url 'shuttle:shuttle' %}" class="button cancel-button">Cancel</a>
+            <a href="{% url 'home' %}" class="button cancel-button">Cancel</a>
         </div>
     </form>
 

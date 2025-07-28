@@ -123,7 +123,7 @@ def add_passengers(request):
 
     if request.method == 'POST':
         form = ShuttleForm(request.POST)
-        payment_formset = PaymentFormSet(request.POST, queryset=Payment.objects.none(), prefix=formset_prefix)
+        payment_formset = PaymentFormSet(request.POST, queryset=Payment.objects.none(), prefix="payment")
 
         if form.is_valid() and payment_formset.is_valid():
             shuttle = form.save(commit=False)
@@ -162,7 +162,7 @@ def add_passengers(request):
 
     else:
         form = ShuttleForm()
-        payment_formset = PaymentFormSet(queryset=Payment.objects.none(), prefix=formset_prefix)
+        payment_formset = PaymentFormSet(queryset=Payment.objects.none(), prefix="payment")
 
     agents, drivers, _, staff_members = get_ordered_people()
 
@@ -197,7 +197,7 @@ def edit_passengers(request, shuttle_id):
 
     if request.method == 'POST':
         form = ShuttleForm(request.POST, instance=shuttle)
-        payment_formset = PaymentFormSet(request.POST, queryset=Payment.objects.filter(shuttle=shuttle), prefix=formset_prefix)
+        payment_formset = PaymentFormSet(request.POST, queryset=Payment.objects.filter(shuttle=shuttle), prefix="payment")
 
         if form.is_valid() and payment_formset.is_valid():
             with transaction.atomic():  # Ensure atomicity
@@ -240,7 +240,7 @@ def edit_passengers(request, shuttle_id):
 
     else:
         form = ShuttleForm(instance=shuttle)
-        payment_formset = PaymentFormSet(queryset=Payment.objects.filter(shuttle=shuttle), prefix=formset_prefix)
+        payment_formset = PaymentFormSet(queryset=Payment.objects.filter(shuttle=shuttle), prefix="payment")
 
     # Get choices for 'paid_to' field
     agents, drivers, _, staff_members = get_ordered_people()

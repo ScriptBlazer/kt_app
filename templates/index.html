@@ -171,12 +171,26 @@
     <ul>
         {% for hotel in upcoming_hotels %}
         <li class="job-container {% if hotel.color == 'red' %}red-job{% elif hotel.color == 'orange' %}orange-job{% elif hotel.color == 'green' %}green-job{% else %}white-job{% endif %}">
+            <div class="job-tag-container">
+                <span class="job-added-by-tag">
+                    {% if hotel.created_by %}
+                        Added by: {{ hotel.created_by.get_full_name|default:hotel.created_by.username }}
+                    {% else %}
+                        Added by: Unknown
+                    {% endif %}
+                </span>
+                {% if hotel.last_modified_by %}
+                    <span class="job-edited-by-tag">
+                        Edited by: {{ hotel.last_modified_by.get_full_name|default:hotel.last_modified_by.username }}
+                    </span>
+                {% endif %}
+            </div>
             <span class="customer-name">{{ hotel.customer_name|truncate_words_chars }}</span>
             <div class="job-info">
-                <span>{{ hotel.check_in|date:"d M Y" }}</span>
-                <span>{{ hotel.no_of_people }} guests</span>
-                <span>{{ hotel.customer_pays }} {{ hotel.customer_pays_currency }}</span>
-                <span>{{ hotel.hotel_price }} {{ hotel.hotel_price_currency }}</span>
+                <span class="slim">{{ hotel.check_in|date:"d M Y" }}</span>
+                <span class="phone">{{ hotel.no_of_people }} guests</span>
+                <span class="tablet">{{ hotel.customer_pays }} {{ hotel.customer_pays_currency }}</span>
+                <span class="phone">{{ hotel.hotel_price }} {{ hotel.hotel_price_currency }}</span>
             </div>
             <div class="button-group">
                 <a href="{% url 'hotels:edit_guests' hotel.id %}" class="button tablet button-purple">Edit</a>
@@ -192,26 +206,31 @@
     <ul id="older-hotels" style="display: none;">
         {% for hotel in older_hotels %}
         <li class="job-container {% if hotel.color == 'red' %}red-job{% elif hotel.color == 'orange' %}orange-job{% elif hotel.color == 'green' %}green-job{% else %}white-job{% endif %}">
-            {% if older_hotels %}
-                <h4 class="toggle-header" data-section-id="older-hotels">More Hotel Bookings <span id="older-hotels-arrow">▼</span></h4>
-                <ul id="older-hotels" style="display: none;">
-                    {% for hotel in older_hotels %}
-                    <li class="job-container {% if hotel.color == 'red' %}red-job{% elif hotel.color == 'orange' %}orange-job{% elif hotel.color == 'green' %}green-job{% else %}white-job{% endif %}">
-                        <span class="customer-name">{{ hotel.customer_name|truncate_words_chars }}</span>
-                        <div class="job-info">
-                            <span>{{ hotel.check_in|date:"d M Y" }}</span>
-                            <span>{{ hotel.no_of_people }} guests</span>
-                            <span>{{ hotel.customer_pays }} {{ hotel.customer_pays_currency }}</span>
-                            <span>{{ hotel.hotel_price }} {{ hotel.hotel_price_currency }}</span>
-                        </div>
-                        <div class="button-group">
-                            <a href="{% url 'hotels:edit_guests' hotel.id %}" class="button tablet button-purple">Edit</a>
-                            <a href="{% url 'hotels:view_guests' hotel.id %}" class="button button-purple">View</a>
-                        </div>
-                    </li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
+            <div class="job-tag-container">
+                <span class="job-added-by-tag">
+                    {% if hotel.created_by %}
+                        Added by: {{ hotel.created_by.get_full_name|default:hotel.created_by.username }}
+                    {% else %}
+                        Added by: Unknown
+                    {% endif %}
+                </span>
+                {% if hotel.last_modified_by %}
+                    <span class="job-edited-by-tag">
+                        Edited by: {{ hotel.last_modified_by.get_full_name|default:hotel.last_modified_by.username }}
+                    </span>
+                {% endif %}
+            </div>
+            <span class="customer-name">{{ hotel.customer_name|truncate_words_chars }}</span>
+            <div class="job-info">
+                <span class="slim">{{ hotel.check_in|date:"d M Y" }}</span>
+                <span class="phone">{{ hotel.no_of_people }} guests</span>
+                <span class="tablet">{{ hotel.customer_pays }} {{ hotel.customer_pays_currency }}</span>
+                <span class="phone">{{ hotel.hotel_price }} {{ hotel.hotel_price_currency }}</span>
+            </div>
+            <div class="button-group">
+                <a href="{% url 'hotels:edit_guests' hotel.id %}" class="button tablet button-purple">Edit</a>
+                <a href="{% url 'hotels:view_guests' hotel.id %}" class="button button-purple">View</a>
+            </div>
         </li>
         {% endfor %}
     </ul>

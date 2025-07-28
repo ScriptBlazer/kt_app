@@ -2,6 +2,7 @@ from django.test import TestCase, override_settings
 from jobs.forms import JobForm
 from jobs.models import Job
 from common.models import Payment
+from unittest.mock import patch
 from decimal import Decimal
 from pytz import timezone as tz
 from django.utils import timezone
@@ -12,7 +13,7 @@ from common.utils import assign_job_color
 from datetime import timedelta
 from django.utils.timezone import now, timedelta
 from unittest import mock
-
+from common.utils import fetch_and_cache_exchange_rate
 import pytz
 from common.utils import get_exchange_rate
 from django.contrib.auth import get_user_model
@@ -70,7 +71,7 @@ class FieldValidationTests(TestCase):
 
 class ConcurrencyHandlingTest(TestCase):
     # Test to simulate two concurrent updates and ensure the latest update is applied
-    @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.2'))
+    @patch("common.utils.fetch_and_cache_exchange_rate", return_value=Decimal('1.0')) # Ensure a Decimal is returned for creation
     def test_concurrent_job_updates(self, mock_get_exchange_rate):
         job = Job.objects.create(
             customer_name="Test User",
@@ -80,9 +81,9 @@ class ConcurrencyHandlingTest(TestCase):
             job_description="Test job description",
             pick_up_location='Budapest',
             job_price=Decimal('100.00'),
-            job_currency='GBP',  
-            no_of_passengers=1,  
-            vehicle_type='Car',  
+            job_currency='GBP',
+            no_of_passengers=1,
+            vehicle_type='Car',
             kilometers=Decimal('10'),
         )
 
@@ -95,28 +96,50 @@ class ConcurrencyHandlingTest(TestCase):
 
 
 class CurrencyConversionTest(TestCase):
-    # Test to ensure currency conversion to Euros works as expected
-    @patch('common.utils.fetch_and_cache_exchange_rate')
-    def test_currency_conversion(self, mock_fetch_and_cache_exchange_rate):
-        mock_fetch_and_cache_exchange_rate.return_value = Decimal('1.2')
+    def setUp(self):
+        cache.clear()
+        print("\n--- SETUP ---")
+        print("Cache cleared.")
+
+    @patch('jobs.models.get_exchange_rate', return_value=Decimal('0.853'))
+    def test_currency_conversion(self, mock_get_exchange_rate):
+        print("\n--- RUNNING: test_currency_conversion (MOCKED) ---")
+
+        current_date = timezone.now().date()
+        current_time = timezone.now().time()
+        print(f"DEBUG: timezone.now().date() = {current_date} (type: {type(current_date)})")
+        print(f"DEBUG: timezone.now().time() = {current_time} (type: {type(current_time)})")
+
         job = Job.objects.create(
             job_price=Decimal('100'),
             job_currency='USD',
-            job_date=timezone.now().date(),
-            job_time=timezone.now().time(),
+            job_date=current_date,
+            job_time=current_time,
             customer_name='John Doe',
-            pick_up_location='Budapest',
             customer_number='123456789',
+            pick_up_location='Budapest',
+            drop_off_location='Somewhere',
+            flight_number='ABC123',
             no_of_passengers=1,
             vehicle_type='Car',
             kilometers=Decimal('100')
         )
-        self.assertEqual(job.job_price_in_euros, Decimal('120.00'))
 
-    # Test to check if saving a job with an unsupported currency raises an error
-    @patch('common.utils.fetch_and_cache_exchange_rate')
-    def test_missing_exchange_rate(self, mock_fetch_and_cache_exchange_rate):
-        mock_fetch_and_cache_exchange_rate.side_effect = ValueError("Error fetching exchange rate for XYZ")
+        print("DEBUG: Job successfully created.")
+        print(f"DEBUG: job.job_price = {job.job_price}")
+        print(f"DEBUG: job.job_currency = {job.job_currency}")
+        print(f"DEBUG: job.job_price_in_euros = {job.job_price_in_euros}")
+
+        expected = Decimal('85.30')
+        print(f"DEBUG: expected = {expected}")
+        self.assertEqual(job.job_price_in_euros, expected)
+
+    @patch('common.utils.get_exchange_rate')
+    def test_missing_exchange_rate(self, mock_get_exchange_rate):
+        print("\n--- RUNNING: test_missing_exchange_rate ---")
+
+        mock_get_exchange_rate.side_effect = ValueError("Error fetching exchange rate for XYZ")
+        print("DEBUG: Mocked get_exchange_rate to raise ValueError.")
 
         job = Job(
             job_price=Decimal('100'),
@@ -128,10 +151,18 @@ class CurrencyConversionTest(TestCase):
             pick_up_location='Budapest',
             no_of_passengers=1,
             vehicle_type='Car',
-            kilometers=Decimal('100')
+            kilometers=Decimal('100'),
+            drop_off_location='Somewhere',
+            flight_number='XYZ123'
         )
-        with self.assertRaises(ValueError):
+
+        print("DEBUG: Created Job object with currency 'XYZ', preparing to save...")
+
+        with self.assertRaises(ValueError) as context:
             job.save()
+
+        print("DEBUG: Exception successfully raised.")
+        print(f"DEBUG: Exception message: {context.exception}")
 
 
 class UpdateJobStatusTests(TestCase):
@@ -683,21 +714,30 @@ class AddJobWithPaymentsTest(TestCase):
 
         # Initial payment data with two payments
         payment_data = {
-            'form-TOTAL_FORMS': '3',  # Initial count of payment forms including one to be removed
-            'form-INITIAL_FORMS': '0',
-            'form-0-payment_amount': '30',
-            'form-0-payment_currency': 'USD',
-            'form-0-payment_type': 'Card',
-            'form-0-paid_to': f'driver_{self.driver.id}',
-            'form-1-payment_amount': '20',
-            'form-1-payment_currency': 'USD',
-            'form-1-payment_type': 'Cash',
-            'form-1-paid_to': f'agent_{self.agent.id}',
-            'form-2-payment_amount': '10',  # Adding a third payment to test removal
-            'form-2-payment_currency': 'USD',
-            'form-2-payment_type': 'Transfer',
-            'form-2-paid_to': f'driver_{self.driver.id}',
-            'form-2-DELETE': 'on',  # Mark the third payment for deletion
+            # management form
+            'payment-TOTAL_FORMS': '3',
+            'payment-INITIAL_FORMS': '0',
+            'payment-MIN_NUM_FORMS': '0',
+            'payment-MAX_NUM_FORMS': '1000',
+
+            # first payment
+            'payment-0-payment_amount': '30',
+            'payment-0-payment_currency': 'USD',
+            'payment-0-payment_type': 'Card',
+            'payment-0-paid_to': f'driver_{self.driver.id}',
+
+            # second payment
+            'payment-1-payment_amount': '20',
+            'payment-1-payment_currency': 'USD',
+            'payment-1-payment_type': 'Cash',
+            'payment-1-paid_to': f'agent_{self.agent.id}',
+
+            # third payment (marked for deletion)
+            'payment-2-payment_amount': '10',
+            'payment-2-payment_currency': 'USD',
+            'payment-2-payment_type': 'Transfer',
+            'payment-2-paid_to': f'driver_{self.driver.id}',
+            'payment-2-DELETE': 'on',
         }
 
         # Combine job and payment data for the POST request
