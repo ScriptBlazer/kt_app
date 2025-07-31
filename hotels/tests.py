@@ -12,7 +12,7 @@ from django.core.exceptions import ValidationError
 
 
 class HotelBookingTests(TestCase):
-
+    # Mock API
     @patch('hotels.models.get_exchange_rate', return_value=Decimal('1.2'))
     def setUp(self, mock_get_exchange_rate):
         # Create a non-superuser and log them in
