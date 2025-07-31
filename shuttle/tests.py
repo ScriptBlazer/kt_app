@@ -486,7 +486,7 @@ class ViewDayInfoTests(TestCase):
         self.assertNotEqual(response.status_code, 200)
         self.assertIn('/login/', response.url)
 
-    @patch('common.utils.fetch_and_cache_exchange_rate', return_value=1)
+    @patch('shuttle.models.get_exchange_rate', return_value=1)
     def test_view_day_info_logged_in(self, _):
         # Create ShuttleDay and cost with currency to avoid triggering the real exchange API
         parent, _ = ShuttleDay.objects.get_or_create(date=self.date)
@@ -507,7 +507,7 @@ class ViewDayInfoTests(TestCase):
         expected_price = self.shuttle_confirmed.no_of_passengers * Decimal('60.00')
         self.assertEqual(context['total_price'], expected_price)
 
-    @patch('common.utils.fetch_and_cache_exchange_rate', return_value=1)
+    @patch('shuttle.models.get_exchange_rate', return_value=1)
     def test_unconfirmed_shuttles_not_included(self, _):
         parent, _ = ShuttleDay.objects.get_or_create(date=self.date)
         ShuttleDailyCost.objects.create(

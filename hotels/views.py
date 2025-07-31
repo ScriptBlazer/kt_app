@@ -13,6 +13,7 @@ from django.db import transaction
 from django.forms import modelformset_factory
 import logging
 import pytz
+from django.core.exceptions import ValidationError
 
 logger = logging.getLogger('kt')
 
@@ -96,57 +97,50 @@ def past_bookings(request):
 @login_required
 def add_guests(request):
     PaymentFormSet = modelformset_factory(Payment, form=PaymentForm, extra=1, can_delete=True)
+    hungary_tz = pytz.timezone('Europe/Budapest')
 
     if request.method == 'POST':
         form = HotelBookingForm(request.POST)
         payment_formset = PaymentFormSet(request.POST, queryset=Payment.objects.none(), prefix="payment")
 
         if form.is_valid() and payment_formset.is_valid():
-            # Freelancer rule
-            if form.cleaned_data.get('is_freelancer') and not form.cleaned_data.get('agent'):
-                form.add_error('agent', 'Select an agent when marking this as a freelancer booking.')
-            else:
-                with transaction.atomic():
-                    hotel_booking = form.save(commit=False)
-                    hotel_booking.is_freelancer = form.cleaned_data.get('is_freelancer', False)
-                    hotel_booking.is_confirmed = form.cleaned_data.get('is_confirmed', False)
-                    hotel_booking.created_by = request.user
-                    hotel_booking.created_at = timezone.now().astimezone(hungary_tz)
-                    hotel_booking.save()
+            with transaction.atomic():
+                hotel_booking = form.save(commit=False)
+                hotel_booking.is_freelancer = form.cleaned_data.get('is_freelancer', False)
+                hotel_booking.is_confirmed = form.cleaned_data.get('is_confirmed', False)
+                hotel_booking.created_by = request.user
+                hotel_booking.created_at = timezone.now().astimezone(hungary_tz)
+                hotel_booking.save()
+                
+                # Save bed types
+                form.save_bed_types()
 
-                    # Save bed types
-                    HotelBookingBedType.objects.filter(hotel_booking=hotel_booking).delete()
-                    for field_name, quantity in form.cleaned_data.items():
-                        if field_name.startswith('bed_type_') and quantity > 0:
-                            bed_type_id = int(field_name.split('_')[-1])
-                            bed_type = BedType.objects.get(id=bed_type_id)
-                            HotelBookingBedType.objects.create(
-                                hotel_booking=hotel_booking,
-                                bed_type=bed_type,
-                                quantity=quantity
-                            )
+                # Save payments
+                payment_errors = []
+                for pf in payment_formset:
+                    if pf.cleaned_data and not pf.cleaned_data.get('DELETE'):
+                        amount = pf.cleaned_data.get("payment_amount")
+                        currency = pf.cleaned_data.get("payment_currency")
+                        payment_type = pf.cleaned_data.get("payment_type")
+                        has_paid_to = any([
+                            pf.cleaned_data.get("paid_to_driver"),
+                            pf.cleaned_data.get("paid_to_agent"),
+                            pf.cleaned_data.get("paid_to_staff")
+                        ])
+                        if any([amount, currency, payment_type, has_paid_to]) and (
+                            not all([amount, currency, payment_type]) or not has_paid_to
+                        ):
+                            payment_errors.append("All payment fields (amount, currency, type, paid to) are required.")
+                            break
+                        payment = pf.save(commit=False)
+                        payment.hotel_booking = hotel_booking
+                        payment.save()
+                
+                if payment_errors:
+                    # If there are payment errors, the transaction will be rolled back
+                    raise ValidationError(payment_errors[0])
 
-                    # Save payments
-                    for pf in payment_formset:
-                        if pf.cleaned_data and not pf.cleaned_data.get('DELETE'):
-                            amount = pf.cleaned_data.get("payment_amount")
-                            currency = pf.cleaned_data.get("payment_currency")
-                            payment_type = pf.cleaned_data.get("payment_type")
-                            has_paid_to = any([
-                                pf.cleaned_data.get("paid_to_driver"),
-                                pf.cleaned_data.get("paid_to_agent"),
-                                pf.cleaned_data.get("paid_to_staff")
-                            ])
-                            if any([amount, currency, payment_type, has_paid_to]) and (
-                                not all([amount, currency, payment_type]) or not has_paid_to
-                            ):
-                                form.add_error(None, "All payment fields (amount, currency, type, paid to) are required.")
-                                break
-                            payment = pf.save(commit=False)
-                            payment.hotel_booking = hotel_booking
-                            payment.save()
-
-                return redirect('home')
+            return redirect('home')
 
         logger.error(f"add_guests form errors: {form.errors}")
         logger.error(f"add_guests payment_formset errors: {payment_formset.errors}")
@@ -213,69 +207,52 @@ def edit_guests(request, guest_id):
         payment_formset = PaymentFormSet(request.POST, queryset=guest.payments.all(), prefix="payment")
 
         if form.is_valid() and payment_formset.is_valid():
-            # Freelancer rule
-            if form.cleaned_data.get('is_freelancer') and not form.cleaned_data.get('agent'):
-                form.add_error('agent', 'Select an agent when marking this as a freelancer booking.')
-            else:
-                with transaction.atomic():
-                    hotel_booking = form.save(commit=False)
-                    hotel_booking.last_modified_by = request.user
-                    hotel_booking.last_modified_at = timezone.now().astimezone(hungary_tz)
-                    hotel_booking.is_freelancer = form.cleaned_data.get('is_freelancer', False)
-                    hotel_booking.is_confirmed = form.cleaned_data.get('is_confirmed', False)
-                    hotel_booking.save()
+            with transaction.atomic():
+                hotel_booking = form.save(commit=False)
+                hotel_booking.last_modified_by = request.user
+                hotel_booking.last_modified_at = timezone.now().astimezone(hungary_tz)
+                hotel_booking.is_freelancer = form.cleaned_data.get('is_freelancer', False)
+                hotel_booking.is_confirmed = form.cleaned_data.get('is_confirmed', False)
+                hotel_booking.save()
+                
+                # Save bed types
+                form.save_bed_types()
 
-                    # Update bed types
-                    HotelBookingBedType.objects.filter(hotel_booking=hotel_booking).delete()
-                    for key, quantity in form.cleaned_data.items():
-                        if key.startswith('bed_type_') and quantity > 0:
-                            bed_type_id = int(key.replace('bed_type_', ''))
-                            bed_type = BedType.objects.get(id=bed_type_id)
-                            HotelBookingBedType.objects.create(
-                                hotel_booking=hotel_booking,
-                                bed_type=bed_type,
-                                quantity=quantity
-                            )
+                # Payments
+                payment_errors = []
+                for pf in payment_formset:
+                    if pf.cleaned_data:
+                        if pf.cleaned_data.get('DELETE') and pf.instance.pk:
+                            pf.instance.delete()
+                        else:
+                            amount = pf.cleaned_data.get("payment_amount")
+                            currency = pf.cleaned_data.get("payment_currency")
+                            payment_type = pf.cleaned_data.get("payment_type")
+                            has_paid_to = any([
+                                pf.cleaned_data.get("paid_to_driver"),
+                                pf.cleaned_data.get("paid_to_agent"),
+                                pf.cleaned_data.get("paid_to_staff")
+                            ])
+                            if any([amount, currency, payment_type, has_paid_to]) and (
+                                not all([amount, currency, payment_type]) or not has_paid_to
+                            ):
+                                payment_errors.append("All payment fields (amount, currency, type, paid to) are required.")
+                                break
+                            payment = pf.save(commit=False)
+                            payment.hotel_booking = hotel_booking
+                            payment.save()
+                
+                if payment_errors:
+                    # If there are payment errors, the transaction will be rolled back
+                    raise ValidationError(payment_errors[0])
 
-                    # Payments
-                    for pf in payment_formset:
-                        if pf.cleaned_data:
-                            if pf.cleaned_data.get('DELETE') and pf.instance.pk:
-                                pf.instance.delete()
-                            else:
-                                amount = pf.cleaned_data.get("payment_amount")
-                                currency = pf.cleaned_data.get("payment_currency")
-                                payment_type = pf.cleaned_data.get("payment_type")
-                                has_paid_to = any([
-                                    pf.cleaned_data.get("paid_to_driver"),
-                                    pf.cleaned_data.get("paid_to_agent"),
-                                    pf.cleaned_data.get("paid_to_staff")
-                                ])
-                                if any([amount, currency, payment_type, has_paid_to]) and (
-                                    not all([amount, currency, payment_type]) or not has_paid_to
-                                ):
-                                    form.add_error(None, "All payment fields (amount, currency, type, paid to) are required.")
-                                    break
-                                payment = pf.save(commit=False)
-                                payment.hotel_booking = hotel_booking
-                                payment.save()
-
-                return redirect('home')
+            return redirect('home')
 
         error_message = "Form is invalid. Please check the fields."
     else:
         form = HotelBookingForm(instance=guest)
         payment_formset = PaymentFormSet(queryset=guest.payments.all(), prefix="payment")
         error_message = None
-
-    # Prefill bed types
-    for bed_type in BedType.objects.all():
-        field_name = f'bed_type_{bed_type.id}'
-        try:
-            booking_bed_type = HotelBookingBedType.objects.get(hotel_booking=guest, bed_type=bed_type)
-            form.fields[field_name].initial = booking_bed_type.quantity
-        except HotelBookingBedType.DoesNotExist:
-            form.fields[field_name].initial = 0
 
     bed_type_fields = [form[field_name] for field_name in form.fields if field_name.startswith('bed_type_')]
     agents, _, _, staff_members = get_ordered_people()

@@ -59,7 +59,7 @@ class HotelBookingForm(PaidToMixin, forms.ModelForm):
 
         for bed_type in bed_types:
             field_name = f'bed_type_{bed_type.id}'
-            initial_value = initial_quantities.get(field_name, 1 if bed_type.name == "Double" else 0)
+            initial_value = initial_quantities.get(field_name, 0)
             self.fields[field_name] = forms.IntegerField(
                 label=bed_type.name,
                 min_value=0,
@@ -74,7 +74,38 @@ class HotelBookingForm(PaidToMixin, forms.ModelForm):
             self.fields['paid_to'].initial = f'staff_{instance.paid_to_staff.id}'
 
     def save(self, commit=True):
-        return super().save(commit=commit)
+        hotel_booking = super().save(commit=False)
+        
+        if commit:
+            hotel_booking.save()
+            self._save_bed_types(hotel_booking)
+        else:
+            # Store the instance so we can save bed types later
+            self._saved_instance = hotel_booking
+        
+        return hotel_booking
+    
+    def save_bed_types(self):
+        """Save bed types after the main instance has been saved."""
+        if hasattr(self, '_saved_instance'):
+            self._save_bed_types(self._saved_instance)
+            delattr(self, '_saved_instance')
+    
+    def _save_bed_types(self, hotel_booking):
+        """Save bed types for the hotel booking."""
+        # Delete existing bed types
+        HotelBookingBedType.objects.filter(hotel_booking=hotel_booking).delete()
+        
+        # Create new ones
+        for field_name, quantity in self.cleaned_data.items():
+            if field_name.startswith('bed_type_') and quantity > 0:
+                bed_type_id = int(field_name.split('_')[-1])
+                bed_type = BedType.objects.get(id=bed_type_id)
+                HotelBookingBedType.objects.create(
+                    hotel_booking=hotel_booking,
+                    bed_type=bed_type,
+                    quantity=quantity
+                )
 
     def clean(self):
         cleaned_data = super().clean()
@@ -82,7 +113,7 @@ class HotelBookingForm(PaidToMixin, forms.ModelForm):
         check_out = cleaned_data.get("check_out")
         agent = cleaned_data.get('agent')
         agent_percentage = cleaned_data.get('agent_percentage')
-        is_freelancer = cleaned_data.get('is_freelancer')  # <-- You need this line!
+        is_freelancer = cleaned_data.get('is_freelancer')
 
         if check_in and check_out and check_out <= check_in:
             self.add_error('check_out', "Check-out date must be after check-in date.")

@@ -17,8 +17,8 @@ import pytz
 class ExpenseTestCase(TestCase):
 
     @patch('expenses.models.get_exchange_rate', return_value=Decimal('1.2'))
-    @patch('common.utils.fetch_and_cache_exchange_rate', return_value=Decimal('0.853'))  # Used in Job model
-    def setUp(self, mock_fetch, mock_get_exchange_rate):
+    @patch('jobs.models.get_exchange_rate', return_value=Decimal('0.853'))  # Used in Job model
+    def setUp(self, mock_jobs_get_exchange_rate, mock_expenses_get_exchange_rate):
         self.client = Client()
         self.user = User.objects.create_user(username='testuser', password='12345')
         self.client.login(username='testuser', password='12345')
