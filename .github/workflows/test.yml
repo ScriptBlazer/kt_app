@@ -5,6 +5,8 @@ on: [push, pull_request, workflow_dispatch]
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      EXCHANGE_RATE_API_KEY: ${{ secrets.EXCHANGE_RATE_API_KEY }}
     steps:
       - uses: actions/checkout@v4
 
