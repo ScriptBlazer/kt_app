@@ -452,7 +452,7 @@ def shuttle_summary_view(request, scrambled):
     if not target_date:
         return render(request, "errors/404.html", status=404)
 
-    shuttles = Shuttle.objects.filter(shuttle_date=target_date)
+    shuttles = Shuttle.objects.filter(is_confirmed=True, shuttle_date=target_date).order_by('customer_name')
     driver_costs = ShuttleDailyCost.objects.filter(parent__date=target_date)
 
     total_passengers = sum(s.no_of_passengers or 0 for s in shuttles)
