@@ -60,6 +60,7 @@ class HotelBookingForm(PaidToMixin, forms.ModelForm):
         for bed_type in bed_types:
             field_name = f'bed_type_{bed_type.id}'
             initial_value = initial_quantities.get(field_name, 0)
+            
             self.fields[field_name] = forms.IntegerField(
                 label=bed_type.name,
                 min_value=0,

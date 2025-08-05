@@ -147,6 +147,12 @@ def add_guests(request):
         error_message = "Form is invalid. Please check the fields."
     else:
         form = HotelBookingForm()
+        
+        # Auto-fill one double bed for new bookings
+        double_bed = BedType.objects.filter(name="Double").first()
+        if double_bed:
+            form.initial[f'bed_type_{double_bed.id}'] = 1
+        
         payment_formset = PaymentFormSet(queryset=Payment.objects.none(), prefix="payment")
         error_message = None
 
