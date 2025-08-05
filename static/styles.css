@@ -397,6 +397,12 @@ table tbody tr:hover {
 }
 
 .form-group-inline {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+}
+
+/* .form-group-inline {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -404,7 +410,7 @@ table tbody tr:hover {
 
 .form-group-inline .field-wrapper {
     flex: 1;
-}
+} */
 
 .loading-overlay {
     position: fixed;
@@ -1039,12 +1045,12 @@ input[type="checkbox"][name$="-DELETE"] {
             }
 
             .pagination {
-                font-size: 9px;
+                font-size: 12px;
             }
         
             .pagination-btn,
             .pagination .current-page {
-                font-size: 9px;
+                font-size: 12px;
                 padding: 4px 6px;
                 margin: 0 1px;
             }

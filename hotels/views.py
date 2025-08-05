@@ -4,11 +4,16 @@ from django.urls import reverse
 from hotels.models import HotelBooking, HotelBookingBedType, BedType
 from django.utils import timezone
 from django.core.paginator import Paginator
-from common.utils import assign_job_color
+from common.utils import assign_job_color, get_ordered_people
 from django.db.models import Sum
 from django.contrib.auth.decorators import login_required
+from common.forms import PaymentForm
+from common.models import Payment
+from django.db import transaction
+from django.forms import modelformset_factory
 import logging
 import pytz
+from django.core.exceptions import ValidationError
 
 logger = logging.getLogger('kt')
 
@@ -91,115 +96,186 @@ def past_bookings(request):
 
 @login_required
 def add_guests(request):
+    PaymentFormSet = modelformset_factory(Payment, form=PaymentForm, extra=1, can_delete=True)
+    hungary_tz = pytz.timezone('Europe/Budapest')
+
     if request.method == 'POST':
         form = HotelBookingForm(request.POST)
-        if form.is_valid():
-            # Save the hotel booking
-            hotel_booking = form.save()
+        payment_formset = PaymentFormSet(request.POST, queryset=Payment.objects.none(), prefix="payment")
 
-            # Remove previous bed types to ensure no duplication
-            HotelBookingBedType.objects.filter(hotel_booking=hotel_booking).delete()
+        if form.is_valid() and payment_formset.is_valid():
+            with transaction.atomic():
+                hotel_booking = form.save(commit=False)
+                hotel_booking.is_freelancer = form.cleaned_data.get('is_freelancer', False)
+                hotel_booking.is_confirmed = form.cleaned_data.get('is_confirmed', False)
+                hotel_booking.created_by = request.user
+                hotel_booking.created_at = timezone.now().astimezone(hungary_tz)
+                hotel_booking.save()
+                
+                # Save bed types
+                form.save_bed_types()
 
-            # Handle bed types manually
-            bed_type_quantities = {
-                key: value for key, value in form.cleaned_data.items() if key.startswith('bed_type_')
-            }
-            for bed_type_id_str, quantity in bed_type_quantities.items():
-                if quantity > 0:
-                    bed_type_id = int(bed_type_id_str.replace('bed_type_', ''))
-                    bed_type = BedType.objects.get(id=bed_type_id)
-                    HotelBookingBedType.objects.create(
-                        hotel_booking=hotel_booking,
-                        bed_type=bed_type,
-                        quantity=quantity
-                    )
+                # Save payments
+                payment_errors = []
+                for pf in payment_formset:
+                    if pf.cleaned_data and not pf.cleaned_data.get('DELETE'):
+                        amount = pf.cleaned_data.get("payment_amount")
+                        currency = pf.cleaned_data.get("payment_currency")
+                        payment_type = pf.cleaned_data.get("payment_type")
+                        has_paid_to = any([
+                            pf.cleaned_data.get("paid_to_driver"),
+                            pf.cleaned_data.get("paid_to_agent"),
+                            pf.cleaned_data.get("paid_to_staff")
+                        ])
+                        if any([amount, currency, payment_type, has_paid_to]) and (
+                            not all([amount, currency, payment_type]) or not has_paid_to
+                        ):
+                            payment_errors.append("All payment fields (amount, currency, type, paid to) are required.")
+                            break
+                        payment = pf.save(commit=False)
+                        payment.hotel_booking = hotel_booking
+                        payment.save()
+                
+                if payment_errors:
+                    # If there are payment errors, the transaction will be rolled back
+                    raise ValidationError(payment_errors[0])
 
-            # return redirect('hotels:hotel_bookings')
             return redirect('home')
+
+        logger.error(f"add_guests form errors: {form.errors}")
+        logger.error(f"add_guests payment_formset errors: {payment_formset.errors}")
+        error_message = "Form is invalid. Please check the fields."
     else:
         form = HotelBookingForm()
+        
+        # Auto-fill one double bed for new bookings
+        double_bed = BedType.objects.filter(name="Double").first()
+        if double_bed:
+            form.initial[f'bed_type_{double_bed.id}'] = 1
+        
+        payment_formset = PaymentFormSet(queryset=Payment.objects.none(), prefix="payment")
+        error_message = None
 
-    # Extract all bed type fields to pass to the template
     bed_type_fields = [form[field_name] for field_name in form.fields if field_name.startswith('bed_type_')]
+    agents, _, _, staff_members = get_ordered_people()
+    for pf in payment_formset.forms:
+        if 'paid_to' in pf.fields:
+            pf.fields['paid_to'].choices = [
+                ('', 'Select an option'),
+                ('Agents', [(f'agent_{agent.id}', agent.name) for agent in agents]),
+                ('Staff', [(f'staff_{staff.id}', staff.name) for staff in staff_members]),
+            ]
 
     return render(request, 'hotels/add_guests.html', {
         'form': form,
         'bed_type_fields': bed_type_fields,
+        'payment_formset': payment_formset,
+        'error_message': error_message
     })
+
 
 
 @login_required
 def view_guests(request, guest_id):
     guest = get_object_or_404(HotelBooking, pk=guest_id)
+    payments = guest.payments.all()
 
-    # Calculate the total with the credit card fee if applicable
     total_with_cc_fee = None
     if guest.payment_type == 'Card' and guest.cc_fee:
         total_with_cc_fee = guest.customer_pays + guest.cc_fee
 
+    # Freelancer display
+    freelancer_name = None
+    if guest.is_freelancer and guest.agent:
+        freelancer_name = f"Freelancer (Agent): {guest.agent.name}"
+
     return render(request, 'hotels/view_guests.html', {
         'guest': guest,
-        'total_with_cc_fee': total_with_cc_fee 
+        'payments': payments,
+        'total_with_cc_fee': total_with_cc_fee,
+        'freelancer_name': freelancer_name,
     })
 
 
 @login_required
 def edit_guests(request, guest_id):
     guest = get_object_or_404(HotelBooking, pk=guest_id)
+    PaymentFormSet = modelformset_factory(Payment, form=PaymentForm, extra=1, can_delete=True)
 
-    # Check if the booking is marked as completed
     if guest.is_completed:
-        error_message = "This booking is marked as completed and cannot be edited."
-        logger.error(error_message)
         return render(request, 'hotels/view_guests.html', {
-                'guest': guest,
-                'error_message': 'This booking is marked as completed and cannot be edited.'
-            }, status=400)
+            'guest': guest,
+            'error_message': 'This booking is marked as completed and cannot be edited.'
+        }, status=400)
 
     if request.method == 'POST':
         form = HotelBookingForm(request.POST, instance=guest)
-        if form.is_valid():
-            # Save the hotel booking
-            hotel_booking = form.save()
+        payment_formset = PaymentFormSet(request.POST, queryset=guest.payments.all(), prefix="payment")
 
-            # Remove previous bed types to ensure no duplication
-            HotelBookingBedType.objects.filter(hotel_booking=hotel_booking).delete()
+        if form.is_valid() and payment_formset.is_valid():
+            with transaction.atomic():
+                hotel_booking = form.save(commit=False)
+                hotel_booking.last_modified_by = request.user
+                hotel_booking.last_modified_at = timezone.now().astimezone(hungary_tz)
+                hotel_booking.is_freelancer = form.cleaned_data.get('is_freelancer', False)
+                hotel_booking.is_confirmed = form.cleaned_data.get('is_confirmed', False)
+                hotel_booking.save()
+                
+                # Save bed types
+                form.save_bed_types()
 
-            # Handle bed types manually
-            bed_type_quantities = {
-                key: value for key, value in form.cleaned_data.items() if key.startswith('bed_type_')
-            }
-            for bed_type_id_str, quantity in bed_type_quantities.items():
-                if quantity > 0:
-                    bed_type_id = int(bed_type_id_str.replace('bed_type_', ''))
-                    bed_type = BedType.objects.get(id=bed_type_id)
-                    HotelBookingBedType.objects.create(
-                        hotel_booking=hotel_booking,
-                        bed_type=bed_type,
-                        quantity=quantity
-                    )
+                # Payments
+                payment_errors = []
+                for pf in payment_formset:
+                    if pf.cleaned_data:
+                        if pf.cleaned_data.get('DELETE') and pf.instance.pk:
+                            pf.instance.delete()
+                        else:
+                            amount = pf.cleaned_data.get("payment_amount")
+                            currency = pf.cleaned_data.get("payment_currency")
+                            payment_type = pf.cleaned_data.get("payment_type")
+                            has_paid_to = any([
+                                pf.cleaned_data.get("paid_to_driver"),
+                                pf.cleaned_data.get("paid_to_agent"),
+                                pf.cleaned_data.get("paid_to_staff")
+                            ])
+                            if any([amount, currency, payment_type, has_paid_to]) and (
+                                not all([amount, currency, payment_type]) or not has_paid_to
+                            ):
+                                payment_errors.append("All payment fields (amount, currency, type, paid to) are required.")
+                                break
+                            payment = pf.save(commit=False)
+                            payment.hotel_booking = hotel_booking
+                            payment.save()
+                
+                if payment_errors:
+                    # If there are payment errors, the transaction will be rolled back
+                    raise ValidationError(payment_errors[0])
 
-            # return redirect('hotels:hotel_bookings')
             return redirect('home')
-        
+
+        error_message = "Form is invalid. Please check the fields."
     else:
         form = HotelBookingForm(instance=guest)
+        payment_formset = PaymentFormSet(queryset=guest.payments.all(), prefix="payment")
+        error_message = None
 
-        # Pre-populate the bed type quantities in the form
-        for bed_type in BedType.objects.all():
-            field_name = f'bed_type_{bed_type.id}'
-            try:
-                booking_bed_type = HotelBookingBedType.objects.get(hotel_booking=guest, bed_type=bed_type)
-                form.fields[field_name].initial = booking_bed_type.quantity
-            except HotelBookingBedType.DoesNotExist:
-                form.fields[field_name].initial = 0  # Set to 0 if not found
-
-    # Extract all bed type fields to pass to the template
     bed_type_fields = [form[field_name] for field_name in form.fields if field_name.startswith('bed_type_')]
+    agents, _, _, staff_members = get_ordered_people()
+    for pf in payment_formset.forms:
+        if 'paid_to' in pf.fields:
+            pf.fields['paid_to'].choices = [
+                ('', 'Select an option'),
+                ('Agents', [(f'agent_{agent.id}', agent.name) for agent in agents]),
+                ('Staff', [(f'staff_{staff.id}', staff.name) for staff in staff_members]),
+            ]
 
     return render(request, 'hotels/edit_guests.html', {
         'form': form,
         'bed_type_fields': bed_type_fields,
+        'payment_formset': payment_formset,
+        'guest': guest,
+        'error_message': error_message,
     })
 
 
@@ -226,36 +302,40 @@ def delete_guests(request, guest_id):
 def update_guest_status(request, guest_id):
     guest = get_object_or_404(HotelBooking, pk=guest_id)
 
-    # Update guest status based on the request
+    # Update checkboxes from POST
     guest.is_confirmed = 'is_confirmed' in request.POST
     guest.is_paid = 'is_paid' in request.POST
     guest.is_completed = 'is_completed' in request.POST
+    guest.is_freelancer = 'is_freelancer' in request.POST  # <-- FIX: Persist freelancer flag
 
-    # If the guest booking is marked as completed, check for required fields
+    # --- VALIDATION: Freelancer must have an agent assigned ---
+    if guest.is_freelancer and not guest.agent:
+        return render(request, 'hotels/view_guests.html', {
+            'guest': guest,
+            'error_message': 'A freelancer booking must have an agent assigned before updating the status.'
+        }, status=400)
+
+    # --- VALIDATION: Paid must have at least one payment ---
+    if guest.is_paid:
+        if not guest.payments.exists():
+            return render(request, 'hotels/view_guests.html', {
+                'guest': guest,
+                'error_message': 'Cannot mark as paid: no payments have been recorded for this booking.'
+            }, status=400)
+
+    # --- VALIDATION: Completed requires payment type and paid_to ---
     if guest.is_completed:
-        # Check if 'payment_type' is provided
         if not guest.payment_type:
-            logger.error("Payment Type is required for completion.")
             return render(request, 'hotels/view_guests.html', {
                 'guest': guest,
                 'error_message': 'Payment Type is required to mark the booking as completed.'
             }, status=400)
 
-        # Check if 'paid_to' field is filled (Driver, Agent, or Staff)
         if not (guest.paid_to_agent or guest.paid_to_staff):
-            logger.error("Paid to field is required for completion.")
             return render(request, 'hotels/view_guests.html', {
                 'guest': guest,
                 'error_message': 'Paid to field (Agent, or Staff) is required to mark the booking as completed.'
             }, status=400)
 
-    # Log the state of the guest booking before saving
-    logger.debug(f"Final guest state before saving: {guest}")
-
-    # Save the updated guest booking
     guest.save()
-    logger.debug("Guest booking saved successfully.")
-
-    # Redirect to 'Past Bookings' if successful
-    # return redirect(reverse('hotels:past_bookings'))
     return redirect('home')

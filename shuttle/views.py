@@ -123,7 +123,7 @@ def add_passengers(request):
 
     if request.method == 'POST':
         form = ShuttleForm(request.POST)
-        payment_formset = PaymentFormSet(request.POST, queryset=Payment.objects.none(), prefix=formset_prefix)
+        payment_formset = PaymentFormSet(request.POST, queryset=Payment.objects.none(), prefix="payment")
 
         if form.is_valid() and payment_formset.is_valid():
             shuttle = form.save(commit=False)
@@ -162,7 +162,7 @@ def add_passengers(request):
 
     else:
         form = ShuttleForm()
-        payment_formset = PaymentFormSet(queryset=Payment.objects.none(), prefix=formset_prefix)
+        payment_formset = PaymentFormSet(queryset=Payment.objects.none(), prefix="payment")
 
     agents, drivers, _, staff_members = get_ordered_people()
 
@@ -197,7 +197,7 @@ def edit_passengers(request, shuttle_id):
 
     if request.method == 'POST':
         form = ShuttleForm(request.POST, instance=shuttle)
-        payment_formset = PaymentFormSet(request.POST, queryset=Payment.objects.filter(shuttle=shuttle), prefix=formset_prefix)
+        payment_formset = PaymentFormSet(request.POST, queryset=Payment.objects.filter(shuttle=shuttle), prefix="payment")
 
         if form.is_valid() and payment_formset.is_valid():
             with transaction.atomic():  # Ensure atomicity
@@ -240,7 +240,7 @@ def edit_passengers(request, shuttle_id):
 
     else:
         form = ShuttleForm(instance=shuttle)
-        payment_formset = PaymentFormSet(queryset=Payment.objects.filter(shuttle=shuttle), prefix=formset_prefix)
+        payment_formset = PaymentFormSet(queryset=Payment.objects.filter(shuttle=shuttle), prefix="payment")
 
     # Get choices for 'paid_to' field
     agents, drivers, _, staff_members = get_ordered_people()
@@ -452,7 +452,7 @@ def shuttle_summary_view(request, scrambled):
     if not target_date:
         return render(request, "errors/404.html", status=404)
 
-    shuttles = Shuttle.objects.filter(shuttle_date=target_date)
+    shuttles = Shuttle.objects.filter(is_confirmed=True, shuttle_date=target_date).order_by('customer_name')
     driver_costs = ShuttleDailyCost.objects.filter(parent__date=target_date)
 
     total_passengers = sum(s.no_of_passengers or 0 for s in shuttles)

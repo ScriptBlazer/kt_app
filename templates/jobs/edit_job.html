@@ -172,7 +172,7 @@
                 </div>
             </div>
         </div>
-        <input type="hidden" name="payment-TOTAL_FORMS" value="{{ payment_formset.total_form_count }}">
+        
         <br><br>
         <p class="nm">*Required fields</p>
 
@@ -181,6 +181,11 @@
             <a href="{% url 'home' %}" class="button cancel-button">Cancel</a>
         </div>
     </form>
+
+    <!-- Modal Trigger if Error -->
+    {% if error_message %}
+    <p id="modal-trigger" style="display:none;">{{ error_message }}</p>
+    {% endif %}
 
     <!-- Modal Structure -->
     <div id="error-modal" class="modal" style="display: none;">

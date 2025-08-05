@@ -4,6 +4,15 @@ from decimal import Decimal
 from people.models import Agent, Staff
 from common.utils import get_exchange_rate, CURRENCY_CHOICES, AGENT_FEE_CHOICES, PAYMENT_TYPE_CHOICES, calculate_cc_fee
 from common.payment_settings import PaymentSettings
+import secrets
+import string
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+def generate_random_id(length=8):
+    alphabet = string.ascii_uppercase + string.digits
+    return ''.join(secrets.choice(alphabet) for _ in range(length))
 
 
 class HotelBooking(models.Model):
@@ -15,9 +24,17 @@ class HotelBooking(models.Model):
         (5, '5 Star'),
     ]
 
+    # Public ID
+    public_id = models.CharField(max_length=16, blank=True, editable=False)
+
     # Customer Information
     customer_name = models.CharField(max_length=255)
     customer_number = models.CharField(max_length=30)
+
+    # Hotel Name + Branch + Ref
+    hotel_name = models.CharField(max_length=255)
+    hotel_branch = models.CharField(max_length=255, null=True, blank=True)
+    booking_ref = models.CharField(max_length=255, null=True, blank=True)
 
     # Booking Details
     check_in = models.DateTimeField()
@@ -44,6 +61,7 @@ class HotelBooking(models.Model):
     paid_to_staff = models.ForeignKey(Staff, on_delete=models.PROTECT, null=True, blank=True, related_name='hotel_paid_to_staff')
     
     is_confirmed = models.BooleanField(default=False)
+    is_freelancer = models.BooleanField(default=False)
     is_paid = models.BooleanField(default=False)
     is_completed = models.BooleanField(default=False)
 
@@ -53,7 +71,21 @@ class HotelBooking(models.Model):
 
     special_requests = models.TextField(blank=True, null=True)
 
+    created_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='hotels_created')
+    last_modified_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='hotels_modified')
+
     def save(self, *args, **kwargs):
+        if not self.public_id:
+            while True:
+                new_id = generate_random_id()
+                # Check case-insensitively
+                if not HotelBooking.objects.filter(public_id__iexact=new_id).exists():
+                    self.public_id = new_id.upper()
+                    break
+        else:
+            # Always store as uppercase
+            self.public_id = self.public_id.upper()
+
         # Convert to euros
         self.convert_to_euros()
 

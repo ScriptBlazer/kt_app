@@ -22,7 +22,7 @@ class ShuttleDay(models.Model):
 
 
 def generate_random_id(length=8):
-    alphabet = string.ascii_letters + string.digits
+    alphabet = string.ascii_uppercase + string.digits
     return ''.join(secrets.choice(alphabet) for _ in range(length))
 
 
@@ -78,7 +78,15 @@ class Shuttle(models.Model):
     def save(self, *args, **kwargs):
         # Generate public_id if missing
         if not self.public_id:
-            self.public_id = generate_random_id()
+            while True:
+                new_id = generate_random_id()
+                # Case-insensitive uniqueness check
+                if not Shuttle.objects.filter(public_id__iexact=new_id).exists():
+                    self.public_id = new_id.upper()
+                    break
+        else:
+            # Always enforce uppercase
+            self.public_id = self.public_id.upper()
 
         # Set the timezone to Budapest
         budapest_tz = pytz.timezone('Europe/Budapest')

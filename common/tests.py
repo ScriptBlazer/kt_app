@@ -12,11 +12,13 @@ from common.exchange_rate_models import ExchangeRate
 class ExchangeRateTests(TestCase):
 
     def setUp(self):
-        # Clear cache before each test to start fresh
-        cache.clear()
+        # Don't clear cache globally - only clear in specific tests that need it
+        pass
 
     @patch('common.utils.requests.get')
     def test_fetch_and_cache_exchange_rate_success(self, mock_get):
+        # Clear cache for this specific test
+        cache.clear()
         """Test fetching and caching the exchange rate successfully."""
         mock_response = {
             'conversion_rates': {
@@ -38,6 +40,8 @@ class ExchangeRateTests(TestCase):
 
     @patch('common.utils.requests.get')
     def test_fetch_and_cache_exchange_rate_failure(self, mock_get):
+        # Clear cache for this specific test
+        cache.clear()
         """Test handling of API request failure."""
         mock_get.side_effect = RequestException("API request failed")
 
@@ -48,6 +52,8 @@ class ExchangeRateTests(TestCase):
 
     @patch('common.utils.requests.get')
     def test_fetch_and_cache_invalid_response(self, mock_get):
+        # Clear cache for this specific test
+        cache.clear()
         """Test handling of invalid API response structure."""
         mock_response = {'unexpected_key': 'some_value'}
         mock_get.return_value.status_code = 200
@@ -71,6 +77,8 @@ class ExchangeRateTests(TestCase):
 
     @patch('common.utils.requests.get')
     def test_get_exchange_rate_not_cached(self, mock_get):
+        # Clear cache for this specific test
+        cache.clear()
         """Test fetching exchange rate when it's not cached (API call happens)."""
         mock_response = {
             'conversion_rates': {
@@ -91,6 +99,8 @@ class ExchangeRateTests(TestCase):
     @patch('common.utils.requests.get')
     @patch('common.exchange_rate_models.ExchangeRate.objects')
     def test_cache_expiration(self, mock_exchange_rate_objects, mock_get):
+        # Clear cache for this specific test
+        cache.clear()
         """Test that cache expires and fetches new rate after expiration."""
         # Mock database to raise DoesNotExist
         mock_exchange_rate_objects.get.side_effect = ExchangeRate.DoesNotExist
@@ -125,6 +135,8 @@ class ExchangeRateTests(TestCase):
     @patch('common.utils.requests.get')
     @patch('common.exchange_rate_models.ExchangeRate.objects')
     def test_cache_expiration_24_hours(self, mock_exchange_rate_objects, mock_get):
+        # Clear cache for this specific test
+        cache.clear()
         """Test that cache expires after 24 hours and new API call is made."""
         # First mock response
         mock_response_1 = {

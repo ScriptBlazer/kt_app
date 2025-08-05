@@ -549,12 +549,12 @@ def balances(request):
                 'currency': payment.payment_currency,
                 'customer_name': payment.job.customer_name if payment.job else \
                               payment.shuttle.customer_name if payment.shuttle else \
-                              payment.hotel.customer_name if payment.hotel else \
+                              payment.hotel_booking.customer_name if payment.hotel_booking else \
                               'Unknown',
                 'direction': 'outgoing',
                 'job_type': 'Driving' if payment.job else \
                            'Shuttle' if payment.shuttle else \
-                           'Hotel' if payment.hotel else \
+                           'Hotel' if payment.hotel_booking else \
                            'Payment'
             })
             

@@ -12,7 +12,7 @@ logger = logging.getLogger('kt')
 
 
 def generate_random_id(length=8):
-    alphabet = string.ascii_letters + string.digits
+    alphabet = string.ascii_uppercase + string.digits
     return ''.join(secrets.choice(alphabet) for _ in range(length))
 
 class Job(models.Model):
@@ -60,7 +60,6 @@ class Job(models.Model):
     agent_percentage = models.CharField(max_length=10, choices=AGENT_FEE_CHOICES, null=True, blank=True)
 
     # Freelancer Info
-    is_freelancer = models.BooleanField(default=False)
     freelancer = models.CharField(max_length=50, null=True, blank=True)
 
     # Track who created and edited the job
@@ -69,6 +68,7 @@ class Job(models.Model):
     last_modified_at = models.DateTimeField(null=True, blank=True)
 
     # Job Completion and Payment Method
+    is_freelancer = models.BooleanField(default=False)
     is_confirmed = models.BooleanField(default=False)
     is_completed = models.BooleanField(default=False)
     is_paid = models.BooleanField(default=False)
@@ -83,7 +83,15 @@ class Job(models.Model):
     def save(self, *args, **kwargs):
         # Only generate public_id for new jobs
         if not self.public_id:
-            self.public_id = generate_random_id()
+            while True:
+                new_id = generate_random_id()
+                # Use iexact for case-insensitive check
+                if not Job.objects.filter(public_id__iexact=new_id).exists():
+                    self.public_id = new_id.upper()
+                    break
+        else:
+            # Always ensure stored as uppercase
+            self.public_id = self.public_id.upper()
 
         # Currency conversion
         self.convert_to_euros()

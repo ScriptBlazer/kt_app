@@ -269,7 +269,7 @@ def add_job(request):
     
     if request.method == 'POST':
         job_form = JobForm(request.POST)
-        payment_formset = PaymentFormSet(request.POST, queryset=Payment.objects.none())
+        payment_formset = PaymentFormSet(request.POST, prefix="payment")
 
         if job_form.is_valid() and payment_formset.is_valid():
             with transaction.atomic():
@@ -285,6 +285,21 @@ def add_job(request):
                 job.save()
                 for form in payment_formset:
                     if form.cleaned_data and not form.cleaned_data.get('DELETE'):
+                        amount = form.cleaned_data.get("payment_amount")
+                        currency = form.cleaned_data.get("payment_currency")
+                        payment_type = form.cleaned_data.get("payment_type")
+                        has_paid_to = any([
+                            form.cleaned_data.get("paid_to_driver"),
+                            form.cleaned_data.get("paid_to_agent"),
+                            form.cleaned_data.get("paid_to_staff")
+                        ])
+                        if not all([amount, currency, payment_type]) or not has_paid_to:
+                            job_form.add_error(None, "All payment fields (amount, currency, type, paid to) are required.")
+                            return render(request, 'jobs/add_job.html', {
+                                'job_form': job_form,
+                                'payment_formset': payment_formset,
+                                'error_message': "Please complete all payment fields before submitting."
+                            })
                         payment = form.save(commit=False)
                         payment.job = job
                         payment.save()
@@ -293,10 +308,11 @@ def add_job(request):
         else:
             logger.warning("Job form or payment formset has errors")
             logger.debug(f"Job form errors: {job_form.errors}")
-            logger.debug(f"Payment formset errors: {payment_formset.errors}")
+            logger.debug(f"Job form non_field_errors: {job_form.non_field_errors()}")
+            logger.debug(f"Payment formset errors: {payment_formset.errors}")   
     else:
         job_form = JobForm()
-        payment_formset = PaymentFormSet(queryset=Payment.objects.none())
+        payment_formset = PaymentFormSet(queryset=Payment.objects.none(), prefix="payment")
 
     return render(request, 'jobs/add_job.html', {
         'job_form': job_form,
@@ -314,11 +330,11 @@ def edit_job(request, job_id):
         return render(request, 'jobs/view_job.html', {'job': job, 'error_message': error_message}, status=403)
     
     PaymentFormSet = modelformset_factory(Payment, form=PaymentForm, extra=1, can_delete=True)
-    payments = Payment.objects.filter(job=job)
+    # payments = Payment.objects.filter(job=job)
 
     if request.method == 'POST':
         job_form = JobForm(request.POST, instance=job)
-        payment_formset = PaymentFormSet(request.POST, queryset=payments)
+        payment_formset = PaymentFormSet(request.POST, queryset=Payment.objects.filter(job=job), prefix="payment")
 
         if job_form.is_valid() and payment_formset.is_valid():
             try:
@@ -337,6 +353,21 @@ def edit_job(request, job_id):
                     for form in payment_formset:
                         # Check if form contains data to prevent saving empty forms
                         if form.cleaned_data and not form.cleaned_data.get('DELETE'):
+                            amount = form.cleaned_data.get("payment_amount")
+                            currency = form.cleaned_data.get("payment_currency")
+                            payment_type = form.cleaned_data.get("payment_type")
+                            has_paid_to = any([
+                                form.cleaned_data.get("paid_to_driver"),
+                                form.cleaned_data.get("paid_to_agent"),
+                                form.cleaned_data.get("paid_to_staff")
+                            ])
+                            if not all([amount, currency, payment_type]) or not has_paid_to:
+                                job_form.add_error(None, "All payment fields (amount, currency, type, paid to) are required.")
+                                return render(request, 'jobs/edit_job.html', {
+                                    'job_form': job_form,
+                                    'payment_formset': payment_formset,
+                                    'error_message': "Please complete all payment fields before submitting."
+                                })
                             payment = form.save(commit=False)
                             payment.job = job
                             payment.save()
@@ -352,10 +383,12 @@ def edit_job(request, job_id):
             logger.debug(f"JobForm errors: {job_form.errors}")
             for form in payment_formset:
                 logger.debug(f"PaymentForm errors for form: {form.errors}")
+            logger.debug(f"PaymentForm non_field_errors: {[form.non_field_errors() for form in payment_formset]}")
+            logger.debug(f"PaymentFormSet non_form_errors: {payment_formset.non_form_errors()}")
 
     else:
         job_form = JobForm(instance=job)
-        payment_formset = PaymentFormSet(queryset=payments)
+        payment_formset = PaymentFormSet(queryset=Payment.objects.filter(job=job), prefix="payment")
 
     return render(request, 'jobs/edit_job.html', {
         'job_form': job_form,

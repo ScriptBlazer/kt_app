@@ -15,6 +15,7 @@ logger = logging.getLogger('kt')
 class Payment(models.Model):
     job = models.ForeignKey('jobs.Job', on_delete=models.CASCADE, null=True, blank=True, related_name="payments")
     shuttle = models.ForeignKey('shuttle.Shuttle', on_delete=models.CASCADE, related_name="payments", null=True, blank=True)
+    hotel_booking = models.ForeignKey('hotels.HotelBooking', on_delete=models.CASCADE, related_name='payments', null=True, blank=True)
     payment_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     payment_amount_in_euros = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     payment_currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, null=True, blank=True)
