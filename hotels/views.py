@@ -339,3 +339,29 @@ def update_guest_status(request, guest_id):
 
     guest.save()
     return redirect('home')
+
+
+def client_view_guest(request, public_id):
+    # Only allow access via public_id — block numeric IDs
+    if public_id.isdigit():
+        return render(request, "errors/404.html", status=404)
+
+    try:
+        guest = HotelBooking.objects.get(public_id=public_id)
+    except HotelBooking.DoesNotExist:
+        return render(request, "errors/404.html", status=404)
+
+    return render(request, 'hotels/client_view_guest.html', {'guest': guest})
+
+
+def client_view_guest_tefilas_rabim(request, public_id):
+    # Only allow access via public_id — block numeric IDs
+    if public_id.isdigit():
+        return render(request, "errors/404.html", status=404)
+
+    try:
+        guest = HotelBooking.objects.get(public_id=public_id)
+    except HotelBooking.DoesNotExist:
+        return render(request, "errors/404.html", status=404)
+
+    return render(request, 'hotels/client_view_guest_tefilas_rabim.html', {'guest': guest})

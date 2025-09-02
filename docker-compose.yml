@@ -30,6 +30,7 @@ services:
     restart: unless-stopped
     environment:
       PUBLIC_HOST: $PUBLIC_HOST
+      TR_HOST: $TR_HOST
     volumes:
       - caddy-data:/data
       - static-data:/app/staticfiles:ro
