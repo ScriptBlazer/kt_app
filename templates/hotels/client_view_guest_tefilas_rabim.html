@@ -1,0 +1,142 @@
+{% load static %}
+{% load humanize %}
+{% load custom_filters %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Your Hotel Booking</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'client-link-styles.css' %}">
+</head>
+<body>
+    <div class="container">
+        <img src="{% static 'images/tr-logo-small.png' %}" alt="Kerestir Travel Logo" class="logo">
+        <h1>Your Hotel Booking</h1>
+        <div class="timeline">
+            <div class="timeline-step">
+                <div class="dot"></div>
+                <div class="card"><strong>Booking ID:</strong> {{ guest.public_id }}</div>
+            </div>
+
+            {% if guest.customer_name %}
+            <div class="timeline-step">
+                <div class="dot"></div>
+                <div class="card"><strong>Customer Name:</strong> {{ guest.customer_name }}</div>
+            </div>
+            {% endif %}
+
+            {% if guest.customer_number %}
+            <div class="timeline-step">
+                <div class="dot"></div>
+                <div class="card"><strong>Hotel Reservation Number:</strong> {{ guest.customer_number }}</div>
+            </div>
+            {% endif %}
+
+            {% if guest.hotel_name %}
+            <div class="timeline-step">
+                <div class="dot"></div>
+                <div class="card"><strong>Hotel Name:</strong> {{ guest.hotel_name }}</div>
+            </div>
+            {% endif %}
+
+            {% if guest.check_in %}
+            <div class="timeline-step">
+                <div class="dot"></div>
+                <div class="card"><strong>Check-in:</strong> {{ guest.check_in|date:"l, d F Y" }} {{ guest.check_in|time:"H:i" }}</div>
+            </div>
+            {% endif %}
+
+            {% if guest.check_out %}
+            <div class="timeline-step">
+                <div class="dot"></div>
+                <div class="card"><strong>Check-out:</strong> {{ guest.check_out|date:"l, d F Y" }} {{ guest.check_out|time:"H:i" }}</div>
+            </div>
+            {% endif %}
+
+            {% if guest.no_of_people %}
+            <div class="timeline-step">
+                <div class="dot"></div>
+                <div class="card"><strong>No. of People:</strong> {{ guest.no_of_people }}</div>
+            </div>
+            {% endif %}
+
+            {% if guest.rooms %}
+            <div class="timeline-step">
+                <div class="dot"></div>
+                <div class="card"><strong>Rooms:</strong> {{ guest.rooms }}</div>
+            </div>
+            {% endif %}
+
+            {% if guest.no_of_beds %}
+            <div class="timeline-step">
+                <div class="dot"></div>
+                <div class="card"><strong>Beds per room:</strong> {{ guest.no_of_beds }}</div>
+            </div>
+            {% endif %}
+
+            {% with beds=guest.hotelbookingbedtype_set.all %}
+            {% if beds %}
+            <div class="timeline-step">
+                <div class="dot"></div>
+                <div class="card"><strong>Beds:</strong>
+                    {% for bed in beds %}
+                        {{ bed.quantity }} {{ bed.bed_type.name }}{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            {% endwith %}
+
+            {% if guest.customer_pays_in_euros %}
+            <div class="timeline-step">
+                <div class="dot"></div>
+                <div class="card"><strong>Customer Pays:</strong>
+                    €{{ guest.customer_pays_in_euros|intcomma }}
+                    {% if guest.customer_pays_currency and guest.customer_pays_currency != 'EUR' %}
+                        ({{ guest.customer_pays_currency|currency_symbol }}{{ guest.customer_pays|intcomma }})
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if guest.hotel_price_in_euros %}
+            <div class="timeline-step">
+                <div class="dot"></div>
+                <div class="card"><strong>Hotel Price:</strong>
+                    €{{ guest.hotel_price_in_euros|intcomma }}
+                    {% if guest.hotel_price_currency and guest.hotel_price_currency != 'EUR' %}
+                        ({{ guest.hotel_price_currency|currency_symbol }}{{ guest.hotel_price|intcomma }})
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if guest.special_requests %}
+            <div class="timeline-step">
+                <div class="dot"></div>
+                <div class="card">
+                    <strong>Special Requests:</strong>
+                    <div style="white-space: pre-wrap;">{{ guest.special_requests }}</div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="info-note">
+                <p><span class="tnx">Thanks for booking with<br><strong>Tefilas Rabim</strong></span></p>
+            </div>
+
+            <p class="footer">Tefilas Rabim &copy; 2024</p>
+        </div>
+    </div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const steps = document.querySelectorAll(".timeline-step");
+        steps.forEach((step, index) => {
+            step.style.setProperty("--i", index + 1);
+        });
+    });
+    </script>
+</body>
+</html>
+

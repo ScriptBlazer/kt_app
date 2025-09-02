@@ -13,3 +13,19 @@
 
     reverse_proxy web:8000
 }
+
+{$TR_HOST} {
+    encode gzip
+
+    handle_path /static/* {
+        root * /app/staticfiles
+        file_server
+    }
+
+    handle_path /media/* {
+        root * /app
+        file_server
+    }
+
+    reverse_proxy web:8000
+}

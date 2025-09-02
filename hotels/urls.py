@@ -12,4 +12,6 @@ urlpatterns = [
     path('edit_guests/<int:guest_id>/', views.edit_guests, name='edit_guests'),
     path('guests/delete/<int:guest_id>/', views.delete_guests, name='delete_guests'),
     path('update_status/<int:guest_id>/', views.update_guest_status, name='update_guest_status'),
+    path('<str:public_id>/client/', views.client_view_guest, name='client_view_guest'),
+    path('<str:public_id>/client/tefilas-rabim/', views.client_view_guest_tefilas_rabim, name='client_view_guest_tefilas_rabim'),
 ]

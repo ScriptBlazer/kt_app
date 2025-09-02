@@ -12,7 +12,9 @@
             <a href="{% url 'hotels:hotel_bookings' %}" class="button button-purple">Back to Bookings</a>
             <a href="{% url 'hotels:enquiries' %}" class="button button-purple">Back to Enquiries</a>
             <a href="{% url 'hotels:hotel_bookings' %}" class="button button-purple">Back to Bookings</a>
-            <button onclick="copyGuestDetails()" class="button button-purple">Copy Guest Details</button>
+            <!-- <button onclick="copyGuestDetails()" class="button button-purple">Copy Guest Details</button> -->
+            <a href="javascript:void(0);" onclick="copyHotelLink('{{ guest.public_id }}')" class="button button-purple">Client Link</a>
+            <a href="javascript:void(0);" onclick="copyHotelTRLink('{{ guest.public_id }}')" class="button button-purple">TR Link</a>
         </div>
     </div>
     <!-- Success Message -->
@@ -186,7 +188,15 @@
         <div style="color: purple;">Past</div>
     </a>
 
-    <a href="#" class="floating-add-button button-purple" onclick="copyGuestDetails()">
+    <!-- <a href="#" class="floating-add-button button-purple" onclick="copyGuestDetails()">
+        <i class="fas fa-copy"></i>
+    </a> -->
+
+    <a href="javascript:void(0);" onclick="copyHotelTRLink('{{ guest.public_id }}')" class="floating-add-button-top button-purple">
+       <span>TR</span>
+    </a>
+
+    <a href="javascript:void(0);" onclick="copyHotelLink('{{ guest.public_id }}')" class="floating-add-button button-purple">
         <i class="fas fa-copy"></i>
     </a>
 </div>
@@ -235,4 +245,33 @@
     }
 </script> -->
 <script src="{% static 'script.js' %}"></script>
+<script>
+    function copyHotelLink(publicId) {
+        const link = `https://app.kerestirtravel.com/hotels/${publicId}/client/`;
+        navigator.clipboard.writeText(link)
+            .then(() => {
+                const msg = document.getElementById('copy-success');
+                msg.textContent = 'Hotel link copied to clipboard!';
+                msg.style.display = 'block';
+                setTimeout(() => {
+                    msg.style.display = 'none';
+                }, 2000);
+            })
+            .catch(err => console.error('Failed to copy:', err));
+    }
+
+    function copyHotelTRLink(publicId) {
+        const link = `https://bookings.tefilasrabim.com/hotels/${publicId}/client/tefilas-rabim/`;
+        navigator.clipboard.writeText(link)
+            .then(() => {
+                const msg = document.getElementById('copy-success');
+                msg.textContent = 'Tefilas Rabim link copied to clipboard!';
+                msg.style.display = 'block';
+                setTimeout(() => {
+                    msg.style.display = 'none';
+                }, 2000);
+            })
+            .catch(err => console.error('Failed to copy:', err));
+    }
+</script>
 {% endblock %}
