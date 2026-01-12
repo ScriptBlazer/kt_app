@@ -3,6 +3,8 @@ from expenses.forms import ExpenseForm
 from expenses.models import Expense, ExpenseImage
 from django.contrib.auth.decorators import login_required
 from django.db.models import Sum
+from django.utils import timezone
+import pytz
 from decimal import Decimal
 from people.models import Driver
 from django.db.models.functions import ExtractYear, ExtractMonth
@@ -15,7 +17,9 @@ def add_expense(request):
     if request.method == 'POST':
         form = ExpenseForm(request.POST, request.FILES)
         if form.is_valid():
-            form.save()
+            expense = form.save(commit=False)
+            expense.created_by = request.user
+            expense.save()
             return redirect('expenses:expenses')
     else:
         form = ExpenseForm()
@@ -86,7 +90,11 @@ def edit_expense(request, expense_id):
         errors = []
 
         if form.is_valid():
-            form.save()
+            expense = form.save(commit=False)
+            expense.last_modified_by = request.user
+            hungary_tz = pytz.timezone('Europe/Budapest')
+            expense.last_modified_at = timezone.now().astimezone(hungary_tz)
+            expense.save()
 
             # Save multiple images
             images = request.FILES.getlist('images')

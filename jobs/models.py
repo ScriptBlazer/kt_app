@@ -23,6 +23,7 @@ class Job(models.Model):
     # Customer Information
     customer_name = models.CharField(max_length=100)
     customer_number = models.CharField(max_length=30)
+    customer_email = models.EmailField(max_length=255, null=True, blank=True)
 
     # Job Details
     job_date = models.DateField()

@@ -24,6 +24,13 @@ class ExpenseForm(forms.ModelForm):
         model = Expense
         fields = ['expense_type', 'driver', 'expense_amount', 'expense_currency', 'expense_date', 'expense_time', 'expense_notes', 'expense_image']
 
+    def __init__(self, *args, **kwargs):
+        super(ExpenseForm, self).__init__(*args, **kwargs)
+        
+        # Set default expense currency to EUR for new expenses
+        if not self.instance.pk or not self.instance.expense_currency:
+            self.initial['expense_currency'] = 'EUR'
+
     def clean(self):
         cleaned_data = super().clean()
         expense_type = cleaned_data.get('expense_type')

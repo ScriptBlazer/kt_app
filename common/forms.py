@@ -88,6 +88,10 @@ class PaymentForm(PaidToMixin, forms.ModelForm):
             ('Staff', [(f"staff_{staff.id}", staff.name) for staff in staffs]),
         ]
 
+        # Set default payment currency to EUR for new payments
+        if not self.instance.pk or not self.instance.payment_currency:
+            self.initial['payment_currency'] = 'EUR'
+
         # Set initial value of 'paid_to' based on the selected paid_to field
         if self.instance.pk:
             if self.instance.paid_to_agent:

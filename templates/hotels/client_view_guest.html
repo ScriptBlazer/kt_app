@@ -122,6 +122,28 @@
             </div>
             {% endif %}
 
+            <div class="timeline-step" style="--i:12;">
+                <div class="dot"></div>
+                <div class="card"><strong>Status:</strong> 
+                    {% if guest.is_confirmed %}
+                        ✅ Confirmed
+                    {% else %}
+                        ⏳ Not Confirmed
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="timeline-step" style="--i:13;">
+                <div class="dot"></div>
+                <div class="card"><strong>Payment:</strong> 
+                    {% if guest.is_paid %}
+                        ✅ Paid
+                    {% else %}
+                        ❌ Not Paid
+                    {% endif %}
+                </div>
+            </div>
+
             <div class="info-note">
                 <p><span class="tnx">Thanks for booking with<br><strong>Kerestir Travel</strong></span></p>
             </div>

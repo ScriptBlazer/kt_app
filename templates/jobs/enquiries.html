@@ -224,9 +224,30 @@
                     if (section.style.display === "none") {
                         section.style.display = "block";
                         arrow.textContent = "▲";
+                        // Change text from "More X" to "Show Less"
+                        const headerText = this.textContent.trim();
+                        const arrowText = arrow.textContent;
+                        const textWithoutArrow = headerText.replace(arrowText, "").trim();
+                        if (textWithoutArrow.startsWith("More ")) {
+                            // Store original text
+                            this.dataset.originalText = textWithoutArrow;
+                            // Update the first text node (which contains the header text)
+                            const textNode = this.firstChild;
+                            if (textNode && textNode.nodeType === Node.TEXT_NODE) {
+                                textNode.textContent = "Show Less ";
+                            }
+                        }
                     } else {
                         section.style.display = "none";
                         arrow.textContent = "▼";
+                        // Change text back from "Show Less" to original "More X"
+                        if (this.dataset.originalText) {
+                            const textNode = this.firstChild;
+                            if (textNode && textNode.nodeType === Node.TEXT_NODE) {
+                                textNode.textContent = this.dataset.originalText + " ";
+                            }
+                            delete this.dataset.originalText;
+                        }
                     }
                 }
             });

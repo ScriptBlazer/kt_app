@@ -163,6 +163,7 @@ document.addEventListener("DOMContentLoaded", () => {
   window.toggleSection = function (sectionId) {
     const section = document.getElementById(sectionId);
     const arrow = document.getElementById(sectionId + "-arrow");
+    const header = document.querySelector(`[data-section-id="${sectionId}"].toggle-header`);
 
     if (!arrow) {
       console.error("Arrow element not found for section: ", sectionId);
@@ -174,9 +175,33 @@ document.addEventListener("DOMContentLoaded", () => {
     if (currentDisplay === "none") {
       section.style.display = "block";
       arrow.textContent = "▲";
+      // Change text from "More X" to "Show Less"
+      if (header) {
+        // Get text content without the arrow
+        const headerText = header.textContent.trim();
+        const arrowText = arrow.textContent;
+        const textWithoutArrow = headerText.replace(arrowText, "").trim();
+        if (textWithoutArrow.startsWith("More ")) {
+          // Store original text
+          header.dataset.originalText = textWithoutArrow;
+          // Update the first text node (which contains the header text)
+          const textNode = header.firstChild;
+          if (textNode && textNode.nodeType === Node.TEXT_NODE) {
+            textNode.textContent = "Show Less ";
+          }
+        }
+      }
     } else {
       section.style.display = "none";
       arrow.textContent = "▼";
+      // Change text back from "Show Less" to original "More X"
+      if (header && header.dataset.originalText) {
+        const textNode = header.firstChild;
+        if (textNode && textNode.nodeType === Node.TEXT_NODE) {
+          textNode.textContent = header.dataset.originalText + " ";
+        }
+        delete header.dataset.originalText;
+      }
     }
   };
 

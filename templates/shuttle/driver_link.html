@@ -39,7 +39,7 @@
                     <div class="dot"></div>
                     <div class="card">
                         <p><strong>Customer Name:</strong> {{ shuttle.customer_name }}</p>
-                        <p><strong>Shuttle Direction:</strong> {{ shuttle.shuttle_direction }}</p>
+                        <p><strong>Shuttle Direction:</strong> {{ shuttle.get_shuttle_direction_display }}</p>
                         <p><strong>No of Passengers:</strong> {{ shuttle.no_of_passengers }}</p>
                         {% if shuttle.driver %}
                             <p><strong>Driver:</strong> {{ shuttle.driver }}</p>

@@ -15,6 +15,20 @@
     </div>
     <br>
     <h2>View Expense</h2>
+    <p><strong>Added by:</strong> 
+        {% if expense.created_by %}
+            {{ expense.created_by.get_full_name|default:expense.created_by.username }}
+        {% else %}
+            Unknown
+        {% endif %}
+    </p>
+    {% if expense.last_modified_by %}
+        <p><strong>Edited by:</strong> {{ expense.last_modified_by.get_full_name|default:expense.last_modified_by.username }}
+            {% if expense.last_modified_at %}
+                ({{ expense.last_modified_at|date:"F j, Y, g:i a" }})
+            {% endif %}
+        </p>
+    {% endif %}
     <p><strong>Driver:</strong> {{ expense.driver.name|default_if_none:"" }}</p>
     <p><strong>Expense Type:</strong> {{ expense.expense_type|default_if_none:"" }}</p>
     <p><strong>Expense Amount:</strong> 

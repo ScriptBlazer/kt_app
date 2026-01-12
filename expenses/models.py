@@ -1,6 +1,7 @@
 from django.db import models
 from people.models import Driver
 from django.utils import timezone
+from django.contrib.auth.models import User
 import pytz
 from decimal import Decimal
 from common.utils import get_exchange_rate, CURRENCY_CHOICES
@@ -31,6 +32,11 @@ class Expense(models.Model):
     expense_time = models.TimeField()
     expense_notes = models.TextField(blank=True, null=True)
     expense_image = models.ImageField(upload_to='expense_images/', null=True, blank=True)
+
+    # Track who created and edited the expense
+    created_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='expenses_created')
+    last_modified_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='expenses_modified')
+    last_modified_at = models.DateTimeField(null=True, blank=True)
 
     def save(self, *args, **kwargs):
         # Convert current time to Budapest timezone if not set

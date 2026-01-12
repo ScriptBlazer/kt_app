@@ -111,6 +111,10 @@ class ShuttleDailyCostForm(forms.ModelForm):
         ordered_drivers = Driver.objects.order_by(Lower('name'))
         self.fields['driver'].queryset = ordered_drivers
 
+        # Set default currency to EUR for new cost entries
+        if not self.instance.pk or not self.instance.currency:
+            self.initial['currency'] = 'EUR'
+
     def clean(self):
         cleaned_data = super().clean()
         driver = cleaned_data.get('driver')

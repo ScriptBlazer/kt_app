@@ -582,10 +582,19 @@ def get_customer(request):
     query = request.GET.get('term', '')
     
     if field == 'name' and len(query) >= 3:
-        results = (Job.objects
+        # Return customer data with name, number, and email
+        jobs = (Job.objects
             .filter(customer_name__icontains=query)
-            .values_list('customer_name', flat=True)
+            .values('customer_name', 'customer_number', 'customer_email')
             .distinct()[:10])
+        results = [
+            {
+                'name': job['customer_name'],
+                'number': job['customer_number'] or '',
+                'email': job['customer_email'] or ''
+            }
+            for job in jobs
+        ]
     elif field == 'number' and len(query) >= 5:
         results = (Job.objects
             .filter(customer_number__icontains=query)
