@@ -49,6 +49,10 @@ class HotelBookingForm(PaidToMixin, forms.ModelForm):
             self.initial['check_in'] = timezone.make_aware(datetime.combine(today, time(15, 0))).strftime('%Y-%m-%dT%H:%M')
         if not self.initial.get('check_out'):
             self.initial['check_out'] = timezone.make_aware(datetime.combine(today + timedelta(days=1), time(11, 0))).strftime('%Y-%m-%dT%H:%M')
+        
+        # Set default hotel price currency to EUR for new bookings
+        if not self.instance.pk or not self.instance.hotel_price_currency:
+            self.initial['hotel_price_currency'] = 'EUR'
 
         # Dynamic bed type fields
         bed_types = BedType.objects.all()

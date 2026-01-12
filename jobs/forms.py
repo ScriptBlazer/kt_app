@@ -41,7 +41,7 @@ class JobForm(PaidToMixin, forms.ModelForm):
     class Meta:
         model = Job
         fields = [
-            'customer_name', 'customer_number', 'job_date', 'job_time',
+            'customer_name', 'customer_number', 'customer_email', 'job_date', 'job_time',
             'job_description', 'job_notes', 'no_of_passengers', 'vehicle_type', 'kilometers',
             'pick_up_location', 'drop_off_location', 'flight_number', 'payment_type',
             'job_price', 'driver_fee', 
@@ -77,6 +77,14 @@ class JobForm(PaidToMixin, forms.ModelForm):
             ('Drivers', [(f"driver_{driver.id}", driver.name) for driver in ordered_drivers]),
             ('Agents', [(f"agent_{agent.id}", agent.name) for agent in ordered_agents]),
         ]
+
+        # Set default currency to EUR for new jobs
+        if not self.instance.pk or not self.instance.job_currency:
+            self.initial['job_currency'] = 'EUR'
+        
+        # Set default driver currency to EUR only when is_freelancer is True (for existing instances)
+        if self.instance.pk and self.instance.is_freelancer and not self.instance.driver_currency:
+            self.initial['driver_currency'] = 'EUR'
 
         if self.instance.pk:
             if self.instance.driver:
@@ -142,11 +150,20 @@ class JobForm(PaidToMixin, forms.ModelForm):
         if no_of_passengers is not None and no_of_passengers <= 0:
             self.add_error('no_of_passengers', 'There must be at least one passenger.')
 
+        # Set default driver currency to EUR if is_freelancer is True and currency is not set
+        is_freelancer = cleaned_data.get('is_freelancer', False)
+        if is_freelancer and not driver_currency:
+            cleaned_data['driver_currency'] = 'EUR'
+            driver_currency = 'EUR'
+
         # Conditional validation for driver fee and driver currency
         if driver_fee is not None and driver_currency is None:
             self.add_error('driver_currency', 'Driver currency is required if driver fee is provided.')
         if driver_currency and driver_fee is None:
-            self.add_error('driver_fee', 'Driver fee is required if driver currency is provided.')
+            error_msg = 'Driver fee is required if driver currency is provided.'
+            if is_freelancer:
+                error_msg += ' (Driver fee is needed when job is set as freelancer)'
+            self.add_error('driver_fee', error_msg)
 
         # Conditional validation for agent name and agent percentage
         if agent_name and not agent_percentage:

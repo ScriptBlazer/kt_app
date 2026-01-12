@@ -28,6 +28,10 @@
             <input type="text" name="customer_number" id="customer_number_input" class="customer-number-input" value="{{ job_form.customer_number.value|default_if_none:'' }}">
             <ul id="number-suggestions" class="suggestion-box" style="display: none; position: absolute; background: white; border: 1px solid #ccc; z-index: 1000;"></ul>
         </div>
+        <div class="form-group">
+            {{ job_form.customer_email.label_tag }}<br>
+            {{ job_form.customer_email }}
+        </div>
         <div class="form-group-inline">
             <div class="field-wrapper">
                 {{ job_form.job_date.label_tag }}*<br>
@@ -264,9 +268,11 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }
 
-    function setupAutoSuggest(inputSelector, suggestionBoxSelector, url, minChars) {
+    function setupAutoSuggest(inputSelector, suggestionBoxSelector, url, minChars, isCustomerName = false) {
         const input = document.querySelector(inputSelector);
         const suggestionBox = document.getElementById(suggestionBoxSelector);
+        const customerNumberInput = document.getElementById('customer_number_input');
+        const customerEmailInput = document.getElementById('id_customer_email');
 
         const handleInput = debounce(function() {
             const query = input.value;
@@ -278,11 +284,30 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (data.length > 0) {
                             data.forEach(item => {
                                 const li = document.createElement('li');
-                                li.textContent = item;
+                                // Handle both string (for other fields) and object (for customer name)
+                                if (isCustomerName && typeof item === 'object') {
+                                    li.textContent = item.name;
+                                    li.dataset.customerName = item.name;
+                                    li.dataset.customerNumber = item.number || '';
+                                    li.dataset.customerEmail = item.email || '';
+                                } else {
+                                    li.textContent = item;
+                                }
                                 li.style.cursor = 'pointer';
                                 li.style.padding = '5px';
                                 li.addEventListener('click', function() {
-                                    input.value = item;
+                                    if (isCustomerName && typeof item === 'object') {
+                                        // Auto-fill customer name, number, and email
+                                        input.value = item.name;
+                                        if (customerNumberInput && item.number) {
+                                            customerNumberInput.value = item.number;
+                                        }
+                                        if (customerEmailInput && item.email) {
+                                            customerEmailInput.value = item.email;
+                                        }
+                                    } else {
+                                        input.value = item;
+                                    }
                                     suggestionBox.style.display = 'none';
                                 });
                                 suggestionBox.appendChild(li);
@@ -309,7 +334,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    setupAutoSuggest('.customer-name-input', 'customer-suggestions', '/jobs/ajax/get-customer/?field=name&term=', 3);
+    setupAutoSuggest('.customer-name-input', 'customer-suggestions', '/jobs/ajax/get-customer/?field=name&term=', 3, true);
     setupAutoSuggest('.customer-number-input', 'number-suggestions', '/jobs/ajax/get-customer/?field=number&term=', 5);
     setupAutoSuggest('#id_pick_up_location', 'pickup-suggestions', '/jobs/ajax/get-customer/?field=pickup&term=', 3);
     setupAutoSuggest('#id_drop_off_location', 'dropoff-suggestions', '/jobs/ajax/get-customer/?field=dropoff&term=', 3);
