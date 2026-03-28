@@ -6,28 +6,29 @@
 {% block content %}
 <div class="container">
     <h2>Edit Job</h2>
-    <form method="post" id="job-form">
+    {% if error_message %}
+    <p id="modal-trigger" style="display:none;">{{ error_message }}</p>
+    {% endif %}
+    <form method="post" id="job-form" novalidate>
         {% csrf_token %}
         <div class="form-group">
             <p><strong>Confirm Job:</strong> 
-                <input class="sbig" type="checkbox" id="id_is_confirmed" name="is_confirmed" {% if job_form.initial.is_confirmed %}checked{% endif %}>
+                <input class="sbig" type="checkbox" id="id_is_confirmed" name="is_confirmed" {% if job_form.is_confirmed.value %}checked{% endif %}>
             </p>
             <p><strong>Freelancer Job:</strong> 
-                <input class="sbig" type="checkbox" id="id_is_freelancer" name="is_freelancer" {% if job_form.initial.is_freelancer %}checked{% endif %}>
+                <input class="sbig" type="checkbox" id="id_is_freelancer" name="is_freelancer" {% if job_form.is_freelancer.value %}checked{% endif %}>
             </p>
         </div>
-    <form method="post" id="job-form">
-        {% csrf_token %}
         <!-- Main Job Fields (above tabs) -->
-        <div class="form-group">
+        <div class="form-group" style="position: relative;">
             {{ job_form.customer_name.label_tag }}*<br>
             <input type="text" name="customer_name" id="customer_name_input" class="customer-name-input" value="{{ job_form.customer_name.value|default_if_none:'' }}">
-            <ul id="customer-suggestions" class="suggestion-box" style="display: none; position: absolute; background: white; border: 1px solid #ccc; z-index: 1000;"></ul>
+            <ul id="customer-suggestions" class="suggestion-box" style="display: none; position: absolute; background: white; border: 1px solid #ccc; z-index: 1000; list-style: none; margin: 0; padding: 0;"></ul>
         </div>
-        <div class="form-group">
+        <div class="form-group" style="position: relative;">
             {{ job_form.customer_number.label_tag }}*<br>
             <input type="text" name="customer_number" id="customer_number_input" class="customer-number-input" value="{{ job_form.customer_number.value|default_if_none:'' }}">
-            <ul id="number-suggestions" class="suggestion-box" style="display: none; position: absolute; background: white; border: 1px solid #ccc; z-index: 1000;"></ul>
+            <ul id="number-suggestions" class="suggestion-box" style="display: none; position: absolute; background: white; border: 1px solid #ccc; z-index: 1000; list-style: none; margin: 0; padding: 0;"></ul>
         </div>
         <div class="form-group">
             {{ job_form.customer_email.label_tag }}<br>
@@ -44,15 +45,15 @@
             </div>
         </div>
         <div class="form-group-inline">
-            <div class="field-wrapper">
+            <div class="field-wrapper" style="position: relative;">
                 {{ job_form.pick_up_location.label_tag }}*<br>
                 {{ job_form.pick_up_location }}
-                <ul id="pickup-suggestions" class="suggestion-box" style="display: none; position: absolute; background: white; border: 1px solid #ccc; z-index: 1000;"></ul>
+                <ul id="pickup-suggestions" class="suggestion-box" style="display: none; position: absolute; background: white; border: 1px solid #ccc; z-index: 1000; list-style: none; margin: 0; padding: 0;"></ul>
             </div>
-            <div class="field-wrapper">
+            <div class="field-wrapper" style="position: relative;">
                 {{ job_form.drop_off_location.label_tag }}<br>
                 {{ job_form.drop_off_location }}
-                <ul id="dropoff-suggestions" class="suggestion-box" style="display: none; position: absolute; background: white; border: 1px solid #ccc; z-index: 1000;"></ul>
+                <ul id="dropoff-suggestions" class="suggestion-box" style="display: none; position: absolute; background: white; border: 1px solid #ccc; z-index: 1000; list-style: none; margin: 0; padding: 0;"></ul>
             </div>
         </div>
         <div class="form-group-inline">
@@ -186,57 +187,11 @@
         </div>
     </form>
 
-    <!-- Modal Trigger if Error -->
-    {% if error_message %}
-    <p id="modal-trigger" style="display:none;">{{ error_message }}</p>
-    {% endif %}
-
-    <!-- Modal Structure -->
     <div id="error-modal" class="modal" style="display: none;">
         <div class="modal-content">
             <span class="close-button" onclick="closeModal()">&times;</span>
             <p id="modal-message">{{ error_message }}</p>
         </div>
-    </div>
-
-    <!-- Display Job Form Errors -->
-    <div class="errors">
-        {% if job_form.errors %}
-            <h3>Job Form Errors:</h3>
-            <ul>
-                {% for field in job_form %}
-                    {% if field.errors %}
-                        <li>{{ field.label }}: {{ field.errors|join:", " }}</li>
-                    {% endif %}
-                {% endfor %}
-            </ul>
-        {% endif %}
-
-        <!-- Display Payment Formset Errors -->
-        {% if payment_formset.non_form_errors %}
-            <h3>Payment Formset Errors:</h3>
-            <ul>
-                {% for error in payment_formset.non_form_errors %}
-                    <li>{{ error }}</li>
-                {% endfor %}
-            </ul>
-        {% endif %}
-
-        {% for form in payment_formset %}
-            {% if form.errors %}
-                <h3>Errors in Payment {{ forloop.counter }}:</h3>
-                <ul>
-                    {% for error in form.non_field_errors %}
-                        <li>{{ error }}</li>
-                    {% endfor %}
-                    {% for field in form.visible_fields %}
-                        {% if field.errors %}
-                            <li>{{ field.label }}: {{ field.errors|join:", " }}</li>
-                        {% endif %}
-                    {% endfor %}
-                </ul>
-            {% endif %}
-        {% endfor %}
     </div>
 </div>
 {% endblock %}
@@ -266,86 +221,23 @@
         });
     });
 </script>
+<script src="{% static 'customer_autocomplete.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    function debounce(func, delay) {
-        let timer;
-        return function(...args) {
-            clearTimeout(timer);
-            timer = setTimeout(() => func.apply(this, args), delay);
-        };
-    }
-
-    function setupAutoSuggest(inputSelector, suggestionBoxSelector, url, minChars, isCustomerName = false) {
-        const input = document.querySelector(inputSelector);
-        const suggestionBox = document.getElementById(suggestionBoxSelector);
-        const customerNumberInput = document.getElementById('customer_number_input');
-        const customerEmailInput = document.getElementById('id_customer_email');
-
-        const handleInput = debounce(function() {
-            const query = input.value;
-            if (query.length >= minChars) {
-                fetch(url + encodeURIComponent(query))
-                    .then(response => response.json())
-                    .then(data => {
-                        suggestionBox.innerHTML = '';
-                        if (data.length > 0) {
-                            data.forEach(item => {
-                                const li = document.createElement('li');
-                                // Handle both string (for other fields) and object (for customer name)
-                                if (isCustomerName && typeof item === 'object') {
-                                    li.textContent = item.name;
-                                    li.dataset.customerName = item.name;
-                                    li.dataset.customerNumber = item.number || '';
-                                    li.dataset.customerEmail = item.email || '';
-                                } else {
-                                    li.textContent = item;
-                                }
-                                li.style.cursor = 'pointer';
-                                li.style.padding = '5px';
-                                li.addEventListener('click', function() {
-                                    if (isCustomerName && typeof item === 'object') {
-                                        // Auto-fill customer name, number, and email
-                                        input.value = item.name;
-                                        if (customerNumberInput && item.number) {
-                                            customerNumberInput.value = item.number;
-                                        }
-                                        if (customerEmailInput && item.email) {
-                                            customerEmailInput.value = item.email;
-                                        }
-                                    } else {
-                                        input.value = item;
-                                    }
-                                    suggestionBox.style.display = 'none';
-                                });
-                                suggestionBox.appendChild(li);
-                            });
-                            suggestionBox.style.display = 'block';
-                            suggestionBox.style.width = input.offsetWidth + 'px';
-                            suggestionBox.style.left = input.offsetLeft + 'px';
-                            suggestionBox.style.top = (input.offsetTop + input.offsetHeight) + 'px';
-                        } else {
-                            suggestionBox.style.display = 'none';
-                        }
-                    });
-            } else {
-                suggestionBox.style.display = 'none';
-            }
-        }, 300); // 300ms debounce delay
-
-        input.addEventListener('input', handleInput);
-
-        document.addEventListener('click', function(e) {
-            if (!input.contains(e.target) && !suggestionBox.contains(e.target)) {
-                suggestionBox.style.display = 'none';
-            }
+    if (window.initKTCustomerAutocomplete) {
+        initKTCustomerAutocomplete({
+            apiUrl: '{% url "common:customer_suggestions" %}',
+            nameInputSelector: '.customer-name-input',
+            nameListId: 'customer-suggestions',
+            numberInputSelector: '.customer-number-input',
+            numberListId: 'number-suggestions',
+            emailInputSelector: '#id_customer_email',
+            extraStringFields: [
+                { inputSelector: '#id_pick_up_location', listId: 'pickup-suggestions', field: 'pickup', minChars: 3 },
+                { inputSelector: '#id_drop_off_location', listId: 'dropoff-suggestions', field: 'dropoff', minChars: 3 },
+            ],
         });
     }
-
-    setupAutoSuggest('.customer-name-input', 'customer-suggestions', '/jobs/ajax/get-customer/?field=name&term=', 3, true);
-    setupAutoSuggest('.customer-number-input', 'number-suggestions', '/jobs/ajax/get-customer/?field=number&term=', 5);
-    setupAutoSuggest('#id_pick_up_location', 'pickup-suggestions', '/jobs/ajax/get-customer/?field=pickup&term=', 3);
-    setupAutoSuggest('#id_drop_off_location', 'dropoff-suggestions', '/jobs/ajax/get-customer/?field=dropoff&term=', 3);
 });
 </script>
 {% endblock %}

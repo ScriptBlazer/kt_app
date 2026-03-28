@@ -72,7 +72,9 @@ class HotelBooking(models.Model):
     special_requests = models.TextField(blank=True, null=True)
 
     created_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='hotels_created')
+    created_at = models.DateTimeField(null=True, blank=True)
     last_modified_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='hotels_modified')
+    last_modified_at = models.DateTimeField(null=True, blank=True)
 
     def save(self, *args, **kwargs):
         if not self.public_id:

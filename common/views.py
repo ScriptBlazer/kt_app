@@ -1,5 +1,10 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.views.decorators.http import require_GET
+
+from common.audit import build_audit_payload, get_audit_model
+from common.utils import format_budapest_datetime
 from shuttle.models import Shuttle
 from hotels.models import HotelBooking
 from django.shortcuts import redirect
@@ -72,7 +77,7 @@ def export_jobs(request):
         })
 
     filter_type = request.GET.get('filter', 'all')
-    file_format = request.GET.get('format', 'csv')
+    file_format = request.GET.get('format', 'xlsx')
     year = request.GET.get('year')
     month = request.GET.get('month')
 
@@ -286,7 +291,7 @@ def export_shuttles(request):
     current_month = now.month
 
     # Filters from GET params
-    file_format = request.GET.get('format', 'csv')
+    file_format = request.GET.get('format', 'xlsx')
     year = request.GET.get('year')
     month = request.GET.get('month')
     filter_driver_id = request.GET.get('filter_driver')
@@ -372,7 +377,7 @@ def export_shuttles(request):
                 shuttle.customer_name,
                 shuttle.customer_number,
                 shuttle.shuttle_date,
-                shuttle.shuttle_direction,
+                shuttle.get_shuttle_direction_display(),
                 shuttle.no_of_passengers,
                 shuttle.price,
                 shuttle.price_currency if hasattr(shuttle, 'price_currency') else 'EUR',
@@ -426,7 +431,7 @@ def export_shuttles(request):
                 shuttle.customer_name,
                 shuttle.customer_number,
                 shuttle.shuttle_date,
-                shuttle.shuttle_direction,
+                shuttle.get_shuttle_direction_display(),
                 shuttle.no_of_passengers,
                 shuttle.price,
                 shuttle.price_currency if hasattr(shuttle, 'price_currency') else 'EUR',
@@ -452,3 +457,268 @@ def export_shuttles(request):
         return response
 
     return HttpResponse("Invalid format", status=400)
+
+
+def _payments_summary_lines(payments):
+    """Build the same human-readable payment summary string used in job/shuttle exports."""
+    if not payments:
+        return ''
+    payment_strs = []
+    for idx, p in enumerate(payments, 1):
+        amt = f"{p.payment_amount}" if p.payment_amount is not None else ''
+        curr = p.payment_currency if p.payment_currency else ''
+        paytype = p.payment_type if p.payment_type else ''
+        payment_str = f"Payment {idx}: {curr}{amt} ({paytype}, to "
+        if p.paid_to_driver:
+            payment_str += f"Driver: {p.paid_to_driver.name}"
+        elif p.paid_to_agent:
+            payment_str += f"Agent: {p.paid_to_agent.name}"
+        elif p.paid_to_staff:
+            payment_str += f"Staff: {p.paid_to_staff.name}"
+        else:
+            payment_str += "Not specified"
+        payment_str += ")"
+        payment_strs.append(payment_str)
+    return ' | '.join(payment_strs)
+
+
+def _naive_datetime_for_excel(dt):
+    """openpyxl cannot write timezone-aware datetimes; Excel has no tz."""
+    if dt is None:
+        return None
+    if timezone.is_aware(dt):
+        return timezone.make_naive(dt, timezone.get_current_timezone())
+    return dt
+
+
+@login_required
+def export_hotels(request):
+    month_range = [(0, 'All')] + [(i, datetime.date(1900, i, 1).strftime('%B')) for i in range(1, 13)]
+    now = timezone.now()
+    current_year = now.year
+    current_month = now.month
+
+    file_format = request.GET.get('format', 'xlsx')
+    year = request.GET.get('year')
+    month = request.GET.get('month')
+
+    if request.method == 'GET' and not request.GET.get('format'):
+        drivers = Driver.objects.order_by('name')
+        return render(request, 'export_page.html', {
+            'month_range': month_range,
+            'current_year': current_year,
+            'current_month': current_month,
+            'drivers': drivers,
+        })
+
+    if not year:
+        drivers = Driver.objects.order_by('name')
+        return render(request, 'export_page.html', {
+            'month_range': month_range,
+            'current_year': current_year,
+            'current_month': current_month,
+            'drivers': drivers,
+            'error_message': 'Please select a year for export.',
+        })
+
+    bookings = (
+        HotelBooking.objects.filter(is_confirmed=True)
+        .select_related('agent')
+        .prefetch_related('payments')
+        .order_by('-check_in')
+    )
+
+    try:
+        year_int = int(year)
+        bookings = bookings.filter(check_in__year=year_int)
+        if month and month != '0':
+            month_int = int(month)
+            bookings = bookings.filter(check_in__month=month_int)
+            sheet_title = f"KT Hotel Bookings {datetime.date(year_int, month_int, 1).strftime('%B %Y')}"
+        else:
+            sheet_title = f"KT Hotel Bookings {year_int}"
+    except ValueError:
+        return HttpResponse('Invalid year or month', status=400)
+
+    headers = [
+        'Customer Name', 'Customer Number', 'Hotel', 'Branch', 'Booking Ref',
+        'Check-in', 'Check-out', 'Guests', 'Rooms', 'Beds', 'Tier',
+        'Hotel Price', 'Hotel Currency', 'Customer Pays',
+        'Customer Pays Currency', 'Confirmed', 'Freelancer', 'Paid', 'Completed',
+        'Agent', 'Agent Fee', 'Special Requests',
+        'Payments Summary',
+    ]
+
+    if file_format == 'csv':
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="{sheet_title}.csv"'
+        writer = csv.writer(response)
+        writer.writerow(headers)
+        for b in bookings:
+            payments_summary = _payments_summary_lines(list(b.payments.all()))
+            writer.writerow([
+                b.customer_name,
+                b.customer_number,
+                b.hotel_name,
+                b.hotel_branch or '',
+                b.booking_ref or '',
+                format_budapest_datetime(b.check_in, fmt='l, j F Y, H:i') or '',
+                format_budapest_datetime(b.check_out, fmt='l, j F Y, H:i') or '',
+                b.no_of_people,
+                b.rooms,
+                b.no_of_beds if b.no_of_beds is not None else '',
+                b.get_hotel_tier_display() if b.hotel_tier is not None else '',
+                b.hotel_price,
+                b.hotel_price_currency,
+                b.customer_pays,
+                b.customer_pays_currency,
+                b.is_confirmed,
+                b.is_freelancer,
+                b.is_paid,
+                b.is_completed,
+                b.agent.name if b.agent else '',
+                f'{b.agent_percentage}%' if b.agent_percentage else '',
+                b.special_requests or '',
+                payments_summary,
+            ])
+        return response
+
+    if file_format == 'xlsx':
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = sheet_title[:31]
+        ws.append(headers)
+        header_font = Font(bold=True)
+        header_fill = PatternFill(start_color='FFA500', end_color='FFA500', fill_type='solid')
+        for cell in ws[1]:
+            cell.font = header_font
+            cell.fill = header_fill
+        ws.freeze_panes = 'A2'
+        last_column = get_column_letter(len(headers))
+        ws.auto_filter.ref = f'A1:{last_column}1'
+
+        for b in bookings:
+            payments_summary = _payments_summary_lines(list(b.payments.all()))
+            ws.append([
+                b.customer_name,
+                b.customer_number,
+                b.hotel_name,
+                b.hotel_branch or '',
+                b.booking_ref or '',
+                _naive_datetime_for_excel(b.check_in),
+                _naive_datetime_for_excel(b.check_out),
+                b.no_of_people,
+                b.rooms,
+                b.no_of_beds if b.no_of_beds is not None else '',
+                b.get_hotel_tier_display() if b.hotel_tier is not None else '',
+                float(b.hotel_price or 0),
+                b.hotel_price_currency,
+                float(b.customer_pays or 0),
+                b.customer_pays_currency,
+                b.is_confirmed,
+                b.is_freelancer,
+                b.is_paid,
+                b.is_completed,
+                b.agent.name if b.agent else '',
+                f'{b.agent_percentage}%' if b.agent_percentage else '',
+                b.special_requests or '',
+                payments_summary,
+            ])
+
+        for col_num, column_title in enumerate(headers, 1):
+            column_letter = get_column_letter(col_num)
+            max_length = len(column_title)
+            for row in ws.iter_rows(min_col=col_num, max_col=col_num):
+                for cell in row:
+                    if cell.value:
+                        max_length = max(max_length, len(str(cell.value)))
+            ws.column_dimensions[column_letter].width = max_length + 2
+
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename="{sheet_title}.xlsx"'
+        wb.save(response)
+        return response
+
+    return HttpResponse('Invalid format', status=400)
+
+
+@login_required
+@require_GET
+def customer_suggestions(request):
+    """
+    Autocomplete for customer name/number across jobs, shuttles, and hotel bookings.
+    Pickup/dropoff suggestions still come from driving jobs only.
+    """
+    field = request.GET.get('field')
+    term = (request.GET.get('term') or '').strip()
+
+    if field == 'name' and len(term) >= 3:
+        seen = set()
+        rows = []
+        querysets = [
+            Job.objects.filter(customer_name__icontains=term).values(
+                'customer_name', 'customer_number', 'customer_email'
+            ),
+            Shuttle.objects.filter(customer_name__icontains=term).values(
+                'customer_name', 'customer_number', 'customer_email'
+            ),
+            HotelBooking.objects.filter(customer_name__icontains=term).values(
+                'customer_name', 'customer_number'
+            ),
+        ]
+        for qs in querysets:
+            for r in qs[:40]:
+                name = (r.get('customer_name') or '').strip()
+                if not name:
+                    continue
+                num = str(r.get('customer_number') or '').strip()
+                em = str(r.get('customer_email') or '').strip()
+                key = (name.lower(), num, em.lower())
+                if key in seen:
+                    continue
+                seen.add(key)
+                rows.append({'name': name, 'number': num, 'email': em})
+        rows.sort(key=lambda x: (x['name'].lower(), x['number'], x['email'].lower()))
+        return JsonResponse(rows[:10], safe=False)
+
+    if field == 'number' and len(term) >= 5:
+        nums = set()
+        for model in (Job, Shuttle, HotelBooking):
+            for n in model.objects.filter(customer_number__icontains=term).values_list(
+                'customer_number', flat=True
+            )[:25]:
+                if n:
+                    s = str(n).strip()
+                    if s:
+                        nums.add(s)
+        return JsonResponse(sorted(nums)[:10], safe=False)
+
+    if field == 'pickup' and len(term) >= 3:
+        results = list(
+            Job.objects.filter(pick_up_location__icontains=term)
+            .values_list('pick_up_location', flat=True)
+            .distinct()[:10]
+        )
+        return JsonResponse(results, safe=False)
+
+    if field == 'dropoff' and len(term) >= 3:
+        results = list(
+            Job.objects.filter(drop_off_location__icontains=term)
+            .values_list('drop_off_location', flat=True)
+            .distinct()[:10]
+        )
+        return JsonResponse(results, safe=False)
+
+    return JsonResponse([], safe=False)
+
+
+@login_required
+@require_GET
+def audit_detail(request, app_label, model_name, pk):
+    Model = get_audit_model(app_label, model_name)
+    if Model is None:
+        return JsonResponse({'error': 'Not found'}, status=404)
+    obj = get_object_or_404(Model, pk=pk)
+    return JsonResponse(build_audit_payload(obj))

@@ -1,4 +1,7 @@
 from django.db import models
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
+from django.conf import settings
 from common.utils import get_exchange_rate, CURRENCY_CHOICES, AGENT_FEE_CHOICES, PAYMENT_TYPE_CHOICES
 from people.models import Agent, Driver, Staff
 from decimal import Decimal
@@ -69,3 +72,38 @@ class Payment(models.Model):
             "Not set"
         )
         return f"{self.payment_amount} {self.payment_currency} paid to {paid_to_name}"
+
+
+class AuditLogEntry(models.Model):
+    """Append-only audit rows for supported models (created / updated)."""
+
+    ACTION_CREATED = 'created'
+    ACTION_UPDATED = 'updated'
+    ACTION_CHOICES = [
+        (ACTION_CREATED, 'Created'),
+        (ACTION_UPDATED, 'Updated'),
+    ]
+
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveBigIntegerField()
+    content_object = GenericForeignKey('content_type', 'object_id')
+    action = models.CharField(max_length=20, choices=ACTION_CHOICES)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='audit_log_entries',
+    )
+    timestamp = models.DateTimeField()
+    changes = models.JSONField(
+        null=True,
+        blank=True,
+        help_text='List of {label, old, new} for field-level updates.',
+    )
+
+    class Meta:
+        ordering = ['timestamp']
+        indexes = [
+            models.Index(fields=['content_type', 'object_id', 'timestamp']),
+        ]

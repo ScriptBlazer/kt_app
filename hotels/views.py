@@ -4,7 +4,7 @@ from django.urls import reverse
 from hotels.models import HotelBooking, HotelBookingBedType, BedType
 from django.utils import timezone
 from django.core.paginator import Paginator
-from common.utils import assign_job_color, get_ordered_people
+from common.utils import assign_job_color, get_ordered_people, now_budapest, form_and_formset_error_summary
 from django.db.models import Sum
 from django.contrib.auth.decorators import login_required
 from common.forms import PaymentForm
@@ -14,7 +14,6 @@ from django.forms import modelformset_factory
 import logging
 import pytz
 from django.core.exceptions import ValidationError
-
 logger = logging.getLogger('kt')
 
 # Set the timezone to Hungary
@@ -109,9 +108,9 @@ def add_guests(request):
                 hotel_booking.is_freelancer = form.cleaned_data.get('is_freelancer', False)
                 hotel_booking.is_confirmed = form.cleaned_data.get('is_confirmed', False)
                 hotel_booking.created_by = request.user
-                hotel_booking.created_at = timezone.now().astimezone(hungary_tz)
+                hotel_booking.created_at = now_budapest()
                 hotel_booking.save()
-                
+
                 # Save bed types
                 form.save_bed_types()
 
@@ -144,7 +143,10 @@ def add_guests(request):
 
         logger.error(f"add_guests form errors: {form.errors}")
         logger.error(f"add_guests payment_formset errors: {payment_formset.errors}")
-        error_message = "Form is invalid. Please check the fields."
+        error_message = (
+            form_and_formset_error_summary(form, payment_formset)
+            or 'Please fix the errors below.'
+        )
     else:
         form = HotelBookingForm()
         
@@ -216,11 +218,11 @@ def edit_guests(request, guest_id):
             with transaction.atomic():
                 hotel_booking = form.save(commit=False)
                 hotel_booking.last_modified_by = request.user
-                hotel_booking.last_modified_at = timezone.now().astimezone(hungary_tz)
+                hotel_booking.last_modified_at = now_budapest()
                 hotel_booking.is_freelancer = form.cleaned_data.get('is_freelancer', False)
                 hotel_booking.is_confirmed = form.cleaned_data.get('is_confirmed', False)
                 hotel_booking.save()
-                
+
                 # Save bed types
                 form.save_bed_types()
 
@@ -254,7 +256,10 @@ def edit_guests(request, guest_id):
 
             return redirect('home')
 
-        error_message = "Form is invalid. Please check the fields."
+        error_message = (
+            form_and_formset_error_summary(form, payment_formset)
+            or 'Please fix the errors below.'
+        )
     else:
         form = HotelBookingForm(instance=guest)
         payment_formset = PaymentFormSet(queryset=guest.payments.all(), prefix="payment")

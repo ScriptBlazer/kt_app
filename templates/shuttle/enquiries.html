@@ -2,6 +2,7 @@
 {% extends 'base/base_services.html' %}
 {% load custom_filters %}
 {% load humanize %}
+{% load audit_extras %}
 {% block content %}
 <div class="container">
     <div class="buttons">
@@ -15,10 +16,11 @@
     <ul>
         {% for shuttle in shuttles %}
             <li class="job-container {% if shuttle.color == 'red' %}red-job{% elif shuttle.color == 'orange' %}orange-job{% elif shuttle.color == 'green' %}green-job{% else %}white-job{% endif %}">
+                {% audit_tag_row shuttle.created_by shuttle.last_modified_by "shuttle" "shuttle" shuttle.id "small" %}
                 <span class="customer-name">{{ shuttle.customer_name|truncate_words_chars }}</span>
                 <div class="job-info">
                     <span class="slim">{{ shuttle.shuttle_date }}</span>
-                    <span class="phone">{{ shuttle.shuttle_direction|default_if_none:"No direction" }}</span>
+                    <span class="phone">{{ shuttle.get_shuttle_direction_display|default:"No direction" }}</span>
                     <span class="tablet">{{ shuttle.price|floatformat:2|intcomma }} EUR</span>
                     <span class="phone">{{ shuttle.no_of_passengers }} Passengers</span>
                 </div>

@@ -1,6 +1,7 @@
 {% extends 'base/base_services.html' %}
 {% load static %}
 {% load custom_filters %}
+{% load audit_extras %}
 {% block title %}Hotel Booking Enquiries{% endblock %}
 
 {% block content %}
@@ -18,6 +19,7 @@
         <ul>
             {% for booking in unconfirmed_bookings %}
             <li class="job-container {% if booking.color == 'red' %}red-job{% elif booking.color == 'orange' %}orange-job{% elif booking.color == 'green' %}green-job{% else %}white-job{% endif %}">
+                {% audit_tag_row booking.created_by booking.last_modified_by "hotels" "hotelbooking" booking.id %}
                 <span class="customer-name">{{ booking.customer_name|truncate_words_chars }}</span>
                 <div class="job-info">
                     <span>{{ booking.customer_name }}</span>

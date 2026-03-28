@@ -35,6 +35,7 @@ class Expense(models.Model):
 
     # Track who created and edited the expense
     created_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='expenses_created')
+    created_at = models.DateTimeField(null=True, blank=True)
     last_modified_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='expenses_modified')
     last_modified_at = models.DateTimeField(null=True, blank=True)
 

@@ -13,7 +13,7 @@ from itertools import groupby
 from operator import attrgetter
 from django.db.models import Q
 from people.models import Driver
-from common.utils import assign_job_color, get_ordered_people
+from common.utils import assign_job_color, get_ordered_people, form_and_formset_error_summary
 from common.models import Payment
 from people.models import Staff
 from common.forms import PaymentForm
@@ -23,8 +23,9 @@ import datetime
 import pytz
 import logging
 import re
-from common.utils import scramble_date
+from common.utils import scramble_date, now_budapest
 logger = logging.getLogger('kt')
+
 
 # Set timezone to Budapest
 budapest_tz = pytz.timezone('Europe/Budapest')
@@ -128,9 +129,10 @@ def add_passengers(request):
         if form.is_valid() and payment_formset.is_valid():
             shuttle = form.save(commit=False)
             shuttle.is_confirmed = form.cleaned_data.get('is_confirmed', False)
+            shuttle.is_freelancer = form.cleaned_data.get('is_freelancer', False)
             shuttle.created_by = request.user
             shuttle.last_modified_by = request.user
-            shuttle.last_modified_at = timezone.now()
+            shuttle.created_at = now_budapest()
             shuttle.save()
 
             for payment_form in payment_formset:
@@ -150,7 +152,10 @@ def add_passengers(request):
                             'form': form,
                             'payment_formset': payment_formset,
                             'formset_prefix': formset_prefix,
-                            'error_message': "Please complete all payment fields before submitting."
+                            'error_message': (
+                                form_and_formset_error_summary(form, payment_formset)
+                                or 'Please complete all payment fields before submitting.'
+                            ),
                         })
 
                     payment = payment_form.save(commit=False)
@@ -159,6 +164,22 @@ def add_passengers(request):
 
             # return redirect('shuttle:shuttle')
             return redirect('home')
+
+        err_msg = form_and_formset_error_summary(form, payment_formset)
+        agents, drivers, _, staff_members = get_ordered_people()
+        for payment_form in payment_formset.forms:
+            if 'paid_to' in payment_form.fields:
+                payment_form.fields['paid_to'].choices = [
+                    ('', 'Select an option'),
+                    ('Drivers', [(f'driver_{driver.id}', driver.name) for driver in drivers]),
+                    ('Staff', [(f'staff_{staff.id}', staff.name) for staff in staff_members]),
+                ]
+        return render(request, 'shuttle/add_passengers.html', {
+            'form': form,
+            'payment_formset': payment_formset,
+            'formset_prefix': formset_prefix,
+            'error_message': err_msg or 'Please fix the errors below.',
+        })
 
     else:
         form = ShuttleForm()
@@ -203,10 +224,9 @@ def edit_passengers(request, shuttle_id):
             with transaction.atomic():  # Ensure atomicity
                 shuttle = form.save(commit=False)
                 shuttle.is_confirmed = form.cleaned_data.get('is_confirmed', False)
+                shuttle.is_freelancer = form.cleaned_data.get('is_freelancer', False)
                 shuttle.last_modified_by = request.user
-                shuttle.last_modified_at = timezone.now()
                 shuttle.save()
-                
 
                 for payment_form in payment_formset:
                     if payment_form.cleaned_data.get("DELETE") and payment_form.instance.pk:
@@ -228,7 +248,10 @@ def edit_passengers(request, shuttle_id):
                                 'form': form,
                                 'payment_formset': payment_formset,
                                 'formset_prefix': formset_prefix,
-                                'error_message': "Please complete all payment fields before submitting."
+                                'error_message': (
+                                    form_and_formset_error_summary(form, payment_formset)
+                                    or 'Please complete all payment fields before submitting.'
+                                ),
                             })
 
                         payment = payment_form.save(commit=False)
@@ -237,6 +260,22 @@ def edit_passengers(request, shuttle_id):
 
             # return redirect('shuttle:shuttle')
             return redirect('home')
+
+        err_msg = form_and_formset_error_summary(form, payment_formset)
+        agents, drivers, _, staff_members = get_ordered_people()
+        for payment_form in payment_formset.forms:
+            if 'paid_to' in payment_form.fields:
+                payment_form.fields['paid_to'].choices = [
+                    ('', 'Select an option'),
+                    ('Drivers', [(f'driver_{driver.id}', driver.name) for driver in drivers]),
+                    ('Staff', [(f'staff_{staff.id}', staff.name) for staff in staff_members]),
+                ]
+        return render(request, 'shuttle/edit_passengers.html', {
+            'form': form,
+            'payment_formset': payment_formset,
+            'formset_prefix': formset_prefix,
+            'error_message': err_msg or 'Please fix the errors below.',
+        })
 
     else:
         form = ShuttleForm(instance=shuttle)
@@ -296,17 +335,21 @@ def update_shuttle_status(request, id):
     is_confirmed = 'is_confirmed' in request.POST
     is_paid = 'is_paid' in request.POST
     is_completed = 'is_completed' in request.POST
+    is_freelancer = 'is_freelancer' in request.POST
+
+    if is_freelancer and not shuttle.driver:
+        error_message = 'You must assign a driver before marking this shuttle as a freelancer job.'
 
     # Enforce dependencies between statuses
-    if is_paid and not is_confirmed:
+    if error_message is None and is_paid and not is_confirmed:
         error_message = 'Shuttle must be confirmed before it can be marked as paid.'
-    elif is_completed and not is_confirmed:
+    elif error_message is None and is_completed and not is_confirmed:
         error_message = 'To mark the shuttle as completed, it must first be confirmed.'
-    elif is_completed and not is_paid:
+    elif error_message is None and is_completed and not is_paid:
         error_message = 'Shuttle must be paid before it can be marked as completed.'
 
     # Additional rule: prevent unconfirming if certain conditions are met
-    elif not is_confirmed:
+    elif error_message is None and not is_confirmed:
         if shuttle.is_paid:
             error_message = 'Shuttle cannot be unconfirmed because it is marked as paid.'
         elif shuttle.driver:
@@ -366,6 +409,8 @@ def update_shuttle_status(request, id):
         shuttle.is_confirmed = is_confirmed
         shuttle.is_paid = is_paid
         shuttle.is_completed = is_completed
+        shuttle.is_freelancer = is_freelancer
+        shuttle.last_modified_by = request.user
         shuttle.save()
         # return redirect('shuttle:shuttle')
         return redirect('home')

@@ -1,6 +1,7 @@
 {% extends 'base/base_services.html' %}
 {% load static %}
 {% load custom_filters %}
+{% load audit_extras %}
 {% block title %}Services{% endblock %}
 
 {% block content %}
@@ -17,12 +18,13 @@
     <ul>
         {% for shuttle in shuttle_jobs_today %}
         <li class="job-container">
+            {% audit_tag_row shuttle.created_by shuttle.last_modified_by "shuttle" "shuttle" shuttle.id "small" %}
             <span class="customer-name">{{ shuttle.customer_name|truncate_words_chars }}</span>
             <div class="job-info">
                 <span class="slim">{{ shuttle.shuttle_date }}</span>
                 <span class="tablet">€{{ shuttle.price }} {{ shuttle.currency }}</span>
                 <span class="phone">Passengers: {{ shuttle.no_of_passengers }}</span>
-                <span class="phone">{{ shuttle.shuttle_direction }}</span>
+                <span class="phone">{{ shuttle.get_shuttle_direction_display }}</span>
             </div>
             <div class="button-group">
                 {% if shuttle.id %}
@@ -40,6 +42,7 @@
     <ul>
         {% for booking in hotel_bookings_today %}
         <li class="job-container">
+            {% audit_tag_row booking.created_by booking.last_modified_by "hotels" "hotelbooking" booking.id %}
             <span class="customer-name">{{ booking.customer_name|truncate_words_chars }}</span>
             <div class="job-info">
                 <span class="slim">{{ booking.check_in|date:"d M Y" }}</span>

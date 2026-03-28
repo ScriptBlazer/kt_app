@@ -181,7 +181,7 @@ def totals(request):
             'customer_name': shuttle.customer_name,
             'shuttle_date': shuttle.shuttle_date,
             'passengers': shuttle.no_of_passengers,
-            'direction': shuttle.shuttle_direction,
+            'direction': shuttle.get_shuttle_direction_display(),
             'price': shuttle.price,
             'profit': profit,
         })
@@ -225,7 +225,7 @@ def totals(request):
             'customer_name': shuttle.customer_name,
             'shuttle_date': shuttle.shuttle_date,
             'passengers': shuttle.no_of_passengers,
-            'direction': shuttle.shuttle_direction,
+            'direction': shuttle.get_shuttle_direction_display(),
             'price': shuttle.price,
             'profit': profit,
         })
@@ -334,7 +334,7 @@ def totals(request):
             'customer_name': shuttle.customer_name,
             'shuttle_date': shuttle.shuttle_date,
             'passengers': shuttle.no_of_passengers,
-            'direction': shuttle.shuttle_direction,
+            'direction': shuttle.get_shuttle_direction_display(),
             'price': shuttle.price,
             'profit': profit,
         })

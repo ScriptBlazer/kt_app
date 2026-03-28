@@ -219,3 +219,60 @@ def get_currency_symbol(currency_code):
 
 def scramble_date(date_string):
     return hashlib.sha256(date_string.encode()).hexdigest()[:12]
+
+
+def now_budapest():
+    """
+    Current instant for DateTimeField values.
+    Stored as UTC in the database when USE_TZ is True; always format for users with format_budapest_datetime().
+    """
+    return timezone.now()
+
+
+def to_budapest(dt):
+    """Return *dt* as an aware datetime in Europe/Budapest (for display logic)."""
+    if dt is None:
+        return None
+    if timezone.is_naive(dt):
+        dt = timezone.make_aware(dt, BUDAPEST_TZ)
+    return dt.astimezone(BUDAPEST_TZ)
+
+
+def format_budapest_datetime(dt, fmt='j M Y, H:i'):
+    """
+    Format a datetime for display in Budapest local time.
+    Use this anywhere the UI should show app-standard local timestamps.
+    """
+    if dt is None:
+        return None
+    from django.utils import formats
+
+    local = to_budapest(dt)
+    return formats.date_format(local, format=fmt, use_l10n=True)
+
+
+def form_and_formset_error_summary(form, formset=None):
+    """
+    Flatten form + optional formset errors into one string for the error modal
+    (script.js reads #modal-trigger on DOMContentLoaded).
+    """
+    parts = []
+    for field, errors in form.errors.items():
+        if field == '__all__':
+            parts.extend(str(e) for e in errors)
+        else:
+            f_obj = form.fields.get(field)
+            label = f_obj.label if f_obj and f_obj.label else field.replace('_', ' ').title()
+            parts.append(f'{label}: {", ".join(errors)}')
+    if formset is not None:
+        for err in formset.non_form_errors():
+            parts.append(str(err))
+        for idx, pf in enumerate(formset.forms, start=1):
+            for field, errors in pf.errors.items():
+                if field == '__all__':
+                    parts.extend(str(e) for e in errors)
+                else:
+                    f_obj = pf.fields.get(field)
+                    label = f_obj.label if f_obj and f_obj.label else field
+                    parts.append(f'Payment {idx} — {label}: {", ".join(errors)}')
+    return '\n\n'.join(parts) if parts else None

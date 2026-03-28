@@ -28,6 +28,7 @@
     <p><strong>No. of Passengers:</strong> {{ shuttle.no_of_passengers|default_if_none:"" }}</p>
     <p><strong>Price:</strong> €{{ shuttle.price|intcomma|default_if_none:"" }}</p>
     <p><strong>Driver:</strong> {{ shuttle.driver|default_if_none:"" }}</p>
+    <p><strong>Freelancer job:</strong> {% if shuttle.is_freelancer %}Yes{% else %}No{% endif %}</p>
     <p><strong>Number Plate:</strong> {{ shuttle.number_plate|default_if_none:"" }}</p>
     <p><strong>Notes:</strong> <div style="white-space: pre-wrap;">{{ shuttle.shuttle_notes|default_if_none:"-" }}</div></p>
 
@@ -96,6 +97,10 @@
 
         <p><strong>Customer Paid:</strong>
             <input class="sbig" type="checkbox" name="is_paid" {% if shuttle.is_paid %}checked{% endif %}>
+        </p>
+
+        <p><strong>Freelancer job:</strong>
+            <input class="sbig" type="checkbox" name="is_freelancer" {% if shuttle.is_freelancer %}checked{% endif %}>
         </p>
 
         <!-- {% if user.is_superuser %}

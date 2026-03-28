@@ -491,9 +491,10 @@ table tbody tr:hover {
 .job-added-by-tag,
 .job-edited-by-tag {
     background-color: #eef;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 10px;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 8px;
+    line-height: 1.35;
     display: inline-block;
 }
 
@@ -657,6 +658,13 @@ table tbody tr:hover {
     align-items: center;
 }
 
+/* Inset activity modal from screen edges */
+#audit-detail-modal.modal {
+    padding: 24px 20px;
+    box-sizing: border-box;
+    align-items: center;
+}
+
 .modal-content {
     position: relative;
     background-color: #fff;
@@ -689,6 +697,312 @@ table tbody tr:hover {
     font-size: 18px;
     color: #333;
     margin: 0;
+}
+
+/* Form validation summaries: backend joins errors with newlines; preserve breaks and space them */
+#modal-message {
+    white-space: pre-line;
+    text-align: left;
+    line-height: 1.65;
+    margin: 0;
+    padding: 0.5rem 0 0;
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 17px;
+}
+
+.modal-content:has(#modal-message) {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    width: min(440px, calc(100vw - 48px));
+    text-align: left;
+}
+
+/* Activity modal: same .modal / .modal-content / .close-button as error modals */
+.modal-content-audit {
+    width: min(600px, calc(100vw - 40px));
+    max-width: 680px;
+    max-height: 88vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    text-align: left;
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 40px 44px 36px;
+    justify-content: flex-start;
+    box-sizing: border-box;
+}
+
+.audit-modal-title {
+    margin: 0 0 22px;
+    padding-right: 32px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #2c2c2c;
+    width: 100%;
+    text-align: left;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 14px;
+}
+
+.audit-modal-body {
+    width: 100%;
+    font-size: 0.72rem;
+    line-height: 1.5;
+    color: #3d3d3d;
+}
+
+.audit-modal-body .modal p,
+.audit-modal-body p {
+    font-size: inherit;
+    margin: 0;
+}
+
+/* “Added” summary */
+.audit-panel--added {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.audit-section-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #6b7280;
+    margin-bottom: 6px;
+}
+
+.audit-section-value {
+    font-size: 0.8rem;
+    color: #111827;
+    font-weight: 500;
+}
+
+/* Edit history: one card per save */
+.audit-history {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.audit-edit-block {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 18px 20px 16px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.audit-edit-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px 16px;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.audit-edit-user {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.audit-edit-time {
+    font-size: 0.68rem;
+    color: #6b7280;
+    font-variant-numeric: tabular-nums;
+}
+
+.audit-edit-body {
+    padding-top: 2px;
+}
+
+.audit-change-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.audit-change-item {
+    margin: 0 0 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #eceff3;
+}
+
+.audit-change-item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.audit-change-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #6b7280;
+    margin-bottom: 5px;
+}
+
+.audit-change-values {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    font-size: 0.72rem;
+}
+
+.audit-ch-old {
+    color: #9ca3af;
+    text-decoration: line-through;
+    text-decoration-color: #d1d5db;
+    max-width: 100%;
+    word-break: break-word;
+}
+
+.audit-ch-arrow {
+    color: #c4c9d1;
+    flex-shrink: 0;
+    font-weight: 600;
+}
+
+.audit-ch-new {
+    color: #111827;
+    font-weight: 500;
+    max-width: 100%;
+    word-break: break-word;
+}
+
+.audit-no-field-changes {
+    margin: 0;
+    font-size: 0.68rem;
+    color: #9ca3af;
+    font-style: italic;
+}
+
+.audit-muted {
+    color: #6b7280;
+    font-size: 0.72rem;
+    margin: 0;
+}
+
+.audit-loading {
+    color: #6b7280;
+    font-size: 0.72rem;
+    margin: 0;
+}
+
+.audit-tag-clickable {
+    cursor: pointer;
+}
+
+.job-added-by-tag.audit-tag-clickable,
+.job-edited-by-tag.audit-tag-clickable {
+    cursor: pointer;
+}
+
+.audit-tag-clickable:hover {
+    color: #5a2d82;
+}
+
+@media (max-width: 600px) {
+    #audit-detail-modal.modal {
+        padding: 14px 12px;
+        box-sizing: border-box;
+    }
+
+    .modal-content-audit {
+        width: 100%;
+        max-width: min(100%, calc(100vw - 24px));
+        padding: 14px 12px 12px;
+        max-height: 90vh;
+        border-radius: 6px;
+    }
+
+    .audit-modal-title {
+        font-size: 0.58rem;
+        margin: 0 0 10px;
+        padding-right: 28px;
+        padding-bottom: 8px;
+        letter-spacing: 0.08em;
+    }
+
+    .audit-modal-body {
+        font-size: 0.6rem;
+        line-height: 1.4;
+    }
+
+    .audit-panel--added {
+        gap: 12px;
+    }
+
+    .audit-section-label {
+        font-size: 0.55rem;
+        margin-bottom: 3px;
+    }
+
+    .audit-section-value {
+        font-size: 0.65rem;
+    }
+
+    .audit-history {
+        gap: 10px;
+    }
+
+    .audit-edit-block {
+        padding: 10px 10px 8px;
+        border-radius: 8px;
+    }
+
+    .audit-edit-header {
+        margin-bottom: 8px;
+        padding-bottom: 8px;
+        gap: 4px 8px;
+    }
+
+    .audit-edit-user {
+        font-size: 0.62rem;
+    }
+
+    .audit-edit-time {
+        font-size: 0.55rem;
+    }
+
+    .audit-change-item {
+        margin: 0 0 8px;
+        padding-bottom: 8px;
+    }
+
+    .audit-change-label {
+        font-size: 0.52rem;
+        margin-bottom: 3px;
+        letter-spacing: 0.04em;
+    }
+
+    .audit-change-values {
+        font-size: 0.58rem;
+        gap: 4px 6px;
+    }
+
+    .audit-no-field-changes,
+    .audit-muted,
+    .audit-loading {
+        font-size: 0.58rem;
+    }
+
+    #audit-detail-modal .close-button {
+        top: 6px;
+        right: 8px;
+        font-size: 22px;
+    }
 }
 
 input[type="checkbox"][name$="-DELETE"] {

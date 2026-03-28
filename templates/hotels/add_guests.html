@@ -7,7 +7,10 @@
 {% block content %}
 <div class="container">
     <h2>Add a New Guest</h2>
-    <form method="post">
+    {% if error_message %}
+    <p id="modal-trigger" style="display:none;">{{ error_message }}</p>
+    {% endif %}
+    <form method="post" novalidate>
         {% csrf_token %}
 
         <div class="form-group">
@@ -22,13 +25,15 @@
         </div>
                 
         <div class="form-group-inline">
-            <div class="field-wrapper">
+            <div class="field-wrapper" style="position: relative;">
                 <label for="customer_name">Customer Name:</label>
                 {{ form.customer_name }}
+                <ul id="hotel-name-suggestions" class="suggestion-box" style="display: none; position: absolute; background: white; border: 1px solid #ccc; z-index: 1000; list-style: none; margin: 0; padding: 0;"></ul>
             </div>
-            <div class="field-wrapper">
+            <div class="field-wrapper" style="position: relative;">
                 <label for="customer_number">Customer Number:</label>
                 {{ form.customer_number }}
+                <ul id="hotel-number-suggestions" class="suggestion-box" style="display: none; position: absolute; background: white; border: 1px solid #ccc; z-index: 1000; list-style: none; margin: 0; padding: 0;"></ul>
             </div>
         </div>
 
@@ -182,31 +187,14 @@
             <button class="button-purple" type="submit" id="save-button button-purple">Add Guests</button>
             <a href="{% url 'home' %}" class="button cancel-button">Cancel</a>
         </div>
-
-        <!-- Modal Trigger if Error -->
-        {% if error_message %}
-        <p id="modal-trigger" style="display:none;">{{ error_message }}</p>
-        {% endif %}
-
-        <!-- Modal Structure -->
-        <div id="error-modal" class="modal" style="display: none;">
-            <div class="modal-content">
-                <span class="close-button" onclick="closeModal()">&times;</span>
-                <p id="modal-message">{{ error_message }}</p>
-            </div>
-        </div>
-
-        {% if form.errors %}
-            <div class="errors">
-                <h2>Form Errors:</h2>
-                <ul>
-                    {% for field, errors in form.errors.items %}
-                        <li>{{ field|capfirst }}: {{ errors|striptags }}</li>
-                    {% endfor %}
-                </ul>
-            </div>
-        {% endif %}
       </form>
+
+    <div id="error-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal()">&times;</span>
+            <p id="modal-message">{{ error_message }}</p>
+        </div>
+    </div>
     </div>
     <script>
         document.addEventListener("DOMContentLoaded", () => {
@@ -253,4 +241,18 @@
         });
     </script>
     <script src="{% static 'edit_payment.js' %}"></script>
+    <script src="{% static 'customer_autocomplete.js' %}"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        if (window.initKTCustomerAutocomplete) {
+            initKTCustomerAutocomplete({
+                apiUrl: '{% url "common:customer_suggestions" %}',
+                nameInputSelector: '#id_customer_name',
+                nameListId: 'hotel-name-suggestions',
+                numberInputSelector: '#id_customer_number',
+                numberListId: 'hotel-number-suggestions',
+            });
+        }
+    });
+    </script>
 {% endblock %}

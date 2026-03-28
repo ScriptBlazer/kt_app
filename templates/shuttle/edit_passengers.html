@@ -10,23 +10,28 @@
     {% if error_message %}
     <p id="modal-trigger" style="display:none;">{{ error_message }}</p>
     {% endif %}
-    <form method="POST">
+    <form method="POST" novalidate>
         {% csrf_token %}
 
         <div class="form-group">
             <p><strong>Confirm Shuttle Passengers:</strong> 
-                <input class="sbig" type="checkbox" id="id_is_confirmed" name="is_confirmed" {% if form.initial.is_confirmed %}checked{% endif %}>
+                <input class="sbig" type="checkbox" id="id_is_confirmed" name="is_confirmed" {% if form.is_confirmed.value %}checked{% endif %}>
+            </p>
+            <p><strong>Freelancer job:</strong>
+                <input class="sbig" type="checkbox" id="id_is_freelancer" name="is_freelancer" {% if form.is_freelancer.value %}checked{% endif %}>
             </p>
         </div>
 
         <div class="form-group-inline">
-            <div class="field-wrapper">
+            <div class="field-wrapper" style="position: relative;">
                 {{ form.customer_name.label_tag }}*<br>
                 {{ form.customer_name }}
+                <ul id="shuttle-name-suggestions" class="suggestion-box" style="display: none; position: absolute; background: white; border: 1px solid #ccc; z-index: 1000; list-style: none; margin: 0; padding: 0;"></ul>
             </div>
-            <div class="field-wrapper">
+            <div class="field-wrapper" style="position: relative;">
                 {{ form.customer_number.label_tag }}*<br>
                 {{ form.customer_number }}
+                <ul id="shuttle-number-suggestions" class="suggestion-box" style="display: none; position: absolute; background: white; border: 1px solid #ccc; z-index: 1000; list-style: none; margin: 0; padding: 0;"></ul>
             </div>
         </div>
         <div class="field-wrapper">
@@ -111,18 +116,6 @@
         </div>
     </form>
 
-    {% if form.errors %}
-        <div class="errors">
-            <h2>Form Errors:</h2>
-            <ul>
-                {% for field in form %}
-                    {% if field.errors %}
-                        <li>{{ field.label }}: {{ field.errors|striptags }}</li>
-                    {% endif %}
-                {% endfor %}
-            </ul>
-        </div>
-    {% endif %}
 </div>
 
 <!-- Modal Structure -->
@@ -138,4 +131,19 @@
 {% block extra_scripts %}
 <script src="{% static 'script.js' %}"></script>
 <script src="{% static 'edit_payment.js' %}"></script>
+<script src="{% static 'customer_autocomplete.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.initKTCustomerAutocomplete) {
+        initKTCustomerAutocomplete({
+            apiUrl: '{% url "common:customer_suggestions" %}',
+            nameInputSelector: '#id_customer_name',
+            nameListId: 'shuttle-name-suggestions',
+            numberInputSelector: '#id_customer_number',
+            numberListId: 'shuttle-number-suggestions',
+            emailInputSelector: '#id_customer_email',
+        });
+    }
+});
+</script>
 {% endblock %}

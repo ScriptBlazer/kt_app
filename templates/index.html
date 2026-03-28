@@ -2,6 +2,7 @@
 {% load static %}
 {% load humanize %}
 {% load custom_filters %}
+{% load audit_extras %}
 
 {% block title %}Home{% endblock %}
 
@@ -30,20 +31,7 @@
     <ul>
         {% for job in upcoming_jobs %}
         <li class="job-container {% if job.color == 'red' %}red-job{% elif job.color == 'orange' %}orange-job{% elif job.color == 'green' %}green-job{% else %}white-job{% endif %}">
-            <div class="job-tag-container">
-                <span class="job-added-by-tag">
-                    {% if job.created_by %}
-                        Added by: {{ job.created_by.get_full_name|default:job.created_by.username }}
-                    {% else %}
-                        Added by: Unknown
-                    {% endif %}
-                </span>
-                {% if job.last_modified_by %}
-                    <span class="job-edited-by-tag">
-                        Edited by: {{ job.last_modified_by.get_full_name|default:job.last_modified_by.username }}
-                    </span>
-                {% endif %}
-            </div>
+            {% audit_tag_row job.created_by job.last_modified_by "jobs" "job" job.id %}
             <span class="customer-name">{{ job.customer_name|truncate_words_chars }}</span>
             <div class="job-info">
                 <span class="slim">{{ job.job_date }}</span>
@@ -66,20 +54,7 @@
     <ul id="older-jobs" style="display: none;">
         {% for job in older_jobs %}
         <li class="job-container {% if job.color == 'red' %}red-job{% elif job.color == 'orange' %}orange-job{% elif job.color == 'green' %}green-job{% else %}white-job{% endif %}">
-            <div class="job-tag-container">
-                <span class="job-added-by-tag">
-                    {% if job.created_by %}
-                        Added by: {{ job.created_by.get_full_name|default:job.created_by.username }}
-                    {% else %}
-                        Added by: Unknown
-                    {% endif %}
-                </span>
-                {% if job.last_modified_by %}
-                    <span class="job-edited-by-tag">
-                        Edited by: {{ job.last_modified_by.get_full_name|default:job.last_modified_by.username }}
-                    </span>
-                {% endif %}
-            </div>
+            {% audit_tag_row job.created_by job.last_modified_by "jobs" "job" job.id %}
             <span class="customer-name">{{ job.customer_name|truncate_words_chars }}</span>
             <div class="job-info">
                 <span class="slim">{{ job.job_date }}</span>
@@ -101,24 +76,11 @@
     <ul>
         {% for shuttle in upcoming_shuttles %}
         <li class="job-container {% if shuttle.color == 'red' %}red-job{% elif shuttle.color == 'orange' %}orange-job{% elif shuttle.color == 'green' %}green-job{% else %}white-job{% endif %}">
-            <div class="job-tag-container">
-                <small class="job-added-by-tag">
-                    {% if shuttle.created_by %}
-                        Added by: {{ shuttle.created_by.get_full_name|default:shuttle.created_by.username }}
-                    {% else %}
-                        Added by: Unknown
-                    {% endif %}
-                </small>
-                {% if shuttle.last_modified_by %}
-                    <small class="job-edited-by-tag">
-                        Edited by: {{ shuttle.last_modified_by.get_full_name|default:shuttle.last_modified_by.username }}
-                    </small>
-                {% endif %}
-            </div>
+            {% audit_tag_row shuttle.created_by shuttle.last_modified_by "shuttle" "shuttle" shuttle.id "small" %}
             <span class="customer-name">{{ shuttle.customer_name|truncate_words_chars }}</span>
             <div class="job-info">
                 <span class="slim">{{ shuttle.shuttle_date }}</span>
-                <span class="phone">{{ shuttle.shuttle_direction|default_if_none:"No direction" }}</span>
+                <span class="phone">{{ shuttle.get_shuttle_direction_display|default:"No direction" }}</span>
                 <span class="tablet">{{ shuttle.price|floatformat:2|intcomma }} EUR</span>
                 <span class="phone">{{ shuttle.no_of_passengers }} Passengers</span>
             </div>
@@ -136,24 +98,11 @@
     <ul id="older-shuttles" style="display: none;">
         {% for shuttle in older_shuttles %}
             <li class="job-container {% if shuttle.color == 'red' %}red-job{% elif shuttle.color == 'orange' %}orange-job{% elif shuttle.color == 'green' %}green-job{% else %}white-job{% endif %}">
-                <div class="job-tag-container">
-                    <small class="job-added-by-tag">
-                        {% if shuttle.created_by %}
-                            Added by: {{ shuttle.created_by.get_full_name|default:shuttle.created_by.username }}
-                        {% else %}
-                            Added by: Unknown
-                        {% endif %}
-                    </small>
-                    {% if shuttle.last_modified_by %}
-                        <small class="job-edited-by-tag">
-                            Edited by: {{ shuttle.last_modified_by.get_full_name|default:shuttle.last_modified_by.username }}
-                        </small>
-                    {% endif %}
-                </div>
+                {% audit_tag_row shuttle.created_by shuttle.last_modified_by "shuttle" "shuttle" shuttle.id "small" %}
                 <span class="customer-name">{{ shuttle.customer_name|truncate_words_chars }}</span>
                 <div class="job-info">
                     <span class="slim">{{ shuttle.shuttle_date }}</span>
-                    <span class="phone">{{ shuttle.shuttle_direction|default_if_none:"No direction" }}</span>
+                    <span class="phone">{{ shuttle.get_shuttle_direction_display|default:"No direction" }}</span>
                     <span class="tablet">{{ shuttle.price|floatformat:2|intcomma }} EUR</span>
                     <span class="phone">{{ shuttle.no_of_passengers }} Passengers</span>
                 </div>
@@ -171,20 +120,7 @@
     <ul>
         {% for hotel in upcoming_hotels %}
         <li class="job-container {% if hotel.color == 'red' %}red-job{% elif hotel.color == 'orange' %}orange-job{% elif hotel.color == 'green' %}green-job{% else %}white-job{% endif %}">
-            <div class="job-tag-container">
-                <span class="job-added-by-tag">
-                    {% if hotel.created_by %}
-                        Added by: {{ hotel.created_by.get_full_name|default:hotel.created_by.username }}
-                    {% else %}
-                        Added by: Unknown
-                    {% endif %}
-                </span>
-                {% if hotel.last_modified_by %}
-                    <span class="job-edited-by-tag">
-                        Edited by: {{ hotel.last_modified_by.get_full_name|default:hotel.last_modified_by.username }}
-                    </span>
-                {% endif %}
-            </div>
+            {% audit_tag_row hotel.created_by hotel.last_modified_by "hotels" "hotelbooking" hotel.id %}
             <span class="customer-name">{{ hotel.customer_name|truncate_words_chars }}</span>
             <div class="job-info">
                 <span class="slim">{{ hotel.check_in|date:"d M Y" }}</span>
@@ -206,20 +142,7 @@
     <ul id="older-hotels" style="display: none;">
         {% for hotel in older_hotels %}
         <li class="job-container {% if hotel.color == 'red' %}red-job{% elif hotel.color == 'orange' %}orange-job{% elif hotel.color == 'green' %}green-job{% else %}white-job{% endif %}">
-            <div class="job-tag-container">
-                <span class="job-added-by-tag">
-                    {% if hotel.created_by %}
-                        Added by: {{ hotel.created_by.get_full_name|default:hotel.created_by.username }}
-                    {% else %}
-                        Added by: Unknown
-                    {% endif %}
-                </span>
-                {% if hotel.last_modified_by %}
-                    <span class="job-edited-by-tag">
-                        Edited by: {{ hotel.last_modified_by.get_full_name|default:hotel.last_modified_by.username }}
-                    </span>
-                {% endif %}
-            </div>
+            {% audit_tag_row hotel.created_by hotel.last_modified_by "hotels" "hotelbooking" hotel.id %}
             <span class="customer-name">{{ hotel.customer_name|truncate_words_chars }}</span>
             <div class="job-info">
                 <span class="slim">{{ hotel.check_in|date:"d M Y" }}</span>

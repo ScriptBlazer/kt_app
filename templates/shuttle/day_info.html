@@ -31,7 +31,7 @@
     {% for shuttle in shuttles %}
         <div class="shuttle-details" style="margin-bottom: 2em;">
             <p><strong>Customer Name:</strong> {{ shuttle.customer_name|default_if_none:"" }}</p>
-            <p><strong>Shuttle Direction:</strong> {{ shuttle.shuttle_direction|default:"No direction" }}</p>
+            <p><strong>Shuttle Direction:</strong> {{ shuttle.get_shuttle_direction_display|default:"No direction" }}</p>
             <p><strong>No of Passengers:</strong> {{ shuttle.no_of_passengers|default_if_none:"" }}</p>
             <p><strong>Driver:</strong> {{ shuttle.driver|default:"No driver" }}</p>
         </div>
@@ -95,7 +95,7 @@
 
 *Passengers:*
 {% for shuttle in shuttles %}
-{{ shuttle.customer_name|default_if_none:"" }} | {{ shuttle.shuttle_direction|default:"No direction" }} | Passengers: {{ shuttle.no_of_passengers|default_if_none:"" }} | Driver: {{ shuttle.driver|default:"No driver" }}
+{{ shuttle.customer_name|default_if_none:"" }} | {{ shuttle.get_shuttle_direction_display|default:"No direction" }} | Passengers: {{ shuttle.no_of_passengers|default_if_none:"" }} | Driver: {{ shuttle.driver|default:"No driver" }}
 {% empty %}
 No passengers for this day.
 {% endfor %}

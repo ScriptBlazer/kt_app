@@ -6,6 +6,7 @@
 {% block title %}View Expense{% endblock %}
 
 {% block content %}
+{% url 'common:audit_detail' 'expenses' 'expense' expense.id as expense_audit_url %}
 <div class="view">
     <div class="buttons">
         <div class="left-buttons">
@@ -15,18 +16,20 @@
     </div>
     <br>
     <h2>View Expense</h2>
-    <p><strong>Added by:</strong> 
-        {% if expense.created_by %}
-            {{ expense.created_by.get_full_name|default:expense.created_by.username }}
-        {% else %}
-            Unknown
-        {% endif %}
+    <p>
+        <span class="job-added-by-tag audit-tag-clickable" role="button" tabindex="0" data-audit-mode="added" data-audit-url="{{ expense_audit_url }}">
+            {% if expense.created_by %}
+                Added by: {{ expense.created_by.get_full_name|default:expense.created_by.username }}
+            {% else %}
+                Added by: Unknown
+            {% endif %}
+        </span>
     </p>
     {% if expense.last_modified_by %}
-        <p><strong>Edited by:</strong> {{ expense.last_modified_by.get_full_name|default:expense.last_modified_by.username }}
-            {% if expense.last_modified_at %}
-                ({{ expense.last_modified_at|date:"F j, Y, g:i a" }})
-            {% endif %}
+        <p>
+            <span class="job-edited-by-tag audit-tag-clickable" role="button" tabindex="0" data-audit-mode="edited" data-audit-url="{{ expense_audit_url }}">
+                Edited by: {{ expense.last_modified_by.get_full_name|default:expense.last_modified_by.username }}
+            </span>
         </p>
     {% endif %}
     <p><strong>Driver:</strong> {{ expense.driver.name|default_if_none:"" }}</p>
