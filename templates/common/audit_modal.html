@@ -1,0 +1,9 @@
+{% load static %}
+<div id="audit-detail-modal" class="modal" style="display: none;" aria-hidden="true">
+    <div class="modal-content modal-content-audit">
+        <span class="close-button" id="audit-modal-close" role="button" tabindex="0" aria-label="Close">&times;</span>
+        <h3 id="audit-modal-title" class="audit-modal-title"></h3>
+        <div id="audit-modal-body" class="audit-modal-body"></div>
+    </div>
+</div>
+<script src="{% static 'audit_modal.js' %}"></script>

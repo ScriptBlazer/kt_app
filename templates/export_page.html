@@ -57,6 +57,31 @@
         <button class="button button-orange" type="submit">Export</button>
     </form>
 
+    <br><br>
+    <hr>
+
+    <h2>Export Hotel Bookings</h2>
+    <p style="margin-top: 0.25rem; color: #555;">Includes confirmed bookings with check-in in the selected period.</p>
+    <form method="get" action="{% url 'common:export_hotels' %}">
+        <label for="hotel-year">Year:</label>
+        <input type="number" name="year" id="hotel-year" min="2000" max="2100">
+
+        <label for="hotel-month">Month:</label>
+        <select name="month" id="hotel-month">
+            {% for number, name in month_range %}
+            <option value="{{ number }}">{{ name }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="hotel-format">Format:</label>
+        <select name="format" id="hotel-format">
+            <option value="xlsx">Excel</option>
+            <option value="csv">CSV</option>
+        </select>
+
+        <button class="button button-orange" type="submit">Export</button>
+    </form>
+
     {% if error_message %}
     <p id="modal-trigger" style="display: none;">{{ error_message }}</p>
     {% endif %}

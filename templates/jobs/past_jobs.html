@@ -1,6 +1,7 @@
 {% extends 'base/base.html' %}
 {% load static %}
 {% load custom_filters %}
+{% load audit_extras %}
 
 {% block title %}Past Jobs{% endblock %}
 
@@ -57,20 +58,13 @@
     <ul>
     {% for item in past_jobs %}
         <li class="job-container {% if item.color == 'red' %}red-job{% elif item.color == 'orange' %}orange-job{% elif item.color == 'green' %}green-job{% else %}white-job{% endif %}">
-            <div class="job-tag-container">
-                <span class="job-added-by-tag">
-                    {% if item.created_by %}
-                        Added by: {{ item.created_by.get_full_name|default:item.created_by.username }}
-                    {% else %}
-                        Added by: Unknown
-                    {% endif %}
-                </span>
-                {% if item.last_modified_by %}
-                    <span class="job-edited-by-tag">
-                        Edited by: {{ item.last_modified_by.get_full_name|default:item.last_modified_by.username }}
-                    </span>
-                {% endif %}
-            </div>
+            {% if item.type == 'job' %}
+                {% audit_tag_row item.created_by item.last_modified_by "jobs" "job" item.id %}
+            {% elif item.type == 'shuttle' %}
+                {% audit_tag_row item.created_by item.last_modified_by "shuttle" "shuttle" item.id "small" %}
+            {% elif item.type == 'hotel' %}
+                {% audit_tag_row item.created_by item.last_modified_by "hotels" "hotelbooking" item.id %}
+            {% endif %}
 
             <span class="customer-name">{{ item.customer_name|truncate_words_chars }}</span>
 
@@ -82,7 +76,7 @@
                     <span class="phone">{{ item.pick_up_location|truncate_words_chars }}</span>
                 {% elif item.type == 'shuttle' %}
                     <span class="slim">{{ item.shuttle_date }}</span>
-                    <span class="phone">{{ item.shuttle_direction|default_if_none:"No direction" }}</span>
+                    <span class="phone">{{ item.get_shuttle_direction_display|default:"No direction" }}</span>
                     <span class="phone">{{ item.price|floatformat:2 }} EUR</span>
                     <span class="phone">{{ item.no_of_passengers }} Passengers</span>
                 {% elif item.type == 'hotel' %}

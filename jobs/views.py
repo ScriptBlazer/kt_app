@@ -21,15 +21,12 @@ from decimal import Decimal
 import logging
 from django.http import Http404
 import pytz
-from common.utils import assign_job_color
+from common.utils import assign_job_color, now_budapest, form_and_formset_error_summary
 import datetime
-from django.http import JsonResponse
-from django.views.decorators.http import require_GET
 from django.utils.html import escape
 from itertools import chain
 from operator import attrgetter
 from django.utils.timezone import make_aware, is_naive
-
 logger = logging.getLogger('kt')
 
 # Set the timezone to Hungary
@@ -266,7 +263,8 @@ def past_jobs(request):
 @login_required
 def add_job(request):
     PaymentFormSet = modelformset_factory(Payment, form=PaymentForm, extra=1, can_delete=True)
-    
+    error_message = None
+
     if request.method == 'POST':
         job_form = JobForm(request.POST)
         payment_formset = PaymentFormSet(request.POST, prefix="payment")
@@ -277,7 +275,7 @@ def add_job(request):
                 job.is_confirmed = job_form.cleaned_data.get('is_confirmed', False)
                 job.is_freelancer = job_form.cleaned_data.get('is_freelancer', False)
                 job.created_by = request.user
-                job.created_at = timezone.now().astimezone(hungary_tz)
+                job.created_at = now_budapest()
 
                 # Assign driver or agent based on cleaned_data
                 job.driver = job_form.cleaned_data.get('driver')
@@ -295,10 +293,14 @@ def add_job(request):
                         ])
                         if not all([amount, currency, payment_type]) or not has_paid_to:
                             job_form.add_error(None, "All payment fields (amount, currency, type, paid to) are required.")
+                            error_message = (
+                                form_and_formset_error_summary(job_form, payment_formset)
+                                or 'Please complete all payment fields before submitting.'
+                            )
                             return render(request, 'jobs/add_job.html', {
                                 'job_form': job_form,
                                 'payment_formset': payment_formset,
-                                'error_message': "Please complete all payment fields before submitting."
+                                'error_message': error_message,
                             })
                         payment = form.save(commit=False)
                         payment.job = job
@@ -309,7 +311,11 @@ def add_job(request):
             logger.warning("Job form or payment formset has errors")
             logger.debug(f"Job form errors: {job_form.errors}")
             logger.debug(f"Job form non_field_errors: {job_form.non_field_errors()}")
-            logger.debug(f"Payment formset errors: {payment_formset.errors}")   
+            logger.debug(f"Payment formset errors: {payment_formset.errors}")
+            error_message = (
+                form_and_formset_error_summary(job_form, payment_formset)
+                or 'Please fix the errors below.'
+            )
     else:
         job_form = JobForm()
         payment_formset = PaymentFormSet(queryset=Payment.objects.none(), prefix="payment")
@@ -317,6 +323,7 @@ def add_job(request):
     return render(request, 'jobs/add_job.html', {
         'job_form': job_form,
         'payment_formset': payment_formset,
+        'error_message': error_message,
     })
 
 
@@ -330,7 +337,7 @@ def edit_job(request, job_id):
         return render(request, 'jobs/view_job.html', {'job': job, 'error_message': error_message}, status=403)
     
     PaymentFormSet = modelformset_factory(Payment, form=PaymentForm, extra=1, can_delete=True)
-    # payments = Payment.objects.filter(job=job)
+    error_message = None
 
     if request.method == 'POST':
         job_form = JobForm(request.POST, instance=job)
@@ -341,7 +348,7 @@ def edit_job(request, job_id):
                 with transaction.atomic():
                     job = job_form.save(commit=False)
                     job.last_modified_by = request.user
-                    job.last_modified_at = timezone.now().astimezone(hungary_tz)
+                    job.last_modified_at = now_budapest()
                     job.is_confirmed = job_form.cleaned_data.get('is_confirmed', False)
                     job.is_freelancer = job_form.cleaned_data.get('is_freelancer', False)
 
@@ -363,10 +370,14 @@ def edit_job(request, job_id):
                             ])
                             if not all([amount, currency, payment_type]) or not has_paid_to:
                                 job_form.add_error(None, "All payment fields (amount, currency, type, paid to) are required.")
+                                error_message = (
+                                    form_and_formset_error_summary(job_form, payment_formset)
+                                    or 'Please complete all payment fields before submitting.'
+                                )
                                 return render(request, 'jobs/edit_job.html', {
                                     'job_form': job_form,
                                     'payment_formset': payment_formset,
-                                    'error_message': "Please complete all payment fields before submitting."
+                                    'error_message': error_message,
                                 })
                             payment = form.save(commit=False)
                             payment.job = job
@@ -385,6 +396,10 @@ def edit_job(request, job_id):
                 logger.debug(f"PaymentForm errors for form: {form.errors}")
             logger.debug(f"PaymentForm non_field_errors: {[form.non_field_errors() for form in payment_formset]}")
             logger.debug(f"PaymentFormSet non_form_errors: {payment_formset.non_form_errors()}")
+            error_message = (
+                form_and_formset_error_summary(job_form, payment_formset)
+                or 'Please fix the errors below.'
+            )
 
     else:
         job_form = JobForm(instance=job)
@@ -393,6 +408,7 @@ def edit_job(request, job_id):
     return render(request, 'jobs/edit_job.html', {
         'job_form': job_form,
         'payment_formset': payment_formset,
+        'error_message': error_message,
     })
 
 
@@ -573,47 +589,6 @@ def update_job_status(request, job_id):
 
     # Return error message if any validation failed
     return render(request, 'jobs/view_job.html', {'job': job, 'error_message': error_message}, status=400)
-
-
-@login_required
-@require_GET
-def get_customer(request):
-    field = request.GET.get('field')
-    query = request.GET.get('term', '')
-    
-    if field == 'name' and len(query) >= 3:
-        # Return customer data with name, number, and email
-        jobs = (Job.objects
-            .filter(customer_name__icontains=query)
-            .values('customer_name', 'customer_number', 'customer_email')
-            .distinct()[:10])
-        results = [
-            {
-                'name': job['customer_name'],
-                'number': job['customer_number'] or '',
-                'email': job['customer_email'] or ''
-            }
-            for job in jobs
-        ]
-    elif field == 'number' and len(query) >= 5:
-        results = (Job.objects
-            .filter(customer_number__icontains=query)
-            .values_list('customer_number', flat=True)
-            .distinct()[:10])
-    elif field == 'pickup' and len(query) >= 3:
-        results = (Job.objects
-            .filter(pick_up_location__icontains=query)
-            .values_list('pick_up_location', flat=True)
-            .distinct()[:10])
-    elif field == 'dropoff' and len(query) >= 3:
-        results = (Job.objects
-            .filter(drop_off_location__icontains=query)
-            .values_list('drop_off_location', flat=True)
-            .distinct()[:10])
-    else:
-        results = []
-
-    return JsonResponse(list(results), safe=False)
 
 
 def client_job_view(request, lookup):

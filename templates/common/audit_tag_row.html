@@ -1,0 +1,29 @@
+<div class="job-tag-container">
+{% if use_small %}
+    <small class="job-added-by-tag audit-tag-clickable" tabindex="0" role="button" data-audit-mode="added" data-audit-url="{{ audit_url }}">
+        {% if created_by %}
+            Added by: {{ created_by.get_full_name|default:created_by.username }}
+        {% else %}
+            Added by: Unknown
+        {% endif %}
+    </small>
+    {% if last_modified_by %}
+    <small class="job-edited-by-tag audit-tag-clickable" tabindex="0" role="button" data-audit-mode="edited" data-audit-url="{{ audit_url }}">
+        Edited by: {{ last_modified_by.get_full_name|default:last_modified_by.username }}
+    </small>
+    {% endif %}
+{% else %}
+    <span class="job-added-by-tag audit-tag-clickable" tabindex="0" role="button" data-audit-mode="added" data-audit-url="{{ audit_url }}">
+        {% if created_by %}
+            Added by: {{ created_by.get_full_name|default:created_by.username }}
+        {% else %}
+            Added by: Unknown
+        {% endif %}
+    </span>
+    {% if last_modified_by %}
+    <span class="job-edited-by-tag audit-tag-clickable" tabindex="0" role="button" data-audit-mode="edited" data-audit-url="{{ audit_url }}">
+        Edited by: {{ last_modified_by.get_full_name|default:last_modified_by.username }}
+    </span>
+    {% endif %}
+{% endif %}
+</div>

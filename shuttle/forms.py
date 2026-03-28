@@ -27,7 +27,7 @@ class ShuttleForm(PaidToMixin, forms.ModelForm):
         fields = [
             'customer_name', 'customer_number', 'customer_email', 'shuttle_date',
             'shuttle_direction', 'payment_type', 'no_of_passengers', 'shuttle_notes',
-            'paid_to_staff', 'driver', 'is_confirmed', 'number_plate'
+            'paid_to_staff', 'driver', 'is_confirmed', 'is_freelancer', 'number_plate'
         ]
         error_messages = {
             'customer_name': {'required': 'Please enter the customer name.'},
@@ -76,6 +76,12 @@ class ShuttleForm(PaidToMixin, forms.ModelForm):
                 cleaned_data['driver'] = Driver.objects.get(id=driver_id)
             else:
                 self.add_error('paid_to', 'Please select a valid "Paid to" option.')
+
+        if cleaned_data.get('is_freelancer') and not cleaned_data.get('driver'):
+            self.add_error(
+                'driver',
+                'You must assign a driver when this shuttle is marked as a freelancer job.',
+            )
 
         return cleaned_data
     
