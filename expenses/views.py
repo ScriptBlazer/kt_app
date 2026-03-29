@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from expenses.forms import ExpenseForm
 from expenses.models import Expense, ExpenseImage
 from django.contrib.auth.decorators import login_required
@@ -64,6 +65,37 @@ def expense_list(request):
         ('05', 'May'), ('06', 'June'), ('07', 'July'), ('08', 'August'),
         ('09', 'September'), ('10', 'October'), ('11', 'November'), ('12', 'December')
     ]
+    month_labels = dict(months)
+
+    params = request.GET.copy()
+
+    def filter_chip_url(exclude_keys):
+        q = params.copy()
+        for key in exclude_keys:
+            q.pop(key, None)
+        qs = q.urlencode()
+        base = reverse('expenses:expenses')
+        return f'{base}?{qs}' if qs else base
+
+    filter_chips = []
+    if filter_driver_id:
+        d_obj = drivers.filter(pk=filter_driver_id).first()
+        label = f'Driver: {d_obj.name}' if d_obj else 'Driver'
+        filter_chips.append({
+            'label': label,
+            'clear_url': filter_chip_url(['filter_driver']),
+        })
+    if filter_month:
+        mk = str(filter_month).zfill(2)
+        filter_chips.append({
+            'label': month_labels.get(mk, f'Month {filter_month}'),
+            'clear_url': filter_chip_url(['filter_month']),
+        })
+    if filter_year:
+        filter_chips.append({
+            'label': f'Year {filter_year}',
+            'clear_url': filter_chip_url(['filter_year']),
+        })
 
     return render(request, 'expenses/expenses.html', {
         'grouped_expenses': grouped_expenses,
@@ -75,6 +107,7 @@ def expense_list(request):
         'filter_year': filter_year or '',
         'years': years,
         'months': months,
+        'filter_chips': filter_chips,
     })
 
 def view_expense(request, expense_id):

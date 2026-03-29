@@ -1,6 +1,7 @@
 from django.db import models
 from decimal import Decimal
 from common.utils import get_exchange_rate, CURRENCY_CHOICES, AGENT_FEE_CHOICES, PAYMENT_TYPE_CHOICES, VEHICLE_CHOICES, calculate_cc_fee
+from common.payment_paid_sync import sync_job_is_paid_from_payments
 from common.payment_settings import PaymentSettings
 from people.models import Agent, Driver
 import logging
@@ -109,7 +110,13 @@ class Job(models.Model):
         self.subtotal = self.calculate_subtotal()
 
         # Finally, save the job
+        was_adding = self._state.adding
         super().save(*args, **kwargs)
+        sync_job_is_paid_from_payments(self.pk)
+        self.refresh_from_db(fields=['is_paid'])
+        from analytics.services import apply_job_analytics_after_save
+
+        apply_job_analytics_after_save(was_adding, self)
 
     def convert_to_euros(self):
         logger.debug(f"Converting job price: {self.job_price} {self.job_currency}")

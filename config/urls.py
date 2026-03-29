@@ -18,6 +18,7 @@ urlpatterns = [
     path('expenses/', include('expenses.urls', namespace='expenses')),
     path('hotels/', include('hotels.urls', namespace='hotels')),
     path('common/', include('common.urls', namespace='common')),
+    path('analytics/', include('analytics.urls', namespace='analytics')),
     path('', jobs_views.home, name='home'),
     path('dashboard/', include('dashboard.urls', namespace='dashboard')),
 ]

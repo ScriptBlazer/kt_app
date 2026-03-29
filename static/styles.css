@@ -16,6 +16,108 @@ html, body {
     color: #fff;
 }
 
+/* Home: compact FX strip under main site header */
+.home-fx-banner {
+    font-size: 0.72rem;
+    line-height: 1.45;
+    color: #5a6570;
+    background: linear-gradient(180deg, #eef2f6 0%, #e8ecf1 100%);
+    border: 1px solid #d8dee6;
+    border-radius: 8px;
+    padding: 0.5rem 0.65rem;
+    margin-bottom: 0.85rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.65rem;
+}
+
+.home-fx-banner__intro {
+    font-weight: 600;
+    color: #3d4a55;
+    letter-spacing: 0.02em;
+    /* Mobile: title on its own line above the rate chips */
+    flex: 1 1 100%;
+    width: 100%;
+    margin-bottom: 0.2rem;
+}
+
+.home-fx-banner__chip {
+    background: rgba(255, 255, 255, 0.75);
+    border: 1px solid #dce2ea;
+    border-radius: 6px;
+    padding: 0.28rem 0.5rem;
+    font-variant-numeric: tabular-nums;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    align-items: flex-start;
+}
+
+.home-fx-banner__pair {
+    display: block;
+    line-height: 1.3;
+}
+
+.home-fx-banner__pair--sub {
+    font-size: 0.65rem;
+    color: #7a8694;
+    font-weight: 400;
+}
+
+.home-fx-banner__amt {
+    font-weight: 600;
+    color: #007bff;
+}
+
+.home-fx-banner__chip strong {
+    color: #007bff;
+    margin-right: 0.25rem;
+    font-weight: 600;
+}
+
+.home-fx-banner__time {
+    font-size: 0.68rem;
+    color: #6b7785;
+    flex: 1 1 100%;
+}
+
+.home-fx-banner__time--muted {
+    font-style: italic;
+    color: #8e9aa8;
+}
+
+@media (min-width: 720px) {
+    .home-fx-banner__intro {
+        flex: 0 1 auto;
+        width: auto;
+        margin-bottom: 0;
+    }
+
+    .home-fx-banner__time {
+        flex: 1 1 auto;
+        margin-left: auto;
+        text-align: right;
+    }
+}
+
+/* Read-only payment status on view forms (is_paid from sync) */
+.form-hint {
+    font-size: 0.85em;
+    font-weight: normal;
+    color: #6c757d;
+}
+
+.status-yes {
+    color: #198754;
+    font-weight: 600;
+}
+
+.status-no {
+    color: #6c757d;
+    font-weight: 600;
+}
+
 .header_admin{
     background-color: orange !important;
 }
@@ -1054,6 +1156,110 @@ input[type="checkbox"][name$="-DELETE"] {
 }
 
 /* Pagination controls */
+/* Expenses list: active filter chips */
+.expense-filter-tags {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+.expense-filter-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 6px 4px 10px;
+    background: #e9ecef;
+    color: #495057;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+.expense-filter-tag-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.4rem;
+    height: 1.4rem;
+    border-radius: 4px;
+    color: #6c757d;
+    text-decoration: none;
+    font-size: 1.15rem;
+    line-height: 1;
+    font-weight: 600;
+}
+.expense-filter-tag-remove:hover,
+.expense-filter-tag-remove:focus {
+    background: #dee2e6;
+    color: #212529;
+    text-decoration: none;
+    outline: none;
+}
+.expense-filter-clear-all {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-left: 4px;
+}
+.expense-filter-clear-all:hover {
+    color: #007bff;
+}
+
+.past-jobs-search-label {
+    display: block;
+    font-size: 0.9rem;
+    margin-bottom: 6px;
+    color: #444;
+}
+.past-jobs-search-wrap {
+    position: relative;
+    max-width: 36rem;
+}
+.past-jobs-search-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border: 1px solid #cfd4dc;
+    border-radius: 6px;
+    font-size: 1rem;
+}
+.past-jobs-error {
+    color: #b00020;
+    margin: 1rem 0;
+}
+
+/* Past jobs: compact type filter (driving / shuttle / hotel) */
+.past-jobs-type-filter {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin: 6px 0 14px;
+}
+.past-type-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.35rem;
+    height: 2.35rem;
+    border-radius: 6px;
+    border: 1px solid #cfd4dc;
+    background: #fff;
+    color: #4a5568;
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+.past-type-btn:hover,
+.past-type-btn:focus {
+    border-color: #007bff;
+    color: #007bff;
+    outline: none;
+}
+.past-type-btn.active {
+    border-color: #007bff;
+    background: #e8f2ff;
+    color: #0056b3;
+}
+
 .pagination {
     text-align: center;
     margin-top: 20px;

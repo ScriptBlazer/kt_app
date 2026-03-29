@@ -1,6 +1,6 @@
 from django.core.cache import cache
 from django.conf import settings
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 import requests
 from common.exchange_rate_models import ExchangeRate
 from django.utils import timezone
@@ -112,8 +112,50 @@ def get_exchange_rate(currency):
     logger.debug(f"No cached or database exchange rate found for {currency}. Fetching from API.")
     # Fetch and cache if not found
     return fetch_and_cache_exchange_rate(currency)
-    
-    
+
+
+def get_home_exchange_rate_banner_context():
+    """
+    Snapshot of USD/GBP/HUF rates for the home page (DB only, no API).
+
+    Stored `rate` is EUR per one unit of foreign currency (same as convert_to_euros).
+    Banner emphasises “how much EUR” and also shows €1 in foreign units for context.
+    """
+    codes = ('USD', 'GBP', 'HUF')
+    labels = dict(CURRENCY_CHOICES)
+    rows = {r.currency: r for r in ExchangeRate.objects.filter(currency__in=codes)}
+    items = []
+    last_any = None
+    for code in codes:
+        r = rows.get(code)
+        rate = r.rate if r else None
+        item = {
+            'code': code,
+            'label': labels.get(code, code),
+            'rate_eur': rate,
+            'foreign_to_eur': None,
+            'foreign_unit_label': None,
+            'eur_to_foreign': None,
+        }
+        if rate is not None and rate > 0:
+            if code == 'HUF':
+                bundle = Decimal('1000')
+                item['foreign_unit_label'] = '1000 HUF'
+                item['foreign_to_eur'] = (bundle * rate).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                item['eur_to_foreign'] = (Decimal('1') / rate).quantize(Decimal('1'), rounding=ROUND_HALF_UP)
+            else:
+                item['foreign_unit_label'] = f'1 {code}'
+                item['foreign_to_eur'] = rate.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                item['eur_to_foreign'] = (Decimal('1') / rate).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        if r and (last_any is None or r.last_updated > last_any):
+            last_any = r.last_updated
+        items.append(item)
+    last_local = None
+    if last_any:
+        last_local = timezone.localtime(last_any, BUDAPEST_TZ)
+    return {'fx_items': items, 'fx_last_refresh': last_local}
+
+
 def assign_job_color(job, now):
     """
     Assigns a color to a job or hotel booking based on its status and conditions.

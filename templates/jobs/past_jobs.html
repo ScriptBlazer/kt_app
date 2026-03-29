@@ -11,133 +11,47 @@
         <a href="{% url 'home' %}" class="button">Back to Home</a>
     </div>
     <br>
-    <form method="GET" action="{% url 'jobs:past_jobs' %}">
-        {% csrf_token %}
-        <input type="text" name="q" placeholder="Search customer name, number, description or pick-up location" value="{{ request.GET.q }}">
-        <button type="submit">Search</button>
-        <a href="{% url 'jobs:past_jobs' %}"><button type="button">View All</button></a>
-    </form>
-    
-    <br><br>
+
+    <label class="past-jobs-search-label" for="past-jobs-search-input">Search past jobs</label>
+    <div class="past-jobs-search-wrap">
+        <input type="search"
+               id="past-jobs-search-input"
+               class="past-jobs-search-input"
+               name="q"
+               autocomplete="off"
+               placeholder="Customer name, number, description, pick-up…"
+               value="{{ query }}"
+               data-past-jobs-url="{% url 'jobs:past_jobs' %}"
+               data-filter-type="{{ filter_type }}">
+    </div>
+
+    <br>
     <h2>Past Jobs</h2>
+    <div class="past-jobs-type-filter" role="toolbar" aria-label="Filter by service type">
+        <a href="{% url 'jobs:past_jobs' %}{% if query %}?q={{ query|urlencode }}{% endif %}"
+           class="past-type-btn past-jobs-type-link{% if not filter_type %} active{% endif %}"
+           title="All types">
+            <i class="fas fa-layer-group" aria-hidden="true"></i>
+        </a>
+        <a href="{% url 'jobs:past_jobs' %}?type=job{% if query %}&q={{ query|urlencode }}{% endif %}"
+           class="past-type-btn past-jobs-type-link{% if filter_type == 'job' %} active{% endif %}"
+           title="Driving jobs only">
+            <i class="fas fa-car" aria-hidden="true"></i>
+        </a>
+        <a href="{% url 'jobs:past_jobs' %}?type=shuttle{% if query %}&q={{ query|urlencode }}{% endif %}"
+           class="past-type-btn past-jobs-type-link{% if filter_type == 'shuttle' %} active{% endif %}"
+           title="Shuttles only">
+            <i class="fas fa-shuttle-van" aria-hidden="true"></i>
+        </a>
+        <a href="{% url 'jobs:past_jobs' %}?type=hotel{% if query %}&q={{ query|urlencode }}{% endif %}"
+           class="past-type-btn past-jobs-type-link{% if filter_type == 'hotel' %} active{% endif %}"
+           title="Hotel bookings only">
+            <i class="fas fa-hotel" aria-hidden="true"></i>
+        </a>
+    </div>
 
-    <!-- <ul>
-        {% for job in past_jobs %}
-            <li class="job-container {% if job.color == 'red' %}red-job{% elif job.color == 'orange' %}orange-job{% elif job.color == 'green' %}green-job{% else %}white-job{% endif %}">
-                <div class="job-tag-container">
-                    <span class="job-added-by-tag">
-                        {% if job.created_by %}
-                            Added by: {{ job.created_by.get_full_name|default:job.created_by.username }}
-                        {% else %}
-                            Added by: Unknown
-                        {% endif %}
-                    </span>
-                    {% if job.last_modified_by %}
-                        <span class="job-edited-by-tag">
-                            Edited by: {{ job.last_modified_by.get_full_name|default:job.last_modified_by.username }}
-                        </span>
-                    {% endif %}
-                </div>
-                <span class="customer-name">{{ job.customer_name|truncate_words_chars }}</span>
-                <div class="job-info">
-                    <span class="slim">{{ job.job_date }}</span>
-                    <span class="phone">{{ job.job_time|time_format }}</span>
-                    <span class="phone">{{ job.job_price }} {{ job.job_currency }}</span>
-                    <span class="phone">{{ job.pick_up_location |truncate_words_chars }}</span>
-                </div>
-                <span class="button-group">
-                    <a href="{% url 'jobs:edit_job' job.id %}" class="button phone">Edit</a>
-                    <a href="{% url 'jobs:view_job' job.id %}" class="button">View</a>
-                </span>
-            </li>
-        {% empty %}
-            <li>No past jobs.</li>
-        {% endfor %}
-    </ul> -->
-
-    <ul>
-    {% for item in past_jobs %}
-        <li class="job-container {% if item.color == 'red' %}red-job{% elif item.color == 'orange' %}orange-job{% elif item.color == 'green' %}green-job{% else %}white-job{% endif %}">
-            {% if item.type == 'job' %}
-                {% audit_tag_row item.created_by item.last_modified_by "jobs" "job" item.id %}
-            {% elif item.type == 'shuttle' %}
-                {% audit_tag_row item.created_by item.last_modified_by "shuttle" "shuttle" item.id "small" %}
-            {% elif item.type == 'hotel' %}
-                {% audit_tag_row item.created_by item.last_modified_by "hotels" "hotelbooking" item.id %}
-            {% endif %}
-
-            <span class="customer-name">{{ item.customer_name|truncate_words_chars }}</span>
-
-            <div class="job-info">
-                {% if item.type == 'job' %}
-                    <span class="slim">{{ item.job_date }}</span>
-                    <span class="phone">{{ item.job_time|time_format }}</span>
-                    <span class="phone">{{ item.job_price }} {{ item.job_currency }}</span>
-                    <span class="phone">{{ item.pick_up_location|truncate_words_chars }}</span>
-                {% elif item.type == 'shuttle' %}
-                    <span class="slim">{{ item.shuttle_date }}</span>
-                    <span class="phone">{{ item.get_shuttle_direction_display|default:"No direction" }}</span>
-                    <span class="phone">{{ item.price|floatformat:2 }} EUR</span>
-                    <span class="phone">{{ item.no_of_passengers }} Passengers</span>
-                {% elif item.type == 'hotel' %}
-                    <span class="slim">{{ item.check_in|date:"d M Y" }}</span>
-                    <span class="phone">{{ item.no_of_people }} guests</span>
-                    <span class="phone">Pays {{ item.customer_pays }} {{ item.customer_pays_currency }}</span>
-                    <span class="phone">Hotel {{ item.hotel_price }} {{ item.hotel_price_currency }}</span>
-                {% endif %}
-            </div>
-
-            <div class="button-group">
-                {% if item.type == 'job' %}
-                    <a href="{% url 'jobs:edit_job' item.id %}" class="button phone">Edit</a>
-                    <a href="{% url 'jobs:view_job' item.id %}" class="button">View</a>
-                {% elif item.type == 'shuttle' %}
-                    <a href="{% url 'shuttle:edit_passengers' item.id %}" class="button phone button-purple">Edit</a>
-                    <a href="{% url 'shuttle:view_passengers' item.id %}" class="button button-purple">View</a>
-                {% elif item.type == 'hotel' %}
-                    <a href="{% url 'hotels:edit_guests' item.id %}" class="button phone button-purple">Edit</a>
-                    <a href="{% url 'hotels:view_guests' item.id %}" class="button button-purple">View</a>
-                {% endif %}
-            </div>
-
-            <div class="job-type-icon">
-                {% if item.type == 'job' %}
-                    <i class="fas fa-car" title="Driving Job" style="color: #007bff;"></i>
-                {% elif item.type == 'shuttle' %}
-                    <i class="fas fa-shuttle-van" title="Shuttle" style="color: purple;"></i>
-                {% elif item.type == 'hotel' %}
-                    <i class="fas fa-hotel" title="Hotel Booking" style="color: purple;"></i>
-                {% endif %}
-            </div>
-        </li>
-    {% empty %}
-        <li>No past jobs.</li>
-    {% endfor %}
-    </ul>
-
-    <!-- Pagination Controls -->
-    <div class="pagination">
-        <span class="step-links">
-            {% if past_jobs.has_previous %}
-                <a href="?page=1{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="pagination-btn">&laquo; First</a>
-                <a href="?page={{ past_jobs.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="pagination-btn">Previous</a>
-            {% else %}
-                <span class="pagination-btn" disabled>&laquo; First</span>
-                <span class="pagination-btn" disabled>Previous</span>
-            {% endif %}
-
-            <span class="current-page">
-                Page {{ past_jobs.number }} of {{ past_jobs.paginator.num_pages }}.
-            </span>
-
-            {% if past_jobs.has_next %}
-                <a href="?page={{ past_jobs.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="pagination-btn">Next</a>
-                <a href="?page={{ past_jobs.paginator.num_pages }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="pagination-btn">Last &raquo;</a>
-            {% else %}
-                <span class="pagination-btn" disabled>Next</span>
-                <span class="pagination-btn" disabled>Last &raquo;</span>
-            {% endif %}
-        </span>
+    <div id="past-jobs-live-results">
+        {% include 'jobs/past_jobs_list_fragment.html' %}
     </div>
 </div>
 <div class="mobile-bottom-nav">
@@ -162,4 +76,5 @@
 
 {% block extra_scripts %}
 <script src="{% static 'script.js' %}"></script>
+<script src="{% static 'past_jobs_live_search.js' %}"></script>
 {% endblock %}

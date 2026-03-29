@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'expenses',
     'shuttle',
     'hotels',
+    'analytics.apps.AnalyticsConfig',
 ]
 
 MIDDLEWARE = [

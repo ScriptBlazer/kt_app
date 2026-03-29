@@ -31,16 +31,16 @@
             <p>Total Renovations: <strong>€{{ totals.renovations|floatformat:2|intcomma|default:"0.00" }}</strong></p>
             <p>Total Car Wash Costs: <strong>€{{ totals.car_wash|floatformat:2|intcomma|default:"0.00" }}</strong></p>
             <p>Total Toll Costs: <strong>€{{ totals.toll|floatformat:2|intcomma|default:"0.00" }}</strong></p>
-            <p>Total Tickets Costs: <strong>€{{ totals.fines|floatformat:2|intcomma|default:"0.00" }}</strong></p>
+            <p>Total Tickets Costs: <strong>€{{ totals.parking_ticket|floatformat:2|intcomma|default:"0.00" }}</strong></p>
             <p>Other Expenses: <strong>€{{ totals.other|floatformat:2|intcomma|default:"0.00" }}</strong></p>
         </div>
     </div>
     <br>
 
-    <form method="get" action="{% url 'expenses:expenses' %}" style="margin-bottom: 20px;" class="filter-form">
+    <form method="get" action="{% url 'expenses:expenses' %}" id="expense-filters-form" class="filter-form expense-filters-form" style="margin-bottom: 10px;">
 
         <label for="filter_driver">Driver:</label>
-        <select name="filter_driver" id="filter_driver">
+        <select name="filter_driver" id="filter_driver" class="expense-filter-select">
             <option value="">All drivers</option>
             {% for driver in drivers %}
                 <option value="{{ driver.id }}" {% if driver.id|stringformat:"s" == filter_driver_id %}selected{% endif %}>{{ driver.name }}</option>
@@ -50,7 +50,7 @@
         <div class="form-group-inline">
             <div class="field-wrapper">
                 <label for="filter_month">Month:</label>
-                <select name="filter_month" id="filter_month">
+                <select name="filter_month" id="filter_month" class="expense-filter-select">
                     <option value="">All months</option>
                     {% for m, m_name in months %}
                         <option value="{{ m }}" {% if m == filter_month %}selected{% endif %}>{{ m_name }}</option>
@@ -59,18 +59,27 @@
             </div>
             <div class="field-wrapper">
                 <label for="filter_year">Year:</label>
-                <select name="filter_year" id="filter_year">
+                <select name="filter_year" id="filter_year" class="expense-filter-select">
                     <option value="">All years</option>
                     {% for y in years %}
-                        <option value="{{ y }}" {% if y == filter_year %}selected{% endif %}>{{ y }}</option>
+                        <option value="{{ y }}" {% if y|stringformat:"s" == filter_year|stringformat:"s" %}selected{% endif %}>{{ y }}</option>
                     {% endfor %}
                 </select>
             </div>
         </div>
-
-        <button type="submit" class="button button-orange">Apply Filter</button>
-        <a href="{% url 'expenses:expenses' %}" class="button button-orange">Clear Filters</a>
     </form>
+
+    {% if filter_chips %}
+    <div class="expense-filter-tags" aria-label="Active filters">
+        {% for chip in filter_chips %}
+            <span class="expense-filter-tag">
+                {{ chip.label }}
+                <a href="{{ chip.clear_url }}" class="expense-filter-tag-remove" title="Remove this filter" aria-label="Remove {{ chip.label }}">&times;</a>
+            </span>
+        {% endfor %}
+        <a href="{% url 'expenses:expenses' %}" class="expense-filter-clear-all">Clear all</a>
+    </div>
+    {% endif %}
     <br>
 
     {% for expense_type in expense_types %}
@@ -135,6 +144,7 @@
 
 {% block extra_scripts %}
 <script src="{% static 'script.js' %}"></script>
+<script src="{% static 'expenses_auto_filter.js' %}"></script>
 
 <style>
     .mobile-message {

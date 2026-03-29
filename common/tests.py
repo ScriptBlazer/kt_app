@@ -1,13 +1,15 @@
-from django.test import TestCase
-from django.core.cache import cache
-from common.utils import get_exchange_rate, fetch_and_cache_exchange_rate
+from datetime import datetime, timedelta, timezone as datetime_timezone
 from decimal import Decimal
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 import requests
-from requests.exceptions import RequestException
-from datetime import timedelta
+from django.core.cache import cache
+from django.test import TestCase
 from django.utils import timezone
+from requests.exceptions import RequestException
+
 from common.exchange_rate_models import ExchangeRate
+from common.utils import fetch_and_cache_exchange_rate, get_exchange_rate
 
 class ExchangeRateTests(TestCase):
 
@@ -133,56 +135,112 @@ class ExchangeRateTests(TestCase):
         self.assertEqual(cached_rate, Decimal('1.22'))
 
     @patch('common.utils.requests.get')
-    @patch('common.exchange_rate_models.ExchangeRate.objects')
-    def test_cache_expiration_24_hours(self, mock_exchange_rate_objects, mock_get):
-        # Clear cache for this specific test
+    def test_refetch_after_cache_cleared_when_db_older_than_24h(self, mock_get):
+        """
+        After in-process cache is cleared, a row whose last_updated is >24h behind
+        'now' must trigger a new HTTP fetch (covers the main production refresh path).
+        """
         cache.clear()
-        """Test that cache expires after 24 hours and new API call is made."""
-        # First mock response
-        mock_response_1 = {
-            'conversion_rates': {
-                'EUR': '1.20'
-            }
-        }
+        base = timezone.now()
         mock_get.return_value.status_code = 200
-        mock_get.return_value.json.return_value = mock_response_1
+        mock_get.return_value.json.return_value = {'conversion_rates': {'EUR': '1.2000'}}
 
-        # Mock database operations
-        mock_exchange_rate = MagicMock()
-        mock_exchange_rate.rate = Decimal('1.20')
-        mock_exchange_rate_objects.get.return_value = mock_exchange_rate
-        mock_exchange_rate_objects.update_or_create.return_value = (mock_exchange_rate, True)
-
-        # First call - should make API call
         rate1 = get_exchange_rate('USD')
-        self.assertEqual(rate1, Decimal('1.20'))
+        self.assertEqual(rate1, Decimal('1.2000'))
+        self.assertEqual(mock_get.call_count, 1)
 
-        with patch('django.utils.timezone.now') as mock_now:
-            current_time = timezone.now()
-            mock_now.return_value = current_time + timedelta(hours=24)
+        mock_get.return_value.json.return_value = {'conversion_rates': {'EUR': '1.2500'}}
+        cache.delete('exchange_rate_USD')
 
-            mock_exchange_rate_objects.get.side_effect = ExchangeRate.DoesNotExist
-
-            # Still cached, should return same
+        with patch('django.utils.timezone.now', return_value=base + timedelta(hours=25)):
             rate2 = get_exchange_rate('USD')
-            self.assertEqual(rate2, Decimal('1.20'))
 
-            # Now simulate cache expiration and change response
-            mock_response_2 = {
-                'conversion_rates': {
-                    'EUR': '1.25'
-                }
-            }
-            mock_get.return_value.json.return_value = mock_response_2
-
-            cache.delete('exchange_rate_USD')
-            mock_now.return_value = current_time + timedelta(hours=25)
-
-            rate3 = get_exchange_rate('USD')
-            self.assertEqual(rate3, Decimal('1.25'))
-
-        # Verify API was called twice
+        self.assertEqual(rate2, Decimal('1.2500'))
         self.assertEqual(mock_get.call_count, 2)
+
+    @patch('common.utils.requests.get')
+    def test_uses_db_without_api_when_row_newer_than_24h(self, mock_get):
+        """Cache miss but DB row 'fresh' (< 24h old): return stored rate, no HTTP."""
+        cache.clear()
+        base = timezone.now()
+        er = ExchangeRate.objects.create(currency='USD', rate=Decimal('0.9100'))
+        ExchangeRate.objects.filter(pk=er.pk).update(last_updated=base - timedelta(hours=3))
+
+        with patch('django.utils.timezone.now', return_value=base):
+            rate = get_exchange_rate('USD')
+
+        self.assertEqual(rate, Decimal('0.9100'))
+        mock_get.assert_not_called()
+
+    @patch('common.utils.requests.get')
+    def test_refetch_when_row_age_just_over_24h_even_if_cache_empty(self, mock_get):
+        """Stale DB row (>=24h) with empty cache forces API (no MagicMock / real ORM)."""
+        cache.clear()
+        base = timezone.now()
+        er = ExchangeRate.objects.create(currency='GBP', rate=Decimal('0.8800'))
+        ExchangeRate.objects.filter(pk=er.pk).update(last_updated=base - timedelta(hours=25))
+
+        mock_get.return_value.status_code = 200
+        mock_get.return_value.json.return_value = {'conversion_rates': {'EUR': '0.9000'}}
+
+        with patch('django.utils.timezone.now', return_value=base):
+            rate = get_exchange_rate('GBP')
+
+        self.assertEqual(rate, Decimal('0.9000'))
+        mock_get.assert_called_once()
+
+    @patch('common.utils.requests.get')
+    def test_boundary_exactly_24h_old_row_still_considered_fresh(self, mock_get):
+        """
+        Condition is strict < (older than 24h). A row exactly 24h behind 'now'
+        still uses DB without calling the API.
+        """
+        cache.clear()
+        base = timezone.now()
+        er = ExchangeRate.objects.create(currency='HUF', rate=Decimal('0.0026'))
+        ExchangeRate.objects.filter(pk=er.pk).update(last_updated=base - timedelta(hours=24))
+
+        with patch('django.utils.timezone.now', return_value=base):
+            rate = get_exchange_rate('HUF')
+
+        self.assertEqual(rate, Decimal('0.0026'))
+        mock_get.assert_not_called()
+
+    @patch('common.utils.requests.get')
+    def test_cache_wins_even_if_db_row_is_stale(self, mock_get):
+        """Documented behaviour: while cache key exists, DB age is ignored."""
+        cache.clear()
+        base = timezone.now()
+        er = ExchangeRate.objects.create(currency='USD', rate=Decimal('0.1000'))
+        ExchangeRate.objects.filter(pk=er.pk).update(last_updated=base - timedelta(days=400))
+        cache.set('exchange_rate_USD', Decimal('0.9200'), timeout=3600)
+
+        with patch('django.utils.timezone.now', return_value=base):
+            rate = get_exchange_rate('USD')
+
+        self.assertEqual(rate, Decimal('0.9200'))
+        mock_get.assert_not_called()
+
+    @patch('common.utils.requests.get')
+    def test_staleness_uses_rolling_24h_not_calendar_midnight_budapest(self, mock_get):
+        """
+        Refresh policy is a rolling 24h window vs last_updated (timezone-aware),
+        not local calendar midnight. Uses a fixed UTC instant so the test is deterministic.
+        """
+        cache.clear()
+        t0 = datetime(2024, 6, 15, 20, 0, 0, tzinfo=datetime_timezone.utc)
+
+        er = ExchangeRate.objects.create(currency='USD', rate=Decimal('1.1000'))
+        ExchangeRate.objects.filter(pk=er.pk).update(last_updated=t0 - timedelta(hours=26))
+
+        mock_get.return_value.status_code = 200
+        mock_get.return_value.json.return_value = {'conversion_rates': {'EUR': '1.3333'}}
+
+        with patch('django.utils.timezone.now', return_value=t0):
+            rate = get_exchange_rate('USD')
+
+        self.assertEqual(rate, Decimal('1.3333'))
+        mock_get.assert_called_once()
 
     @patch('common.utils.requests.get')
     def test_get_exchange_rate_eur(self, mock_get):

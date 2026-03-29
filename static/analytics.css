@@ -1,0 +1,270 @@
+/* Analytics dashboard — calm, high-contrast, system-native feel */
+
+.analytics-page {
+    --analytics-bg: #f5f5f7;
+    --analytics-card: rgba(255, 255, 255, 0.82);
+    --analytics-card-border: rgba(0, 0, 0, 0.06);
+    --analytics-text: #1d1d1f;
+    --analytics-text-secondary: #86868b;
+    --analytics-track: #e8e8ed;
+    /* Driving = blue; Shuttle = forest green; Hotel = warm orange */
+    --analytics-driving-paid: #0066cc;
+    --analytics-driving-track: #c5ddf7;
+    --analytics-shuttle-paid: #15803d;
+    --analytics-shuttle-track: #dcfce7;
+    --analytics-hotel-paid: #ea580c;
+    --analytics-hotel-track: #ffedd5;
+    --analytics-unpaid-accent: #ff3b30;
+    --analytics-radius: 22px;
+    --analytics-shadow: 0 4px 24px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 0 20px 48px;
+}
+
+.analytics-page .analytics-inner {
+    background: var(--analytics-bg);
+    border-radius: var(--analytics-radius);
+    padding: 32px 28px 40px;
+    margin-top: 8px;
+}
+
+.analytics-hero {
+    margin-bottom: 36px;
+    text-align: center;
+}
+
+.analytics-hero h1 {
+    font-size: 2rem;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    color: var(--analytics-text);
+    margin: 0 0 8px;
+}
+
+.analytics-hero .analytics-meta {
+    font-size: 0.8125rem;
+    color: var(--analytics-text-secondary);
+    letter-spacing: 0.02em;
+}
+
+.analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+@media (max-width: 960px) {
+    .analytics-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.analytics-card {
+    position: relative;
+    background: var(--analytics-card);
+    border: 1px solid var(--analytics-card-border);
+    border-radius: var(--analytics-radius);
+    box-shadow: var(--analytics-shadow);
+    padding: 28px 24px 24px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.analytics-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.analytics-card h2 {
+    align-self: flex-start;
+    width: 100%;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--analytics-text-secondary);
+    margin: 0 0 24px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--analytics-track);
+}
+
+.analytics-card--driving h2 {
+    color: #004a9e;
+}
+
+.analytics-card--shuttle h2 {
+    color: #14532d;
+}
+
+.analytics-card--hotel h2 {
+    color: #9a3412;
+}
+
+.analytics-donut-wrap {
+    position: relative;
+    width: 176px;
+    height: 176px;
+    margin-bottom: 20px;
+}
+
+.analytics-donut {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: conic-gradient(
+        var(--donut-paid) 0 var(--paid-deg),
+        var(--donut-track) var(--paid-deg) 360deg
+    );
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.analytics-card--driving .analytics-donut {
+    --donut-paid: var(--analytics-driving-paid);
+    --donut-track: var(--analytics-driving-track);
+}
+
+.analytics-card--shuttle .analytics-donut {
+    --donut-paid: var(--analytics-shuttle-paid);
+    --donut-track: var(--analytics-shuttle-track);
+}
+
+.analytics-card--hotel .analytics-donut {
+    --donut-paid: var(--analytics-hotel-paid);
+    --donut-track: var(--analytics-hotel-track);
+}
+
+.analytics-card[data-empty="true"] .analytics-donut {
+    --donut-paid: var(--analytics-track);
+    --donut-track: var(--analytics-track);
+    background: var(--analytics-track);
+}
+
+.analytics-donut-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.analytics-donut-center::before {
+    content: "";
+    position: absolute;
+    width: 58%;
+    height: 58%;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
+    z-index: 0;
+}
+
+.analytics-donut-total {
+    position: relative;
+    z-index: 1;
+    font-size: 2.25rem;
+    font-weight: 600;
+    letter-spacing: -0.04em;
+    color: var(--analytics-text);
+    line-height: 1;
+}
+
+.analytics-donut-label {
+    position: relative;
+    z-index: 1;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--analytics-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 4px;
+}
+
+.analytics-segbar {
+    width: 100%;
+    height: 8px;
+    border-radius: 99px;
+    background: var(--analytics-track);
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.analytics-segbar-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: linear-gradient(90deg, var(--seg-start), var(--seg-end));
+    min-width: 0;
+    transition: width 0.6s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.analytics-card--driving .analytics-segbar-fill {
+    --seg-start: var(--analytics-driving-paid);
+    --seg-end: #42a1ff;
+}
+
+.analytics-card--shuttle .analytics-segbar-fill {
+    --seg-start: var(--analytics-shuttle-paid);
+    --seg-end: #22c55e;
+}
+
+.analytics-card--hotel .analytics-segbar-fill {
+    --seg-start: var(--analytics-hotel-paid);
+    --seg-end: #ffb340;
+}
+
+.analytics-card[data-empty="true"] .analytics-segbar-fill {
+    width: 0 !important;
+    background: var(--analytics-track);
+}
+
+.analytics-stats {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 16px;
+    margin: 0;
+}
+
+.analytics-stats > div {
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: 14px;
+    padding: 14px 16px;
+}
+
+.analytics-stats dt {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--analytics-text-secondary);
+    margin: 0 0 6px;
+}
+
+.analytics-stats dd {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--analytics-text);
+}
+
+.analytics-stats .analytics-stat--unpaid dd {
+    color: var(--analytics-unpaid-accent);
+}
+
+.analytics-nav-row {
+    margin-bottom: 8px;
+}
+
+.analytics-nav-row .left-buttons {
+    flex-wrap: wrap;
+    gap: 8px;
+}

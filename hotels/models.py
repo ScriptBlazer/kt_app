@@ -3,6 +3,7 @@ from django.core.validators import MinValueValidator
 from decimal import Decimal
 from people.models import Agent, Staff
 from common.utils import get_exchange_rate, CURRENCY_CHOICES, AGENT_FEE_CHOICES, PAYMENT_TYPE_CHOICES, calculate_cc_fee
+from common.payment_paid_sync import sync_hotel_is_paid_from_payments
 from common.payment_settings import PaymentSettings
 import secrets
 import string
@@ -56,6 +57,9 @@ class HotelBooking(models.Model):
     customer_pays_in_euros = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     cc_fee = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
 
+    # Customer pays (EUR) minus agent commission; set on every save
+    subtotal = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+
     # Paid to fields
     paid_to_agent = models.ForeignKey(Agent, on_delete=models.PROTECT, null=True, blank=True, related_name='hotel_paid_to_agent')
     paid_to_staff = models.ForeignKey(Staff, on_delete=models.PROTECT, null=True, blank=True, related_name='hotel_paid_to_staff')
@@ -98,8 +102,16 @@ class HotelBooking(models.Model):
         # Calculate credit card fee using the utility function
         self.cc_fee = calculate_cc_fee(self.hotel_price, self.payment_type, cc_fee_percentage)
 
+        self.subtotal = self.calculate_subtotal()
+
         # Save the booking
+        was_adding = self._state.adding
         super().save(*args, **kwargs)
+        sync_hotel_is_paid_from_payments(self.pk)
+        self.refresh_from_db(fields=['is_paid'])
+        from analytics.services import apply_hotel_analytics_after_save
+
+        apply_hotel_analytics_after_save(was_adding, self)
 
     def convert_to_euros(self):
         """Convert both hotel price and customer pays to EUR if they are in another currency."""
@@ -114,6 +126,27 @@ class HotelBooking(models.Model):
         else:
             rate = get_exchange_rate(self.customer_pays_currency)
             self.customer_pays_in_euros = (self.customer_pays * rate).quantize(Decimal('0.01'))
+
+    def calculate_subtotal(self):
+        """
+        Same agent % rules as driving jobs, but base amount is customer_pays_in_euros
+        and there is no driver fee on hotel bookings.
+        """
+        customer = self.customer_pays_in_euros or Decimal('0.00')
+        driver_fee = Decimal('0.00')
+        if self.agent_percentage == '5':
+            agent_fee = customer * Decimal('0.05')
+        elif self.agent_percentage == '10':
+            agent_fee = customer * Decimal('0.10')
+        elif self.agent_percentage == '50':
+            agent_fee = (
+                (customer - driver_fee) * Decimal('0.50')
+                if customer > Decimal('0.00')
+                else Decimal('0.00')
+            )
+        else:
+            agent_fee = Decimal('0.00')
+        return (customer - agent_fee).quantize(Decimal('0.01'))
 
     def __str__(self):
         return f"Booking for {self.customer_name} in {self.hotel_tier} star hotel"

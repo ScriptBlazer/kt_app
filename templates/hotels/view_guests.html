@@ -74,6 +74,25 @@
     </p>
     <p><strong>Agent:</strong> {{ guest.agent }}</p>
     <p><strong>Agent Fee:</strong> {% if guest.agent_percentage %}{{ guest.agent_percentage }}%{% endif %}</p>
+    <p>
+        <strong>Subtotal:</strong>
+        {% if guest.subtotal is not None %}
+            €{{ guest.subtotal|intcomma }}
+            (Customer pays: €{{ guest.customer_pays_in_euros|intcomma }} - Agent fee:
+            {% if guest.agent_percentage == '5' %}
+                €{{ guest.customer_pays_in_euros|mul:0.05|floatformat:2|intcomma }}
+            {% elif guest.agent_percentage == '10' %}
+                €{{ guest.customer_pays_in_euros|mul:0.10|floatformat:2|intcomma }}
+            {% elif guest.agent_percentage == '50' %}
+                €{{ guest.customer_pays_in_euros|mul:0.50|floatformat:2|intcomma }}
+            {% else %}
+                €0.00
+            {% endif %}
+            )
+        {% else %}
+            Not available
+        {% endif %}
+    </p>
     <p><strong>Special Requests:</strong> <div style="white-space: pre-wrap;"> {{ guest.special_requests|default:"No special requests" }}</div></p>
 
 
@@ -134,8 +153,8 @@
             <input class="sbig" type="checkbox" id="is_confirmed" name="is_confirmed" {% if guest.is_confirmed %}checked{% endif %}>
         </p>
 
-        <p><strong>Customer Paid:</strong> 
-            <input class="sbig" type="checkbox" id="is_paid" name="is_paid" {% if guest.is_paid %}checked{% endif %}>
+        <p><strong>Customer paid</strong> <span class="form-hint">(from payments)</span>:
+            {% if guest.is_paid %}<span class="status-yes">Yes</span>{% else %}<span class="status-no">No</span>{% endif %}
         </p>
 
 
