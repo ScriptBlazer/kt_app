@@ -83,6 +83,7 @@ _HOTEL_FIELDS = [
     ('is_completed', 'Completed'),
     ('agent', 'Agent'),
     ('agent_percentage', 'Agent %'),
+    ('subtotal', 'Subtotal'),
     ('special_requests', 'Special requests'),
 ]
 

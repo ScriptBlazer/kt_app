@@ -188,10 +188,13 @@ class UpdateJobStatusTests(TestCase):
         self.url = reverse('jobs:update_job_status', args=[self.job.id])
 
     @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.0'))
-    def test_mark_as_paid_without_confirmation(self, mock_get_exchange_rate):
+    def test_paid_status_not_controlled_by_post_checkbox(self, mock_get_exchange_rate):
+        """is_paid is synced from payments, not the old manual checkbox."""
         response = self.client.post(self.url, {'is_paid': True})
-        self.assertEqual(response.status_code, 400)
-        self.assertContains(response, 'Job must be confirmed before it can be marked as paid.', status_code=400)
+        self.assertEqual(response.status_code, 302)
+        self.job.refresh_from_db()
+        self.assertFalse(self.job.is_confirmed)
+        self.assertFalse(self.job.is_paid)
 
     @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.0'))
     def test_mark_as_completed_without_confirmation(self, mock_get_exchange_rate):
@@ -491,14 +494,8 @@ class JobColorAssignmentTest(TestCase):
 
 
 class ExchangeRateCacheTest(TestCase):
-    
-    def setUp(self):
-        # Don't clear cache globally - only clear in specific tests that need it
-        pass
-
     @patch('common.utils.fetch_and_cache_exchange_rate')
     def test_rates_read_from_cache(self, mock_fetch_and_cache_exchange_rate):
-        # Clear cache for this specific test
         cache.clear()
         cache.set('exchange_rate_GBP', Decimal('1.20'), timeout=3600)
         rate = get_exchange_rate('GBP')
@@ -508,21 +505,21 @@ class ExchangeRateCacheTest(TestCase):
     @override_settings(CACHES={
         'default': {
             'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-            'LOCATION': 'unique-snowflake',
+            'LOCATION': 'exchange_rate_cache_test',
         }
     })
-    class ExchangeRateCacheTest(TestCase):
-
-        @patch('common.utils.fetch_and_cache_exchange_rate')
-        def test_rates_fetched_and_cached(self, mock_fetch_and_cache_exchange_rate):
-            # Clear cache for this specific test
-            cache.clear()
-            mock_fetch_and_cache_exchange_rate.return_value = Decimal('1.19')
-            rate = get_exchange_rate('GBP')
-            mock_fetch_and_cache_exchange_rate.assert_called_once_with('GBP')
-            cached_rate = cache.get('exchange_rate_GBP')
-            self.assertIsNotNone(cached_rate, "The exchange rate should be cached")
-            self.assertEqual(cached_rate, Decimal('1.19'))
+    @patch('common.utils.fetch_and_cache_exchange_rate')
+    def test_rates_fetched_and_cached(self, mock_fetch_and_cache_exchange_rate):
+        """
+        When cache is cold and DB has no row, get_exchange_rate delegates to
+        fetch_and_cache_exchange_rate. (Mocking fetch skips real cache.set;
+        caching is covered in common.tests.ExchangeRateTests.)
+        """
+        cache.clear()
+        mock_fetch_and_cache_exchange_rate.return_value = Decimal('1.19')
+        rate = get_exchange_rate('GBP')
+        mock_fetch_and_cache_exchange_rate.assert_called_once_with('GBP')
+        self.assertEqual(rate, Decimal('1.19'))
 
 
 class EnquiriesViewTests(TestCase):
@@ -669,8 +666,18 @@ class AdditionalJobTests(TestCase):
             no_of_passengers=1,
             vehicle_type='Car',
         )
+        # is_paid is synced from payments; without a row it clears to False
+        Payment.objects.create(
+            job=job,
+            payment_amount=Decimal('100.00'),
+            payment_currency='EUR',
+            payment_type='Cash',
+            paid_to_driver=self.driver,
+        )
+        job.refresh_from_db()
+        self.assertTrue(job.is_paid)
         color = assign_job_color(job, timezone.now())
-        self.assertEqual(color, 'green')  # Should be green according to new logic
+        self.assertEqual(color, 'green')  # Paid counts as done even if not confirmed
 
     @patch('jobs.models.get_exchange_rate', return_value=Decimal('1.2'))
     def test_agent_percentage_applies_to_total(self, mock_get_exchange_rate):
@@ -781,35 +788,3 @@ class AddJobWithPaymentsTest(TestCase):
         self.assertEqual(payment2.payment_currency, 'USD')
         self.assertEqual(payment2.payment_type, 'Cash')
 
-
-class CurrencyExchangeRenewalBudapestTest(TestCase):
-    BUDAPEST_TZ = pytz.timezone('Europe/Budapest')
-
-    def setUp(self):
-        # Don't clear cache globally - only clear in specific tests that need it
-        pass
-
-    @patch('jobs.tests.get_exchange_rate')
-    def test_exchange_rate_refresh_after_midnight_budapest_time(self, mock_get_exchange_rate):
-        # Clear cache for this specific test
-        cache.clear()
-        # Mock the API response for the exchange rate
-        mock_get_exchange_rate.return_value = Decimal('1.2')
-
-        # Simulate fetching and caching the exchange rate at 10:00 PM Budapest time
-        first_pull_time = now().astimezone(self.BUDAPEST_TZ).replace(
-            hour=22, minute=0, second=0, microsecond=0
-        )
-        with patch('django.utils.timezone.now', return_value=first_pull_time):
-            rate = get_exchange_rate('USD')
-            self.assertEqual(rate, Decimal('1.2'))
-            mock_get_exchange_rate.assert_called_once_with('USD')
-
-        # Simulate time passing to 1:00 AM the next day Budapest time
-        midnight_pull_time = first_pull_time + timedelta(hours=3)
-        mock_get_exchange_rate.reset_mock()  # Reset the mock for the second API call
-
-        with patch('django.utils.timezone.now', return_value=midnight_pull_time):
-            rate = get_exchange_rate('USD')  # Should trigger a new API call after midnight
-            self.assertEqual(rate, Decimal('1.2'))
-            mock_get_exchange_rate.assert_called_once_with('USD')  # Confirm a new API call

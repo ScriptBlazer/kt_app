@@ -95,8 +95,8 @@
             <input class="sbig" type="checkbox" name="is_confirmed" {% if shuttle.is_confirmed %}checked{% endif %}>
         </p>
 
-        <p><strong>Customer Paid:</strong>
-            <input class="sbig" type="checkbox" name="is_paid" {% if shuttle.is_paid %}checked{% endif %}>
+        <p><strong>Customer paid</strong> <span class="form-hint">(from payments)</span>:
+            {% if shuttle.is_paid %}<span class="status-yes">Yes</span>{% else %}<span class="status-no">No</span>{% endif %}
         </p>
 
         <p><strong>Freelancer job:</strong>

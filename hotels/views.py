@@ -309,9 +309,9 @@ def update_guest_status(request, guest_id):
 
     # Update checkboxes from POST
     guest.is_confirmed = 'is_confirmed' in request.POST
-    guest.is_paid = 'is_paid' in request.POST
     guest.is_completed = 'is_completed' in request.POST
     guest.is_freelancer = 'is_freelancer' in request.POST  # <-- FIX: Persist freelancer flag
+    # is_paid is synced from payments + customer pays (EUR); not set from POST
 
     # --- VALIDATION: Freelancer must have an agent assigned ---
     if guest.is_freelancer and not guest.agent:
@@ -319,14 +319,6 @@ def update_guest_status(request, guest_id):
             'guest': guest,
             'error_message': 'A freelancer booking must have an agent assigned before updating the status.'
         }, status=400)
-
-    # --- VALIDATION: Paid must have at least one payment ---
-    if guest.is_paid:
-        if not guest.payments.exists():
-            return render(request, 'hotels/view_guests.html', {
-                'guest': guest,
-                'error_message': 'Cannot mark as paid: no payments have been recorded for this booking.'
-            }, status=400)
 
     # --- VALIDATION: Completed requires payment type and paid_to ---
     if guest.is_completed:

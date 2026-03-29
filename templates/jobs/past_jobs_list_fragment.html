@@ -1,0 +1,85 @@
+{% load custom_filters %}
+{% load audit_extras %}
+<ul class="past-jobs-live-ul">
+{% for item in past_jobs %}
+    <li class="job-container {% if item.color == 'red' %}red-job{% elif item.color == 'orange' %}orange-job{% elif item.color == 'green' %}green-job{% else %}white-job{% endif %}">
+        {% if item.type == 'job' %}
+            {% audit_tag_row item.created_by item.last_modified_by "jobs" "job" item.id %}
+        {% elif item.type == 'shuttle' %}
+            {% audit_tag_row item.created_by item.last_modified_by "shuttle" "shuttle" item.id "small" %}
+        {% elif item.type == 'hotel' %}
+            {% audit_tag_row item.created_by item.last_modified_by "hotels" "hotelbooking" item.id %}
+        {% endif %}
+
+        <span class="customer-name">{{ item.customer_name|truncate_words_chars }}</span>
+
+        <div class="job-info">
+            {% if item.type == 'job' %}
+                <span class="slim">{{ item.job_date }}</span>
+                <span class="phone">{{ item.job_time|time_format }}</span>
+                <span class="phone">{{ item.job_price }} {{ item.job_currency }}</span>
+                <span class="phone">{{ item.pick_up_location|truncate_words_chars }}</span>
+            {% elif item.type == 'shuttle' %}
+                <span class="slim">{{ item.shuttle_date }}</span>
+                <span class="phone">{{ item.get_shuttle_direction_display|default:"No direction" }}</span>
+                <span class="phone">{{ item.price|floatformat:2 }} EUR</span>
+                <span class="phone">{{ item.no_of_passengers }} Passengers</span>
+            {% elif item.type == 'hotel' %}
+                <span class="slim">{{ item.check_in|date:"d M Y" }}</span>
+                <span class="phone">{{ item.no_of_people }} guests</span>
+                <span class="phone">Pays {{ item.customer_pays }} {{ item.customer_pays_currency }}</span>
+                <span class="phone">Hotel {{ item.hotel_price }} {{ item.hotel_price_currency }}</span>
+            {% endif %}
+        </div>
+
+        <div class="button-group">
+            {% if item.type == 'job' %}
+                <a href="{% url 'jobs:edit_job' item.id %}" class="button phone">Edit</a>
+                <a href="{% url 'jobs:view_job' item.id %}" class="button">View</a>
+            {% elif item.type == 'shuttle' %}
+                <a href="{% url 'shuttle:edit_passengers' item.id %}" class="button phone button-purple">Edit</a>
+                <a href="{% url 'shuttle:view_passengers' item.id %}" class="button button-purple">View</a>
+            {% elif item.type == 'hotel' %}
+                <a href="{% url 'hotels:edit_guests' item.id %}" class="button phone button-purple">Edit</a>
+                <a href="{% url 'hotels:view_guests' item.id %}" class="button button-purple">View</a>
+            {% endif %}
+        </div>
+
+        <div class="job-type-icon">
+            {% if item.type == 'job' %}
+                <i class="fas fa-car" title="Driving Job" style="color: #007bff;"></i>
+            {% elif item.type == 'shuttle' %}
+                <i class="fas fa-shuttle-van" title="Shuttle" style="color: purple;"></i>
+            {% elif item.type == 'hotel' %}
+                <i class="fas fa-hotel" title="Hotel Booking" style="color: purple;"></i>
+            {% endif %}
+        </div>
+    </li>
+{% empty %}
+    <li>No past jobs.</li>
+{% endfor %}
+</ul>
+
+<div class="pagination">
+    <span class="step-links">
+        {% if past_jobs.has_previous %}
+            <a href="{% url 'jobs:past_jobs' %}?page=1{% if query %}&q={{ query|urlencode }}{% endif %}{% if filter_type %}&type={{ filter_type }}{% endif %}" class="pagination-btn">&laquo; First</a>
+            <a href="{% url 'jobs:past_jobs' %}?page={{ past_jobs.previous_page_number }}{% if query %}&q={{ query|urlencode }}{% endif %}{% if filter_type %}&type={{ filter_type }}{% endif %}" class="pagination-btn">Previous</a>
+        {% else %}
+            <span class="pagination-btn" disabled>&laquo; First</span>
+            <span class="pagination-btn" disabled>Previous</span>
+        {% endif %}
+
+        <span class="current-page">
+            Page {{ past_jobs.number }} of {{ past_jobs.paginator.num_pages }}.
+        </span>
+
+        {% if past_jobs.has_next %}
+            <a href="{% url 'jobs:past_jobs' %}?page={{ past_jobs.next_page_number }}{% if query %}&q={{ query|urlencode }}{% endif %}{% if filter_type %}&type={{ filter_type }}{% endif %}" class="pagination-btn">Next</a>
+            <a href="{% url 'jobs:past_jobs' %}?page={{ past_jobs.paginator.num_pages }}{% if query %}&q={{ query|urlencode }}{% endif %}{% if filter_type %}&type={{ filter_type }}{% endif %}" class="pagination-btn">Last &raquo;</a>
+        {% else %}
+            <span class="pagination-btn" disabled>Next</span>
+            <span class="pagination-btn" disabled>Last &raquo;</span>
+        {% endif %}
+    </span>
+</div>

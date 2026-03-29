@@ -333,19 +333,17 @@ def update_shuttle_status(request, id):
 
     # Retrieve the intended new statuses from the POST request
     is_confirmed = 'is_confirmed' in request.POST
-    is_paid = 'is_paid' in request.POST
     is_completed = 'is_completed' in request.POST
     is_freelancer = 'is_freelancer' in request.POST
+    # is_paid follows payments + list price automatically; not set from POST
 
     if is_freelancer and not shuttle.driver:
         error_message = 'You must assign a driver before marking this shuttle as a freelancer job.'
 
     # Enforce dependencies between statuses
-    if error_message is None and is_paid and not is_confirmed:
-        error_message = 'Shuttle must be confirmed before it can be marked as paid.'
-    elif error_message is None and is_completed and not is_confirmed:
+    if error_message is None and is_completed and not is_confirmed:
         error_message = 'To mark the shuttle as completed, it must first be confirmed.'
-    elif error_message is None and is_completed and not is_paid:
+    elif error_message is None and is_completed and not shuttle.is_paid:
         error_message = 'Shuttle must be paid before it can be marked as completed.'
 
     # Additional rule: prevent unconfirming if certain conditions are met
@@ -365,25 +363,6 @@ def update_shuttle_status(request, id):
             paid_to_staff=None
         ).exists():
             error_message = 'Shuttle cannot be unconfirmed because there is a completed payment entry.'
-
-    # Check for a complete payment entry when marking as paid
-    if error_message is None and is_paid and not shuttle.is_paid:
-        complete_payment_exists = Payment.objects.filter(
-            shuttle=shuttle,
-            payment_amount__isnull=False,
-            payment_currency__isnull=False,
-            payment_type__isnull=False,
-        ).exclude(
-            paid_to_driver=None,
-            paid_to_agent=None,
-            paid_to_staff=None
-        ).exists()
-
-        if not complete_payment_exists:
-            error_message = (
-                'To mark the shuttle as paid, there must be at least one fully completed payment entry '
-                '(amount, currency, payment type, and recipient).'
-            )
 
     # Check for a complete payment entry when marking as completed
     elif error_message is None and is_completed and not shuttle.is_completed:
@@ -407,7 +386,6 @@ def update_shuttle_status(request, id):
     # If no errors, update the shuttle statuses
     if error_message is None:
         shuttle.is_confirmed = is_confirmed
-        shuttle.is_paid = is_paid
         shuttle.is_completed = is_completed
         shuttle.is_freelancer = is_freelancer
         shuttle.last_modified_by = request.user

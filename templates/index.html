@@ -8,6 +8,25 @@
 
 {% block content %}
 <div class="container">
+    <aside class="home-fx-banner" aria-label="Reference exchange rates">
+        <span class="home-fx-banner__intro">How much in EUR</span>
+        {% for item in fx_banner.fx_items %}
+        <span class="home-fx-banner__chip" title="{{ item.label }}">
+            {% if item.foreign_to_eur is not None %}
+            <span class="home-fx-banner__pair"><span class="home-fx-banner__amt">{{ item.foreign_unit_label }}</span> ≈ €{{ item.foreign_to_eur|floatformat:2|intcomma }}</span>
+            <span class="home-fx-banner__pair home-fx-banner__pair--sub">€1 ≈ {% if item.code == 'HUF' %}{{ item.eur_to_foreign|floatformat:0|intcomma }} HUF{% else %}{{ item.eur_to_foreign|floatformat:2|intcomma }} {{ item.code }}{% endif %}</span>
+            {% else %}
+            <span class="home-fx-banner__pair"><strong>{{ item.code }}</strong> —</span>
+            {% endif %}
+        </span>
+        {% endfor %}
+        {% if fx_banner.fx_last_refresh %}
+        <span class="home-fx-banner__time">Last API refresh {{ fx_banner.fx_last_refresh|date:"j M Y, H:i" }} (Budapest)</span>
+        {% else %}
+        <span class="home-fx-banner__time home-fx-banner__time--muted">Rates appear after the first conversion or scheduled fetch</span>
+        {% endif %}
+    </aside>
+
     <div class="buttons">
         <div class="left-buttons">
             <a href="{% url 'common:services' %}" class="button button-purple">Services</a>

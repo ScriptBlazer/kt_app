@@ -2,6 +2,12 @@ from django.db import models
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.conf import settings
+from common.payment_paid_sync import (
+    sync_hotel_is_paid_from_payments,
+    sync_job_is_paid_from_payments,
+    sync_parent_is_paid_after_payment_change,
+    sync_shuttle_is_paid_from_payments,
+)
 from common.utils import get_exchange_rate, CURRENCY_CHOICES, AGENT_FEE_CHOICES, PAYMENT_TYPE_CHOICES
 from people.models import Agent, Driver, Staff
 from decimal import Decimal
@@ -47,6 +53,19 @@ class Payment(models.Model):
         # Perform currency conversion to euros
         self.convert_to_euros()
         super().save(*args, **kwargs)
+        sync_parent_is_paid_after_payment_change(self)
+
+    def delete(self, *args, **kwargs):
+        job_id = self.job_id
+        shuttle_id = self.shuttle_id
+        hotel_booking_id = self.hotel_booking_id
+        super().delete(*args, **kwargs)
+        if job_id:
+            sync_job_is_paid_from_payments(job_id)
+        if shuttle_id:
+            sync_shuttle_is_paid_from_payments(shuttle_id)
+        if hotel_booking_id:
+            sync_hotel_is_paid_from_payments(hotel_booking_id)
 
     def convert_to_euros(self):
         """Convert the payment amount to euros."""

@@ -10,6 +10,7 @@ from people.models import Staff, Driver
 from decimal import Decimal
 from people.models import Driver
 from common.utils import get_exchange_rate, CURRENCY_CHOICES
+from common.payment_paid_sync import sync_shuttle_is_paid_from_payments
 from decimal import Decimal, ROUND_HALF_UP
 
 
@@ -106,7 +107,13 @@ class Shuttle(models.Model):
         payment_settings = PaymentSettings.objects.first()
         cc_fee_percentage = payment_settings.cc_fee_percentage if payment_settings else Decimal('7.00')
 
+        was_adding = self._state.adding
         super(Shuttle, self).save(*args, **kwargs)
+        sync_shuttle_is_paid_from_payments(self.pk)
+        self.refresh_from_db(fields=['is_paid'])
+        from analytics.services import apply_shuttle_analytics_after_save
+
+        apply_shuttle_analytics_after_save(was_adding, self)
 
 
 # --- ShuttleDailyCost Model ---

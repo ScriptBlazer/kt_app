@@ -164,8 +164,9 @@
             <input class="sbig" type="checkbox" id="is_confirmed" name="is_confirmed" {% if job.is_confirmed %}checked{% endif %}>
         </p>
 
-        <p><strong>Customer Paid:</strong> 
-            <input class="sbig" type="checkbox" id="is_paid" name="is_paid" {% if job.is_paid %}checked{% endif %}>
+        {# is_paid is maintained automatically from payment rows + job price #}
+        <p><strong>Customer paid</strong> <span class="form-hint">(from payments)</span>:
+            {% if job.is_paid %}<span class="status-yes">Yes</span>{% else %}<span class="status-no">No</span>{% endif %}
         </p>
     
         <!-- {% if user.is_superuser %}

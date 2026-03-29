@@ -19,12 +19,16 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden
 from decimal import Decimal
 import logging
-from django.http import Http404
+from django.http import Http404, HttpResponse
 import pytz
-from common.utils import assign_job_color, now_budapest, form_and_formset_error_summary
+from common.utils import (
+    assign_job_color,
+    now_budapest,
+    form_and_formset_error_summary,
+    get_home_exchange_rate_banner_context,
+)
 import datetime
 from django.utils.html import escape
-from itertools import chain
 from operator import attrgetter
 from django.utils.timezone import make_aware, is_naive
 logger = logging.getLogger('kt')
@@ -113,6 +117,7 @@ def home(request):
         'older_shuttles': all_upcoming_shuttles[3:],
         'upcoming_hotels': all_upcoming_hotels[:3],
         'older_hotels': all_upcoming_hotels[3:],
+        'fx_banner': get_home_exchange_rate_banner_context(),
     }
 
     return render(request, 'index.html', context)
@@ -194,6 +199,11 @@ def enquiries(request):
 def past_jobs(request):
     now = timezone.now().astimezone(hungary_tz)
     query = request.GET.get('q', '')
+    raw_type = (request.GET.get('type') or '').strip().lower()
+    if raw_type not in ('job', 'shuttle', 'hotel'):
+        filter_type = ''
+    else:
+        filter_type = raw_type
 
     job_filter = (
         Q(job_date__lt=now.date()) |
@@ -221,29 +231,41 @@ def past_jobs(request):
             shuttle_queryset = shuttle_queryset.filter(filters)
             hotel_queryset = hotel_queryset.filter(filters)
 
-        for job in job_queryset:
-            job.type = 'job'
-            job.date_sort = make_aware(datetime.datetime.combine(job.job_date, job.job_time), timezone=hungary_tz)
-            job.color = assign_job_color(job, now)
+        include_job = filter_type in ('', 'job')
+        include_shuttle = filter_type in ('', 'shuttle')
+        include_hotel = filter_type in ('', 'hotel')
 
-        for shuttle in shuttle_queryset:
-            shuttle.type = 'shuttle'
-            shuttle.date_sort = make_aware(datetime.datetime.combine(shuttle.shuttle_date, datetime.time.min), timezone=hungary_tz)
-            shuttle.color = assign_job_color(shuttle, now)
+        combined = []
+        if include_job:
+            for job in job_queryset:
+                job.type = 'job'
+                job.date_sort = make_aware(
+                    datetime.datetime.combine(job.job_date, job.job_time), timezone=hungary_tz
+                )
+                job.color = assign_job_color(job, now)
+                combined.append(job)
 
-        for hotel in hotel_queryset:
-            hotel.type = 'hotel'
-            hotel_date = hotel.check_in
-            if is_naive(hotel_date):
-                hotel_date = make_aware(hotel_date, timezone=hungary_tz)
-            hotel.date_sort = hotel_date
-            hotel.color = assign_job_color(hotel, now)
+        if include_shuttle:
+            for shuttle in shuttle_queryset:
+                shuttle.type = 'shuttle'
+                shuttle.date_sort = make_aware(
+                    datetime.datetime.combine(shuttle.shuttle_date, datetime.time.min),
+                    timezone=hungary_tz,
+                )
+                shuttle.color = assign_job_color(shuttle, now)
+                combined.append(shuttle)
 
-        combined = sorted(
-            chain(job_queryset, shuttle_queryset, hotel_queryset),
-            key=attrgetter('date_sort'),
-            reverse=True
-        )
+        if include_hotel:
+            for hotel in hotel_queryset:
+                hotel.type = 'hotel'
+                hotel_date = hotel.check_in
+                if is_naive(hotel_date):
+                    hotel_date = make_aware(hotel_date, timezone=hungary_tz)
+                hotel.date_sort = hotel_date
+                hotel.color = assign_job_color(hotel, now)
+                combined.append(hotel)
+
+        combined.sort(key=attrgetter('date_sort'), reverse=True)
 
         paginator = Paginator(combined, 10)
         page_number = request.GET.get('page')
@@ -251,13 +273,23 @@ def past_jobs(request):
 
     except Exception as e:
         logger.error(f"[PAST JOBS ERROR] {e}")
+        if request.GET.get('_partial') == '1':
+            return HttpResponse(
+                '<p class="past-jobs-error">Could not load results.</p>',
+                status=500,
+                content_type='text/html; charset=utf-8',
+            )
         return render(request, 'errors/error_page.html', {'error_message': 'An error occurred fetching past jobs.'})
 
-    return render(request, 'jobs/past_jobs.html', {
+    ctx = {
         'past_jobs': page_obj,
         'query': query,
+        'filter_type': filter_type,
         'month_range': [(i, datetime.date(1900, i, 1).strftime('%B')) for i in range(1, 13)],
-    })
+    }
+    if request.GET.get('_partial') == '1':
+        return render(request, 'jobs/past_jobs_list_fragment.html', ctx)
+    return render(request, 'jobs/past_jobs.html', ctx)
 
 
 @login_required
@@ -509,15 +541,13 @@ def update_job_status(request, job_id):
 
     # Retrieve the intended new statuses from the POST request
     is_confirmed = 'is_confirmed' in request.POST
-    is_paid = 'is_paid' in request.POST
     is_completed = 'is_completed' in request.POST
+    # is_paid is derived from payments + price (see payment_paid_sync); not set from POST
 
     # Enforce dependencies between statuses
-    if is_paid and not is_confirmed:
-        error_message = 'Job must be confirmed before it can be marked as paid.'
-    elif is_completed and not is_confirmed:
+    if is_completed and not is_confirmed:
         error_message = 'Job must be confirmed before it can be marked as completed.'
-    elif is_completed and not is_paid:
+    elif is_completed and not job.is_paid:
         error_message = 'Job must be paid before it can be marked as completed.'
     
     # Additional rule: prevent unconfirming if certain conditions are met
@@ -537,25 +567,6 @@ def update_job_status(request, job_id):
             paid_to_staff=None
         ).exists():
             error_message = 'Job cannot be unconfirmed because there is a completed payment entry.'
-
-    # Check for a complete payment entry when marking as paid
-    if error_message is None and is_paid and not job.is_paid:
-        complete_payment_exists = Payment.objects.filter(
-            job=job,
-            payment_amount__isnull=False,
-            payment_currency__isnull=False,
-            payment_type__isnull=False,
-        ).exclude(
-            paid_to_driver=None,
-            paid_to_agent=None,
-            paid_to_staff=None
-        ).exists()
-
-        if not complete_payment_exists:
-            error_message = (
-                'To mark the job as paid, there must be at least one fully completed payment entry '
-                '(amount, currency, payment type, and recipient).'
-            )
 
     # Check for a complete payment entry when marking as completed
     elif error_message is None and is_completed and not job.is_completed:
@@ -579,7 +590,6 @@ def update_job_status(request, job_id):
     # If no errors, update the job statuses
     if error_message is None:
         job.is_confirmed = is_confirmed
-        job.is_paid = is_paid
         job.is_completed = is_completed
         job.is_freelancer = is_freelancer
         # job.freelancer = freelancer  # Removed as per refactor
