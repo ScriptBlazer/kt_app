@@ -1521,7 +1521,7 @@ input[type="checkbox"][name$="-DELETE"] {
             .lne h1 {
                 padding-left: 25px;
                 font-size: 1.4em;
-            };
+            }
 
             .container {
                 min-width: 40%;
@@ -1608,10 +1608,38 @@ input[type="checkbox"][name$="-DELETE"] {
                 display: flex;
             }
 
+            @media (max-width: 450px) {
+                html {
+                    font-size: 15px;
+                }
 
-            @media (max-width: 415px) {
+                /* Title was absolute left; relative + justify-content:end clustered everything right */
+                .lne {
+                    justify-content: space-between;
+                    align-items: center;
+                    padding-left: 12px;
+                    padding-right: 12px;
+                }
+
                 .lne h1 {
                     position: relative;
+                    left: auto;
+                    font-size: 1.25em;
+                    padding-left: 0;
+                    margin: 0.35em 0;
+                    flex: 0 1 auto;
+                    min-width: 0;
+                    text-align: left;
+                }
+
+                .lne h1 a {
+                    display: inline-block;
+                    max-width: 100%;
+                }
+
+                .lne .hunfrd {
+                    flex: 0 0 auto;
+                    margin-right: 0;
                 }
 
                 .container {
@@ -1619,15 +1647,124 @@ input[type="checkbox"][name$="-DELETE"] {
                 }
 
                 .content {
-                    padding: 5px;
+                    padding: 6px;
+                }
+
+                h2 {
+                    font-size: 1.1em;
+                }
+
+                h3 {
+                    font-size: 1.05em;
+                }
+
+                h4 {
+                    font-size: 0.98em;
+                }
+
+                a.button,
+                button {
+                    font-size: 0.9em;
+                    padding: 8px 14px;
+                    margin: 6px 0;
+                }
+
+                .view {
+                    padding: 8px;
+                }
+
+                .job-container {
+                    padding: 8px 10px;
+                }
+
+                .form-group {
+                    margin-bottom: 0.65rem;
                 }
 
                 .small-phone {
                     display: none;
                 }
 
-                @media (max-width: 295px) {
+                .mobile-bottom-nav {
+                    height: 54px;
+                }
 
+                .mobile-nav-item {
+                    font-size: 11px;
+                }
+
+                .mobile-nav-item i {
+                    font-size: 19px;
+                }
+
+                .pagination,
+                .pagination-btn,
+                .pagination .current-page {
+                    font-size: 11px;
+                }
+
+                .pagination-btn,
+                .pagination .current-page {
+                    padding: 3px 5px;
+                }
+
+                /* Home FX: one horizontal row; hide inverse + refresh line to save height */
+                .home-fx-banner {
+                    flex-wrap: nowrap;
+                    align-items: center;
+                    overflow-x: auto;
+                    -webkit-overflow-scrolling: touch;
+                    font-size: 0.62rem;
+                    line-height: 1.25;
+                    padding: 0.35rem 0.45rem;
+                    margin-bottom: 0.6rem;
+                    gap: 0.28rem;
+                    scrollbar-width: thin;
+                }
+
+                .home-fx-banner__intro {
+                    flex: 0 0 auto;
+                    width: auto;
+                    margin-bottom: 0;
+                    margin-right: 0.1rem;
+                    font-size: 0.58rem;
+                    font-weight: 600;
+                    white-space: nowrap;
+                }
+
+                .home-fx-banner__chip {
+                    flex: 0 0 auto;
+                    flex-direction: row;
+                    flex-wrap: nowrap;
+                    align-items: baseline;
+                    gap: 0.2rem;
+                    padding: 0.2rem 0.38rem;
+                    border-radius: 5px;
+                }
+
+                .home-fx-banner__pair {
+                    display: inline;
+                    white-space: nowrap;
+                }
+
+                .home-fx-banner__pair--sub {
+                    display: none;
+                }
+
+                .home-fx-banner__amt {
+                    font-size: 0.95em;
+                }
+
+                .home-fx-banner__time,
+                .home-fx-banner__time--muted {
+                    display: none;
+                }
+
+                .form-hint {
+                    font-size: 0.8em;
+                }
+
+                @media (max-width: 295px) {
                     .slim {
                         display: none;
                     }

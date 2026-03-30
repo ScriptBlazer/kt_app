@@ -106,11 +106,10 @@
             {% audit_tag_row hotel.created_by hotel.last_modified_by "hotels" "hotelbooking" hotel.id %}
             <span class="customer-name">{{ hotel.customer_name|truncate_words_chars }}</span>
             <div class="job-info">
-                <span>{{ hotel.customer_name }}</span>
-                <span>{{ hotel.check_in|date:"d M Y" }}</span>
-                <span>{{ hotel.no_of_people }}</span>
-                <span>{{ hotel.customer_pays }} {{ hotel.customer_pays_currency }}</span>
-                <span>{{ hotel.hotel_price }} {{ hotel.hotel_price_currency }}</span>
+                <span class="slim">{{ hotel.check_in|date:"d M Y" }}</span>
+                <span class="phone">{{ hotel.no_of_people }}</span>
+                <span class="phone">{{ hotel.customer_pays }} {{ hotel.customer_pays_currency }}</span>
+                <span class="phone">{{ hotel.hotel_price }} {{ hotel.hotel_price_currency }}</span>
             </div>
             <div class="button-group">
                 <a href="{% url 'hotels:edit_guests' hotel.id %}" class="button tablet button-purple">Edit</a>
