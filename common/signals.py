@@ -30,6 +30,10 @@ def _store_audit(instance, created, raw):
     log_audit(instance, 'updated', user, ts, changes=changes)
 
 
+def _on_audited_save(sender, instance, created, raw, **kwargs):
+    _store_audit(instance, created, raw)
+
+
 _registered = False
 
 
@@ -44,9 +48,6 @@ def register_audit_signals():
     from hotels.models import HotelBooking
     from expenses.models import Expense
 
-    def on_audited_save(sender, instance, created, raw, **kwargs):
-        _store_audit(instance, created, raw)
-
     for model in (Job, Shuttle, HotelBooking, Expense):
         pre_save.connect(
             _capture_pre_save,
@@ -54,7 +55,7 @@ def register_audit_signals():
             dispatch_uid=f'kt-audit-pre-{model._meta.label}',
         )
         post_save.connect(
-            on_audited_save,
+            _on_audited_save,
             sender=model,
             dispatch_uid=f'kt-audit-{model._meta.label}',
         )
