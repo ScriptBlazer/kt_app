@@ -1,7 +1,8 @@
 from django.shortcuts import render
-from django.db.models import Sum
+from django.db.models import Count, Max, Sum
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden
+from django.core.cache import cache
 from people.models import Agent, Driver, Staff
 from django.utils import timezone
 from jobs.models import Job
@@ -42,6 +43,19 @@ logger = logging.getLogger('kt')
 
 # Set the timezone to Hungary (Budapest)
 budapest_tz = pytz.timezone('Europe/Budapest')
+TOTALS_CACHE_TTL_SECONDS = 30
+
+
+def _totals_data_fingerprint() -> str:
+    """
+    Build a lightweight cache-busting fingerprint from row counts/max IDs.
+    This keeps totals cache small-lived while avoiding stale responses after writes.
+    """
+    model_stats = []
+    for model in (Job, Shuttle, HotelBooking, Payment, Expense):
+        agg = model.objects.aggregate(row_count=Count('id'), max_id=Max('id'))
+        model_stats.append(f"{agg['row_count'] or 0}:{agg['max_id'] or 0}")
+    return "|".join(model_stats)
 
 
 def get_agent_totals(jobs, hotels):
@@ -104,6 +118,12 @@ def totals(request):
     now = timezone.now().astimezone(budapest_tz)
     current_year = now.year
     current_month = now.month
+    totals_cache_key = (
+        f"billing:totals:v2:{current_year}:{current_month}:{_totals_data_fingerprint()}"
+    )
+    cached_context = cache.get(totals_cache_key)
+    if cached_context is not None:
+        return render(request, 'billing/totals.html', cached_context)
 
     # Fetch all expense types dynamically from the Expense model
     expense_types = [expense_type[0] for expense_type in Expense.EXPENSE_TYPES]
@@ -539,7 +559,7 @@ def totals(request):
 
     """Render all totals"""
     # Render the template with context
-    return render(request, 'billing/totals.html', {
+    context = {
         'now': now,
         'show_totals': show_totals,
 
@@ -634,7 +654,9 @@ def totals(request):
         'driving_agent_totals': driving_agent_totals,
         'hotel_agent_totals': hotel_agent_totals,
         'agent_totals': get_agent_totals(all_driving, all_hotels),
-    })
+    }
+    cache.set(totals_cache_key, context, TOTALS_CACHE_TTL_SECONDS)
+    return render(request, 'billing/totals.html', context)
 
     
 
