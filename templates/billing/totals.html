@@ -5,6 +5,10 @@
 
 {% block title %}Totals{% endblock %}
 
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'totals.css' %}">
+{% endblock %}
+
 {% block content %}
     {% if not show_totals %}
         <div class="container">
@@ -41,85 +45,272 @@
                     <!-- <a href="#agent-totals" class="button button-orange">Agent Totals</a>  -->
                     </div>
                     <h1>Totals</h1>
-                    <div class="row">
-                        <div class="column total-box">
-                            <h2>{{ now|date:"F" }} Totals</h2>
-                            <div class="totals-text">
-                                <p>Total Turnover: <strong>€{{ monthly_total_income|floatformat:2|intcomma }}</strong></p>
-                                <p class="{% if monthly_unpaid_total > 0 %}red{% else %}black{% endif %}">Total Unpaid Jobs: 
-                                    <strong>€{{ monthly_unpaid_total|floatformat:2|intcomma }}</strong>
-                                </p>
-                                <br>
-                                <p>Total Driving Jobs Income: <strong>€{{ monthly_driving_income|floatformat:2|intcomma }}</strong></p>
-                                <p>Total Shuttle Income: <strong>€{{ monthly_shuttle_income|floatformat:2|intcomma }}</strong></p>
-                                <p>Total Hotels Income: <strong>€{{monthly_hotel_income|floatformat:2|intcomma}}</strong></p>
-                                <br>
-                                <p>Total Expenses: <strong>€{{ monthly_total_expenses|floatformat:2|intcomma }}</strong></p>
-                                <p>Total Agent Fees: <strong>€{{ monthly_total_agent_fees|floatformat:2|intcomma }}</strong></p>
-                                <p>Total Driver Fees: <strong>€{{ monthly_total_driver_fees|floatformat:2|intcomma }}</strong></p>
 
-                                <br>
-                                <p>Total Profit from All Jobs: <strong>€{{ monthly_total_profit|floatformat:2|intcomma }}</strong></p>
-                                <p>Overall Profit (After Expenses): <strong>€{{ monthly_overall_profit|floatformat:2|intcomma }}</strong></p>
+                    <section class="totals-page" aria-labelledby="totals-heading">
+                        <div class="totals-inner">
+                            <header class="totals-hero">
+                                <h2 id="totals-heading">KT margin — what we made vs still owed</h2>
+                                <p class="totals-meta">These figures are KT’s share on each booking (from stored subtotal where present). <strong>Paid</strong> is all recorded payment money linked to the bookings shown in this section. <strong>Unpaid</strong> starts from bookings still marked unpaid, then subtracts payments on those same unpaid bookings (never below zero per booking). Shuttle uses trip price as margin until costs are modeled separately.</p>
+                            </header>
+                            <section class="totals-guide" aria-label="How KT margin cards work">
+                                <h3>How to read these cards</h3>
+                                <div class="totals-guide-grid">
+                                    <div class="totals-guide-item">
+                                        <strong>Total (center of donut)</strong>
+                                        <p>Your full KT margin for confirmed bookings in that bucket.</p>
+                                    </div>
+                                    <div class="totals-guide-item">
+                                        <strong>Paid</strong>
+                                        <p>All payment money recorded for those bookings in that time range.</p>
+                                    </div>
+                                    <div class="totals-guide-item">
+                                        <strong>Unpaid</strong>
+                                        <p>KT margin still open on bookings marked unpaid, minus any partial payments on those same bookings.</p>
+                                    </div>
+                                    <div class="totals-guide-item">
+                                        <strong>Driving / Shuttle / Hotel</strong>
+                                        <p>Each card shows that service type only; snapshots combine all three.</p>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <h3 class="totals-section-title">All-time</h3>
+                            <div class="totals-grid">
+                                <article class="totals-card totals-card--driving" data-empty="{% if overall_driving_margin_segment.empty %}true{% else %}false{% endif %}">
+                                    <h3>Driving</h3>
+                                    <div class="totals-donut-wrap" aria-hidden="true">
+                                        <div class="totals-donut" style="--paid-deg: {{ overall_driving_margin_segment.paid_deg }}deg;"></div>
+                                        <div class="totals-donut-center">
+                                            <span class="totals-donut-total">{{ overall_driving_margin_segment.total|floatformat:2|intcomma }}</span>
+                                            <span class="totals-donut-label">KT margin</span>
+                                        </div>
+                                    </div>
+                                    <div class="totals-segbar" title="Share paid">
+                                        <div class="totals-segbar-fill" style="width: {{ overall_driving_margin_segment.paid_pct }}%;"></div>
+                                    </div>
+                                    <dl class="totals-stats">
+                                        <div>
+                                            <dt>Paid</dt>
+                                            <dd>€{{ overall_driving_margin_segment.paid|floatformat:2|intcomma }}</dd>
+                                        </div>
+                                        <div class="totals-stat--unpaid">
+                                            <dt>Unpaid</dt>
+                                            <dd>€{{ overall_driving_margin_segment.unpaid|floatformat:2|intcomma }}</dd>
+                                        </div>
+                                    </dl>
+                                </article>
+
+                                <article class="totals-card totals-card--shuttle" data-empty="{% if overall_shuttle_margin_segment.empty %}true{% else %}false{% endif %}">
+                                    <h3>Shuttle</h3>
+                                    <div class="totals-donut-wrap" aria-hidden="true">
+                                        <div class="totals-donut" style="--paid-deg: {{ overall_shuttle_margin_segment.paid_deg }}deg;"></div>
+                                        <div class="totals-donut-center">
+                                            <span class="totals-donut-total">{{ overall_shuttle_margin_segment.total|floatformat:2|intcomma }}</span>
+                                            <span class="totals-donut-label">KT margin</span>
+                                        </div>
+                                    </div>
+                                    <div class="totals-segbar" title="Share paid">
+                                        <div class="totals-segbar-fill" style="width: {{ overall_shuttle_margin_segment.paid_pct }}%;"></div>
+                                    </div>
+                                    <dl class="totals-stats">
+                                        <div>
+                                            <dt>Paid</dt>
+                                            <dd>€{{ overall_shuttle_margin_segment.paid|floatformat:2|intcomma }}</dd>
+                                        </div>
+                                        <div class="totals-stat--unpaid">
+                                            <dt>Unpaid</dt>
+                                            <dd>€{{ overall_shuttle_margin_segment.unpaid|floatformat:2|intcomma }}</dd>
+                                        </div>
+                                    </dl>
+                                </article>
+
+                                <article class="totals-card totals-card--hotel" data-empty="{% if overall_hotel_margin_segment.empty %}true{% else %}false{% endif %}">
+                                    <h3>Hotel</h3>
+                                    <div class="totals-donut-wrap" aria-hidden="true">
+                                        <div class="totals-donut" style="--paid-deg: {{ overall_hotel_margin_segment.paid_deg }}deg;"></div>
+                                        <div class="totals-donut-center">
+                                            <span class="totals-donut-total">{{ overall_hotel_margin_segment.total|floatformat:2|intcomma }}</span>
+                                            <span class="totals-donut-label">KT margin</span>
+                                        </div>
+                                    </div>
+                                    <div class="totals-segbar" title="Share paid">
+                                        <div class="totals-segbar-fill" style="width: {{ overall_hotel_margin_segment.paid_pct }}%;"></div>
+                                    </div>
+                                    <dl class="totals-stats">
+                                        <div>
+                                            <dt>Paid</dt>
+                                            <dd>€{{ overall_hotel_margin_segment.paid|floatformat:2|intcomma }}</dd>
+                                        </div>
+                                        <div class="totals-stat--unpaid">
+                                            <dt>Unpaid</dt>
+                                            <dd>€{{ overall_hotel_margin_segment.unpaid|floatformat:2|intcomma }}</dd>
+                                        </div>
+                                    </dl>
+                                </article>
+                            </div>
+
+                            <h2 class="totals-bottom-heading totals-bottom-heading--inline">KT margin snapshots</h2>
+                            <p class="totals-bottom-lead">Monthly, calendar year, and all-time. Figures are KT margin only (what you booked as your share). Unpaid is only from bookings still marked unpaid, reduced by partial payments on those same unpaid bookings.</p>
+                            <section class="totals-guide totals-guide--compact" aria-label="How snapshot cards work">
+                                <div class="totals-guide-grid">
+                                    <div class="totals-guide-item">
+                                        <strong>{{ now|date:"F" }}</strong>
+                                        <p>Only confirmed bookings with dates in this month.</p>
+                                    </div>
+                                    <div class="totals-guide-item">
+                                        <strong>{{ now.year }}</strong>
+                                        <p>Only confirmed bookings in this calendar year.</p>
+                                    </div>
+                                    <div class="totals-guide-item">
+                                        <strong>All-time</strong>
+                                        <p>All confirmed bookings in the database.</p>
+                                    </div>
+                                    <div class="totals-guide-item">
+                                        <strong>Paid vs Unpaid</strong>
+                                        <p>Paid is recorded money on bookings in that period; unpaid is open margin on unpaid bookings after subtracting their own partial payments.</p>
+                                    </div>
+                                </div>
+                            </section>
+                            <div class="totals-period-grid">
+                                <article class="totals-period-card">
+                                    <h3>{{ now|date:"F" }}</h3>
+                                    <div class="totals-period-head">
+                                        <div class="totals-period-kpi">
+                                            <span class="label">Total KT margin</span>
+                                            <span class="value">€{{ monthly_total_margin|floatformat:2|intcomma }}</span>
+                                        </div>
+                                        <div class="totals-period-kpi">
+                                            <span class="label">Paid</span>
+                                            <span class="value">€{{ monthly_total_margin_segment.paid|floatformat:2|intcomma }}</span>
+                                        </div>
+                                        <div class="totals-period-kpi kpi-unpaid">
+                                            <span class="label">Unpaid</span>
+                                            <span class="value">€{{ monthly_total_margin_segment.unpaid|floatformat:2|intcomma }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="totals-period-subgrid">
+                                        <div class="mini">Expenses <strong>€{{ monthly_total_expenses|floatformat:2|intcomma }}</strong></div>
+                                        <div class="mini">Agent fees <strong>€{{ monthly_total_agent_fees|floatformat:2|intcomma }}</strong></div>
+                                        <div class="mini">Driver fees <strong>€{{ monthly_total_driver_fees|floatformat:2|intcomma }}</strong></div>
+                                        <div class="mini">Overall profit <strong>€{{ monthly_overall_profit|floatformat:2|intcomma }}</strong> <span class="totals-mini-hint">(margin − expenses)</span></div>
+                                    </div>
+                                    <div class="totals-jobtype-grid">
+                                        <div class="jobtype jobtype-driving">
+                                            <span class="name">Driving</span>
+                                            <span class="paid">Paid €{{ monthly_driving_margin_segment.paid|floatformat:2|intcomma }}</span>
+                                            <span class="unpaid">Unpaid €{{ monthly_driving_margin_segment.unpaid|floatformat:2|intcomma }}</span>
+                                        </div>
+                                        <div class="jobtype jobtype-shuttle">
+                                            <span class="name">Shuttle</span>
+                                            <span class="paid">Paid €{{ monthly_shuttle_margin_segment.paid|floatformat:2|intcomma }}</span>
+                                            <span class="unpaid">Unpaid €{{ monthly_shuttle_margin_segment.unpaid|floatformat:2|intcomma }}</span>
+                                        </div>
+                                        <div class="jobtype jobtype-hotel">
+                                            <span class="name">Hotel</span>
+                                            <span class="paid">Paid €{{ monthly_hotel_margin_segment.paid|floatformat:2|intcomma }}</span>
+                                            <span class="unpaid">Unpaid €{{ monthly_hotel_margin_segment.unpaid|floatformat:2|intcomma }}</span>
+                                        </div>
+                                    </div>
+                                </article>
+
+                                <article class="totals-period-card">
+                                    <h3>{{ now.year }}</h3>
+                                    <div class="totals-period-head">
+                                        <div class="totals-period-kpi">
+                                            <span class="label">Total KT margin</span>
+                                            <span class="value">€{{ yearly_total_margin|floatformat:2|intcomma }}</span>
+                                        </div>
+                                        <div class="totals-period-kpi">
+                                            <span class="label">Paid</span>
+                                            <span class="value">€{{ yearly_total_margin_segment.paid|floatformat:2|intcomma }}</span>
+                                        </div>
+                                        <div class="totals-period-kpi kpi-unpaid">
+                                            <span class="label">Unpaid</span>
+                                            <span class="value">€{{ yearly_total_margin_segment.unpaid|floatformat:2|intcomma }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="totals-period-subgrid">
+                                        <div class="mini">Expenses <strong>€{{ yearly_total_expenses|floatformat:2|intcomma }}</strong></div>
+                                        <div class="mini">Agent fees <strong>€{{ yearly_total_agent_fees|floatformat:2|intcomma }}</strong></div>
+                                        <div class="mini">Driver fees <strong>€{{ yearly_total_driver_fees|floatformat:2|intcomma }}</strong></div>
+                                        <div class="mini">Overall profit <strong>€{{ yearly_overall_profit|floatformat:2|intcomma }}</strong> <span class="totals-mini-hint">(margin − expenses)</span></div>
+                                    </div>
+                                    <div class="totals-jobtype-grid">
+                                        <div class="jobtype jobtype-driving">
+                                            <span class="name">Driving</span>
+                                            <span class="paid">Paid €{{ yearly_driving_margin_segment.paid|floatformat:2|intcomma }}</span>
+                                            <span class="unpaid">Unpaid €{{ yearly_driving_margin_segment.unpaid|floatformat:2|intcomma }}</span>
+                                        </div>
+                                        <div class="jobtype jobtype-shuttle">
+                                            <span class="name">Shuttle</span>
+                                            <span class="paid">Paid €{{ yearly_shuttle_margin_segment.paid|floatformat:2|intcomma }}</span>
+                                            <span class="unpaid">Unpaid €{{ yearly_shuttle_margin_segment.unpaid|floatformat:2|intcomma }}</span>
+                                        </div>
+                                        <div class="jobtype jobtype-hotel">
+                                            <span class="name">Hotel</span>
+                                            <span class="paid">Paid €{{ yearly_hotel_margin_segment.paid|floatformat:2|intcomma }}</span>
+                                            <span class="unpaid">Unpaid €{{ yearly_hotel_margin_segment.unpaid|floatformat:2|intcomma }}</span>
+                                        </div>
+                                    </div>
+                                </article>
+
+                                <article class="totals-period-card">
+                                    <h3>All-time</h3>
+                                    <div class="totals-period-head">
+                                        <div class="totals-period-kpi">
+                                            <span class="label">Total KT margin</span>
+                                            <span class="value">€{{ overall_total_margin|floatformat:2|intcomma }}</span>
+                                        </div>
+                                        <div class="totals-period-kpi">
+                                            <span class="label">Paid</span>
+                                            <span class="value">€{{ overall_total_margin_segment.paid|floatformat:2|intcomma }}</span>
+                                        </div>
+                                        <div class="totals-period-kpi kpi-unpaid">
+                                            <span class="label">Unpaid</span>
+                                            <span class="value">€{{ overall_total_margin_segment.unpaid|floatformat:2|intcomma }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="totals-period-subgrid">
+                                        <div class="mini">Expenses <strong>€{{ overall_expenses_total|floatformat:2|intcomma }}</strong></div>
+                                        <div class="mini">Agent fees <strong>€{{ overall_total_agent_fees|floatformat:2|intcomma }}</strong></div>
+                                        <div class="mini">Driver fees <strong>€{{ overall_total_driver_fees|floatformat:2|intcomma }}</strong></div>
+                                        <div class="mini">Overall profit <strong>€{{ overall_total_profit|floatformat:2|intcomma }}</strong> <span class="totals-mini-hint">(margin − expenses)</span></div>
+                                    </div>
+                                    <div class="totals-jobtype-grid">
+                                        <div class="jobtype jobtype-driving">
+                                            <span class="name">Driving</span>
+                                            <span class="paid">Paid €{{ overall_driving_margin_segment.paid|floatformat:2|intcomma }}</span>
+                                            <span class="unpaid">Unpaid €{{ overall_driving_margin_segment.unpaid|floatformat:2|intcomma }}</span>
+                                        </div>
+                                        <div class="jobtype jobtype-shuttle">
+                                            <span class="name">Shuttle</span>
+                                            <span class="paid">Paid €{{ overall_shuttle_margin_segment.paid|floatformat:2|intcomma }}</span>
+                                            <span class="unpaid">Unpaid €{{ overall_shuttle_margin_segment.unpaid|floatformat:2|intcomma }}</span>
+                                        </div>
+                                        <div class="jobtype jobtype-hotel">
+                                            <span class="name">Hotel</span>
+                                            <span class="paid">Paid €{{ overall_hotel_margin_segment.paid|floatformat:2|intcomma }}</span>
+                                            <span class="unpaid">Unpaid €{{ overall_hotel_margin_segment.unpaid|floatformat:2|intcomma }}</span>
+                                        </div>
+                                    </div>
+                                </article>
                             </div>
                         </div>
+                    </section>
 
-                        <div class="column total-box">
-                            <h2>{{now.year}} Totals</h2>
-                            <div class="totals-text">
-                                <p>Total Turnover: <strong>€{{ yearly_total_income|floatformat:2|intcomma }}</strong></p>
-                                <p class="{% if yearly_unpaid_total > 0 %}red{% else %}black{% endif %}">Total Unpaid Jobs: 
-                                    <strong>€{{ yearly_unpaid_total|floatformat:2|intcomma }}</strong>
-                                </p>
-                                <br>
-                                <p>Total Driving Jobs Income: <strong>€{{ yearly_driving_income|floatformat:2|intcomma }}</strong></p>
-                                <p>Total Shuttle Income: <strong>€{{ yearly_shuttle_income|floatformat:2|intcomma }}</strong></p>
-                                <p>Total Hotels Income: <strong>€{{yearly_hotel_income|floatformat:2|intcomma}}</strong></p>
-                                <br>
-                                <p>Total Expenses: <strong>€{{ yearly_total_expenses|floatformat:2|intcomma }}</strong></p>
-                                <p>Total Agent Fees: <strong>€{{ yearly_total_agent_fees|floatformat:2|intcomma }}</strong></p>
-                                <p>Total Driver Fees: <strong>€{{ yearly_total_driver_fees|floatformat:2|intcomma }}</strong></p>
-                                <br>
-                                <p>Total Profit from Jobs: <strong>€{{ yearly_total_profit|floatformat:2|intcomma }}</strong></p>
-                                <p>Overall Profit (After Expenses): <strong>€{{ yearly_overall_profit|floatformat:2|intcomma }}</strong></p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="column total-box">
-                        <h2>All-Time Totals</h2>
-                        <div class="totals-text">
-                            <p>Total Turnover: <strong>€{{ overall_total_income|floatformat:2|intcomma }}</strong></p>
-                            <p class="{% if overall_unpaid_total > 0 %}red{% else %}black{% endif %}">Total Unpaid Jobs: 
-                                <strong>€{{ overall_unpaid_total|floatformat:2|intcomma }}</strong>
-                            </p>
-                            <br>
-                            <p>Total Driving Jobs Income: <strong>€{{ overall_driving_income|floatformat:2|intcomma }}</strong></p>
-                            <p>Total Shuttle Income: <strong>€{{ overall_shuttle_income|floatformat:2|intcomma }}</strong></p>
-                            <p>Total Hotels Income: <strong>€{{overall_hotel_income|floatformat:2|intcomma}}</strong></p>
-                            <br>
-                            <p>Total Expenses: <strong>€{{ overall_expenses_total|floatformat:2|intcomma }}</strong></p>
-                            <p>Total Agent Fees: <strong>€{{ overall_total_agent_fees|floatformat:2|intcomma }}</strong></p>
-                            <p>Total Driver Fees: <strong>€{{ overall_total_driver_fees|floatformat:2|intcomma }}</strong></p>
-                            <br>
-                            <p>Total Profit: <strong>€{{ overall_driving_profit|floatformat:2|intcomma }}</strong></p>
-                            <p>Overall Profit (After Expenses): <strong>€{{ overall_total_profit|floatformat:2|intcomma }}</strong></p>
-                        </div>
-                    </div>
                     <br>
 
 
 
                     
                     <!-- Unpaid Jobs Breakdown -->
-                    <h2 class="{% if overall_unpaid_total > 0 %}red{% else %}black{% endif %}">Unpaid Jobs Breakdown
-                        (Total Income = €{{ overall_unpaid_total|floatformat:2|intcomma }})
-                    </h2>
+                    <h2 class="{% if overall_unpaid_margin_total > 0 %}red{% else %}black{% endif %}">Still owed (KT margin) — €{{ overall_unpaid_margin_total|floatformat:2|intcomma }}</h2>
+                    <p class="totals-unpaid-hint">Customer gross still unpaid (GMV): €{{ overall_unpaid_total|floatformat:2|intcomma }} — full GMV breakdown in the <a href="#totals-gmv-reference">GMV section</a> at the bottom.</p>
                     <div id="unpaid-jobs-breakdown-section">
                         
                         <!-- Driving Jobs Breakdown -->
-                        <h3 class="toggle-header {% if overall_unpaid_driving > 0 %}red{% else %}black{% endif %}" data-section-id="unpaid-driving-jobs-section">
-                            Driving (Total Income = €{{ overall_unpaid_driving|floatformat:2|intcomma }}) 
+                        <h3 class="toggle-header {% if overall_unpaid_driving_margin > 0 %}red{% else %}black{% endif %}" data-section-id="unpaid-driving-jobs-section">
+                            Driving — margin owed €{{ overall_unpaid_driving_margin|floatformat:2|intcomma }}
                             <span id="unpaid-driving-jobs-section-arrow">▼</span>
                         </h3>
                         <div id="unpaid-driving-jobs-section" style="display: none;">
@@ -133,7 +324,7 @@
                                         <th>Agent Name</th>
                                         <th class="tablet">Agent Fee</th>
                                         <th class="tablet">Agent Fee Amount</th>
-                                        <th>Profit</th>
+                                        <th>KT margin</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -173,8 +364,8 @@
 
 
                         <!-- Shuttle Jobs Breakdown -->
-                        <h3 class="toggle-header {% if overall_unpaid_shuttle > 0 %}red{% else %}black{% endif %}" data-section-id="unpaid-shuttle-jobs-section">
-                            Shuttle (Total Income = €{{ overall_unpaid_shuttle|floatformat:2|intcomma }}) 
+                        <h3 class="toggle-header {% if overall_unpaid_shuttle_margin > 0 %}red{% else %}black{% endif %}" data-section-id="unpaid-shuttle-jobs-section">
+                            Shuttle — margin owed €{{ overall_unpaid_shuttle_margin|floatformat:2|intcomma }}
                             <span id="unpaid-shuttle-jobs-section-arrow">▼</span>
                         </h3>
                         <div id="unpaid-shuttle-jobs-section" style="display: none;">
@@ -186,7 +377,7 @@
                                         <th>Passengers</th>
                                         <th>Direction</th>
                                         <th>Job Price</th>
-                                        <th>Profit</th>
+                                        <th>KT margin</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -212,8 +403,8 @@
 
 
                         <!-- Hotel Jobs Breakdown -->
-                        <h3 class="toggle-header {% if overall_unpaid_hotels > 0 %}red{% else %}black{% endif %}" data-section-id="unpaid-hotel-jobs-section">
-                            Hotels (Total Income = €{{ overall_unpaid_hotels|floatformat:2|intcomma }}) 
+                        <h3 class="toggle-header {% if overall_unpaid_hotels_margin > 0 %}red{% else %}black{% endif %}" data-section-id="unpaid-hotel-jobs-section">
+                            Hotels — margin owed €{{ overall_unpaid_hotels_margin|floatformat:2|intcomma }}
                             <span id="unpaid-hotel-jobs-section-arrow">▼</span>
                         </h3>
                         <div id="unpaid-hotel-jobs-section" style="display: none;">
@@ -227,7 +418,7 @@
                                         <th>Agent Name</th>
                                         <th class="tablet">Agent Fee</th>
                                         <th class="tablet">Agent Fee Amount</th>
-                                        <th>Profit</th>
+                                        <th>KT margin</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -240,7 +431,7 @@
                                                 <td>€{{ hotel.customer_pays|floatformat:2|intcomma }}</td>
                                                 <td>{{ hotel.agent_name }}</td>
                                                 <td class="tablet">
-                                                    {% if hotel.agent_fee and job.agent_fee != '0' %}
+                                                    {% if hotel.agent_fee and hotel.agent_fee != '0' %}
                                                         {{ hotel.agent_fee }}%
                                                     {% endif %}
                                                 </td>
@@ -267,11 +458,11 @@
 
 
                     <!-- Breakdown of Jobs for the Current Month -->
-                    <h2>Breakdown of Jobs in {{ now|date:"F" }} (Total Profit = €{{ monthly_total_profit|floatformat:2|intcomma }})</h2>
+                    <h2>Breakdown of jobs in {{ now|date:"F" }} (total KT margin = €{{ monthly_total_profit|floatformat:2|intcomma }})</h2>
 
                     <!-- Driving Jobs Breakdown -->
                     <h3 class="toggle-header" data-section-id="monthly-driving-jobs-section">
-                        Driving (Total Profit = €{{ monthly_driving_profit|floatformat:2|intcomma }}) 
+                        Driving (KT margin = €{{ monthly_driving_profit|floatformat:2|intcomma }}) 
                         <span id="monthly-driving-jobs-section-arrow">▼</span>
                     </h3>
                     <div id="monthly-driving-jobs-section" style="display: none;">
@@ -285,7 +476,7 @@
                                     <th>Agent Name</th>
                                     <th class="tablet">Agent Fee</th>
                                     <th class="tablet">Agent Fee Amount</th>
-                                    <th>Profit</th>
+                                    <th>KT margin</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -325,7 +516,7 @@
 
                     <!-- Shuttle Jobs Breakdown -->
                     <h3 class="toggle-header" data-section-id="monthly-shuttle-jobs-section">
-                        Shuttle (Total Profit = €{{ monthly_shuttle_income|floatformat:2|intcomma }}) 
+                        Shuttle (KT margin = €{{ monthly_shuttle_profit|floatformat:2|intcomma }}) 
                         <span id="monthly-shuttle-jobs-section-arrow">▼</span>
                     </h3>
                     <div id="monthly-shuttle-jobs-section" style="display: none;">
@@ -337,7 +528,7 @@
                                     <th>Passengers</th>
                                     <th>Direction</th>
                                     <th>Job Price</th>
-                                    <th>Profit</th>
+                                    <th>KT margin</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -363,7 +554,7 @@
 
                     <!-- Hotel Jobs Breakdown -->
                     <h3 class="toggle-header" data-section-id="monthly-hotel-jobs-section">
-                        Hotels (Total Profit = €{{ monthly_hotel_profit|floatformat:2|intcomma }}) 
+                        Hotels (KT margin = €{{ monthly_hotel_profit|floatformat:2|intcomma }}) 
                         <span id="monthly-hotel-jobs-section-arrow">▼</span>
                     </h3>
                     <div id="monthly-hotel-jobs-section" style="display: none;">
@@ -377,7 +568,7 @@
                                     <th>Agent Name</th>
                                     <th class="tablet">Agent Fee</th>
                                     <th class="tablet">Agent Fee Amount</th>
-                                    <th>Profit</th>
+                                    <th>KT margin</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -390,7 +581,7 @@
                                             <td>€{{ hotel.customer_pays|floatformat:2|intcomma }}</td>
                                             <td>{{ hotel.agent_name }}</td>
                                             <td class="tablet">
-                                                {% if hotel.agent_fee and job.agent_fee != '0' %}
+                                                {% if hotel.agent_fee and hotel.agent_fee != '0' %}
                                                     {{ hotel.agent_fee }}%
                                                 {% endif %}
                                             </td>
@@ -416,11 +607,11 @@
 
 
                     <!-- Breakdown of All Jobs -->
-                    <h2>Breakdown of All Jobs (Total profit = €{{ overall_total_profit|floatformat:2|intcomma }})</h2>
+                    <h2>Breakdown of all jobs (KT margin; after expenses overall €{{ overall_total_profit|floatformat:2|intcomma }})</h2>
 
                     <!-- Driving Jobs Breakdown -->
                     <h3 class="toggle-header" data-section-id="all-driving-jobs-section">
-                        Driving (Total Profit = €{{ overall_driving_income|floatformat:2|intcomma }}) 
+                        Driving — total KT margin €{{ overall_driving_profit|floatformat:2|intcomma }}
                         <span id="all-driving-jobs-section-arrow">▼</span>
                     </h3>
                     <div id="all-driving-jobs-section" style="display: none;">
@@ -434,7 +625,7 @@
                                     <th>Agent Name</th>
                                     <th class="tablet">Agent Fee</th>
                                     <th class="tablet">Agent Fee Amount</th>
-                                    <th>Profit</th>
+                                    <th>KT margin</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -474,7 +665,7 @@
 
                     <!-- Shuttle Jobs Breakdown -->
                     <h3 class="toggle-header" data-section-id="all-shuttle-jobs-section">
-                        Shuttle (Total = €{{ overall_shuttle_income|floatformat:2|intcomma }}) 
+                        Shuttle — total KT margin €{{ overall_shuttle_profit|floatformat:2|intcomma }}
                         <span id="all-shuttle-jobs-section-arrow">▼</span>
                     </h3>
                     <div id="all-shuttle-jobs-section" style="display: none;">
@@ -486,7 +677,7 @@
                                     <th>Passengers</th>
                                     <th>Direction</th>
                                     <th>Job Price</th>
-                                    <th>Profit</th>
+                                    <th>KT margin</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -512,7 +703,7 @@
 
                     <!-- Hotel Jobs Breakdown -->
                     <h3 class="toggle-header" data-section-id="all-hotel-jobs-section">
-                        Hotels (Total = €{{ overall_hotel_income|floatformat:2|intcomma }}) 
+                        Hotels — total KT margin €{{ overall_hotel_profit|floatformat:2|intcomma }}
                         <span id="all-hotel-jobs-section-arrow">▼</span>
                     </h3>
                     <div id="all-hotel-jobs-section" style="display: none;">
@@ -526,7 +717,7 @@
                                     <th>Agent Name</th>
                                     <th class="tablet">Agent Fee</th>
                                     <th class="tablet">Agent Fee Amount</th>
-                                    <th>Profit</th>
+                                    <th>KT margin</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -539,7 +730,7 @@
                                             <td>€{{ hotel.customer_pays|floatformat:2|intcomma }}</td>
                                             <td>{{ hotel.agent_name }}</td>
                                             <td class="tablet">
-                                                {% if hotel.agent_fee and job.agent_fee != '0' %}
+                                                {% if hotel.agent_fee and hotel.agent_fee != '0' %}
                                                     {{ hotel.agent_fee }}%
                                                 {% endif %}
                                             </td>
@@ -628,6 +819,217 @@
                             </tbody>
                         </table>
                     </div>
+
+
+                    <section class="totals-page totals-gmv-block" id="totals-gmv-reference" aria-label="Customer gross GMV">
+                        <div class="totals-inner totals-inner--flush">
+                            <h2 class="totals-bottom-heading">Customer gross (GMV)</h2>
+                            <p class="totals-bottom-lead">Separate from KT margin. Totals are what customers are charged (driving job price, shuttle price, hotel customer pays), in EUR. <strong>Paid</strong> is all recorded payment money linked to bookings in this section; <strong>unpaid</strong> is the remaining open value on bookings still marked unpaid, after subtracting payments on those same unpaid bookings.</p>
+                            <section class="totals-guide totals-guide--gmv" aria-label="How GMV cards work">
+                                <div class="totals-guide-grid">
+                                    <div class="totals-guide-item">
+                                        <strong>What GMV means</strong>
+                                        <p>Total customer charge value, not KT profit.</p>
+                                    </div>
+                                    <div class="totals-guide-item">
+                                        <strong>Paid</strong>
+                                        <p>Recorded customer payments applied to those bookings.</p>
+                                    </div>
+                                    <div class="totals-guide-item">
+                                        <strong>Unpaid</strong>
+                                        <p>Charge value still outstanding on unpaid bookings after their own recorded payments are deducted.</p>
+                                    </div>
+                                    <div class="totals-guide-item">
+                                        <strong>When to use this</strong>
+                                        <p>Use GMV for sales volume, and KT margin cards for your actual business share.</p>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <h3 class="totals-section-title">All-time GMV</h3>
+                            <div class="totals-grid">
+                                <article class="totals-card totals-card--driving" data-empty="{% if overall_driving_gmv_segment.empty %}true{% else %}false{% endif %}">
+                                    <h3>Driving</h3>
+                                    <div class="totals-donut-wrap" aria-hidden="true">
+                                        <div class="totals-donut" style="--paid-deg: {{ overall_driving_gmv_segment.paid_deg }}deg;"></div>
+                                        <div class="totals-donut-center">
+                                            <span class="totals-donut-total">{{ overall_driving_gmv_segment.total|floatformat:2|intcomma }}</span>
+                                            <span class="totals-donut-label">GMV</span>
+                                        </div>
+                                    </div>
+                                    <div class="totals-segbar" title="Share paid">
+                                        <div class="totals-segbar-fill" style="width: {{ overall_driving_gmv_segment.paid_pct }}%;"></div>
+                                    </div>
+                                    <dl class="totals-stats">
+                                        <div>
+                                            <dt>Paid</dt>
+                                            <dd>€{{ overall_driving_gmv_segment.paid|floatformat:2|intcomma }}</dd>
+                                        </div>
+                                        <div class="totals-stat--unpaid">
+                                            <dt>Unpaid</dt>
+                                            <dd>€{{ overall_driving_gmv_segment.unpaid|floatformat:2|intcomma }}</dd>
+                                        </div>
+                                    </dl>
+                                </article>
+
+                                <article class="totals-card totals-card--shuttle" data-empty="{% if overall_shuttle_gmv_segment.empty %}true{% else %}false{% endif %}">
+                                    <h3>Shuttle</h3>
+                                    <div class="totals-donut-wrap" aria-hidden="true">
+                                        <div class="totals-donut" style="--paid-deg: {{ overall_shuttle_gmv_segment.paid_deg }}deg;"></div>
+                                        <div class="totals-donut-center">
+                                            <span class="totals-donut-total">{{ overall_shuttle_gmv_segment.total|floatformat:2|intcomma }}</span>
+                                            <span class="totals-donut-label">GMV</span>
+                                        </div>
+                                    </div>
+                                    <div class="totals-segbar" title="Share paid">
+                                        <div class="totals-segbar-fill" style="width: {{ overall_shuttle_gmv_segment.paid_pct }}%;"></div>
+                                    </div>
+                                    <dl class="totals-stats">
+                                        <div>
+                                            <dt>Paid</dt>
+                                            <dd>€{{ overall_shuttle_gmv_segment.paid|floatformat:2|intcomma }}</dd>
+                                        </div>
+                                        <div class="totals-stat--unpaid">
+                                            <dt>Unpaid</dt>
+                                            <dd>€{{ overall_shuttle_gmv_segment.unpaid|floatformat:2|intcomma }}</dd>
+                                        </div>
+                                    </dl>
+                                </article>
+
+                                <article class="totals-card totals-card--hotel" data-empty="{% if overall_hotel_gmv_segment.empty %}true{% else %}false{% endif %}">
+                                    <h3>Hotel</h3>
+                                    <div class="totals-donut-wrap" aria-hidden="true">
+                                        <div class="totals-donut" style="--paid-deg: {{ overall_hotel_gmv_segment.paid_deg }}deg;"></div>
+                                        <div class="totals-donut-center">
+                                            <span class="totals-donut-total">{{ overall_hotel_gmv_segment.total|floatformat:2|intcomma }}</span>
+                                            <span class="totals-donut-label">GMV</span>
+                                        </div>
+                                    </div>
+                                    <div class="totals-segbar" title="Share paid">
+                                        <div class="totals-segbar-fill" style="width: {{ overall_hotel_gmv_segment.paid_pct }}%;"></div>
+                                    </div>
+                                    <dl class="totals-stats">
+                                        <div>
+                                            <dt>Paid</dt>
+                                            <dd>€{{ overall_hotel_gmv_segment.paid|floatformat:2|intcomma }}</dd>
+                                        </div>
+                                        <div class="totals-stat--unpaid">
+                                            <dt>Unpaid</dt>
+                                            <dd>€{{ overall_hotel_gmv_segment.unpaid|floatformat:2|intcomma }}</dd>
+                                        </div>
+                                    </dl>
+                                </article>
+                            </div>
+
+                            <h3 class="totals-section-title totals-section-title--spaced">GMV snapshots</h3>
+                            <div class="totals-period-grid">
+                                <article class="totals-period-card totals-period-card--gmv">
+                                    <h3>{{ now|date:"F" }} — GMV</h3>
+                                    <div class="totals-period-head">
+                                        <div class="totals-period-kpi">
+                                            <span class="label">Total GMV</span>
+                                            <span class="value">€{{ monthly_total_income|floatformat:2|intcomma }}</span>
+                                        </div>
+                                        <div class="totals-period-kpi">
+                                            <span class="label">Paid</span>
+                                            <span class="value">€{{ monthly_total_gmv_segment.paid|floatformat:2|intcomma }}</span>
+                                        </div>
+                                        <div class="totals-period-kpi kpi-unpaid">
+                                            <span class="label">Unpaid</span>
+                                            <span class="value">€{{ monthly_total_gmv_segment.unpaid|floatformat:2|intcomma }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="totals-jobtype-grid">
+                                        <div class="jobtype jobtype-driving">
+                                            <span class="name">Driving</span>
+                                            <span class="paid">Paid €{{ monthly_driving_gmv_segment.paid|floatformat:2|intcomma }}</span>
+                                            <span class="unpaid">Unpaid €{{ monthly_driving_gmv_segment.unpaid|floatformat:2|intcomma }}</span>
+                                        </div>
+                                        <div class="jobtype jobtype-shuttle">
+                                            <span class="name">Shuttle</span>
+                                            <span class="paid">Paid €{{ monthly_shuttle_gmv_segment.paid|floatformat:2|intcomma }}</span>
+                                            <span class="unpaid">Unpaid €{{ monthly_shuttle_gmv_segment.unpaid|floatformat:2|intcomma }}</span>
+                                        </div>
+                                        <div class="jobtype jobtype-hotel">
+                                            <span class="name">Hotel</span>
+                                            <span class="paid">Paid €{{ monthly_hotel_gmv_segment.paid|floatformat:2|intcomma }}</span>
+                                            <span class="unpaid">Unpaid €{{ monthly_hotel_gmv_segment.unpaid|floatformat:2|intcomma }}</span>
+                                        </div>
+                                    </div>
+                                </article>
+
+                                <article class="totals-period-card totals-period-card--gmv">
+                                    <h3>{{ now.year }} — GMV</h3>
+                                    <div class="totals-period-head">
+                                        <div class="totals-period-kpi">
+                                            <span class="label">Total GMV</span>
+                                            <span class="value">€{{ yearly_total_income|floatformat:2|intcomma }}</span>
+                                        </div>
+                                        <div class="totals-period-kpi">
+                                            <span class="label">Paid</span>
+                                            <span class="value">€{{ yearly_total_gmv_segment.paid|floatformat:2|intcomma }}</span>
+                                        </div>
+                                        <div class="totals-period-kpi kpi-unpaid">
+                                            <span class="label">Unpaid</span>
+                                            <span class="value">€{{ yearly_total_gmv_segment.unpaid|floatformat:2|intcomma }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="totals-jobtype-grid">
+                                        <div class="jobtype jobtype-driving">
+                                            <span class="name">Driving</span>
+                                            <span class="paid">Paid €{{ yearly_driving_gmv_segment.paid|floatformat:2|intcomma }}</span>
+                                            <span class="unpaid">Unpaid €{{ yearly_driving_gmv_segment.unpaid|floatformat:2|intcomma }}</span>
+                                        </div>
+                                        <div class="jobtype jobtype-shuttle">
+                                            <span class="name">Shuttle</span>
+                                            <span class="paid">Paid €{{ yearly_shuttle_gmv_segment.paid|floatformat:2|intcomma }}</span>
+                                            <span class="unpaid">Unpaid €{{ yearly_shuttle_gmv_segment.unpaid|floatformat:2|intcomma }}</span>
+                                        </div>
+                                        <div class="jobtype jobtype-hotel">
+                                            <span class="name">Hotel</span>
+                                            <span class="paid">Paid €{{ yearly_hotel_gmv_segment.paid|floatformat:2|intcomma }}</span>
+                                            <span class="unpaid">Unpaid €{{ yearly_hotel_gmv_segment.unpaid|floatformat:2|intcomma }}</span>
+                                        </div>
+                                    </div>
+                                </article>
+
+                                <article class="totals-period-card totals-period-card--gmv">
+                                    <h3>All-time — GMV</h3>
+                                    <div class="totals-period-head">
+                                        <div class="totals-period-kpi">
+                                            <span class="label">Total GMV</span>
+                                            <span class="value">€{{ overall_total_income|floatformat:2|intcomma }}</span>
+                                        </div>
+                                        <div class="totals-period-kpi">
+                                            <span class="label">Paid</span>
+                                            <span class="value">€{{ overall_total_gmv_segment.paid|floatformat:2|intcomma }}</span>
+                                        </div>
+                                        <div class="totals-period-kpi kpi-unpaid">
+                                            <span class="label">Unpaid</span>
+                                            <span class="value">€{{ overall_total_gmv_segment.unpaid|floatformat:2|intcomma }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="totals-jobtype-grid">
+                                        <div class="jobtype jobtype-driving">
+                                            <span class="name">Driving</span>
+                                            <span class="paid">Paid €{{ overall_driving_gmv_segment.paid|floatformat:2|intcomma }}</span>
+                                            <span class="unpaid">Unpaid €{{ overall_driving_gmv_segment.unpaid|floatformat:2|intcomma }}</span>
+                                        </div>
+                                        <div class="jobtype jobtype-shuttle">
+                                            <span class="name">Shuttle</span>
+                                            <span class="paid">Paid €{{ overall_shuttle_gmv_segment.paid|floatformat:2|intcomma }}</span>
+                                            <span class="unpaid">Unpaid €{{ overall_shuttle_gmv_segment.unpaid|floatformat:2|intcomma }}</span>
+                                        </div>
+                                        <div class="jobtype jobtype-hotel">
+                                            <span class="name">Hotel</span>
+                                            <span class="paid">Paid €{{ overall_hotel_gmv_segment.paid|floatformat:2|intcomma }}</span>
+                                            <span class="unpaid">Unpaid €{{ overall_hotel_gmv_segment.unpaid|floatformat:2|intcomma }}</span>
+                                        </div>
+                                    </div>
+                                </article>
+                            </div>
+                        </div>
+                    </section>
                 </div>
             </div>
         </div>
