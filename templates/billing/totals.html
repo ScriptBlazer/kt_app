@@ -149,8 +149,8 @@
                                 </article>
                             </div>
 
-                            <h2 class="totals-bottom-heading totals-bottom-heading--inline">KT margin snapshots</h2>
-                            <p class="totals-bottom-lead">Monthly, calendar year, and all-time. Figures are KT margin only (what you booked as your share). Unpaid is only from bookings still marked unpaid, reduced by partial payments on those same unpaid bookings.</p>
+                            <h2 class="totals-bottom-heading totals-bottom-heading--inline">Profit snapshots</h2>
+                            <p class="totals-bottom-lead">Monthly, calendar year, and all-time. Total profit is KT margin minus expenses. Paid/unpaid lines still track booking payment status logic for open margin.</p>
                             <section class="totals-guide totals-guide--compact" aria-label="How snapshot cards work">
                                 <div class="totals-guide-grid">
                                     <div class="totals-guide-item">
@@ -176,8 +176,8 @@
                                     <h3>{{ now|date:"F" }}</h3>
                                     <div class="totals-period-head">
                                         <div class="totals-period-kpi">
-                                            <span class="label">Total KT margin</span>
-                                            <span class="value">€{{ monthly_total_margin|floatformat:2|intcomma }}</span>
+                                            <span class="label">Total profit</span>
+                                            <span class="value">€{{ monthly_overall_profit|floatformat:2|intcomma }}</span>
                                         </div>
                                         <div class="totals-period-kpi">
                                             <span class="label">Paid</span>
@@ -192,7 +192,7 @@
                                         <div class="mini">Expenses <strong>€{{ monthly_total_expenses|floatformat:2|intcomma }}</strong></div>
                                         <div class="mini">Agent fees <strong>€{{ monthly_total_agent_fees|floatformat:2|intcomma }}</strong></div>
                                         <div class="mini">Driver fees <strong>€{{ monthly_total_driver_fees|floatformat:2|intcomma }}</strong></div>
-                                        <div class="mini">Overall profit <strong>€{{ monthly_overall_profit|floatformat:2|intcomma }}</strong> <span class="totals-mini-hint">(margin − expenses)</span></div>
+                                        <div class="mini">KT margin <strong>€{{ monthly_total_margin|floatformat:2|intcomma }}</strong></div>
                                     </div>
                                     <div class="totals-jobtype-grid">
                                         <div class="jobtype jobtype-driving">
@@ -217,8 +217,8 @@
                                     <h3>{{ now.year }}</h3>
                                     <div class="totals-period-head">
                                         <div class="totals-period-kpi">
-                                            <span class="label">Total KT margin</span>
-                                            <span class="value">€{{ yearly_total_margin|floatformat:2|intcomma }}</span>
+                                            <span class="label">Total profit</span>
+                                            <span class="value">€{{ yearly_overall_profit|floatformat:2|intcomma }}</span>
                                         </div>
                                         <div class="totals-period-kpi">
                                             <span class="label">Paid</span>
@@ -233,7 +233,7 @@
                                         <div class="mini">Expenses <strong>€{{ yearly_total_expenses|floatformat:2|intcomma }}</strong></div>
                                         <div class="mini">Agent fees <strong>€{{ yearly_total_agent_fees|floatformat:2|intcomma }}</strong></div>
                                         <div class="mini">Driver fees <strong>€{{ yearly_total_driver_fees|floatformat:2|intcomma }}</strong></div>
-                                        <div class="mini">Overall profit <strong>€{{ yearly_overall_profit|floatformat:2|intcomma }}</strong> <span class="totals-mini-hint">(margin − expenses)</span></div>
+                                        <div class="mini">KT margin <strong>€{{ yearly_total_margin|floatformat:2|intcomma }}</strong></div>
                                     </div>
                                     <div class="totals-jobtype-grid">
                                         <div class="jobtype jobtype-driving">
@@ -258,8 +258,8 @@
                                     <h3>All-time</h3>
                                     <div class="totals-period-head">
                                         <div class="totals-period-kpi">
-                                            <span class="label">Total KT margin</span>
-                                            <span class="value">€{{ overall_total_margin|floatformat:2|intcomma }}</span>
+                                            <span class="label">Total profit</span>
+                                            <span class="value">€{{ overall_total_profit|floatformat:2|intcomma }}</span>
                                         </div>
                                         <div class="totals-period-kpi">
                                             <span class="label">Paid</span>
@@ -274,7 +274,7 @@
                                         <div class="mini">Expenses <strong>€{{ overall_expenses_total|floatformat:2|intcomma }}</strong></div>
                                         <div class="mini">Agent fees <strong>€{{ overall_total_agent_fees|floatformat:2|intcomma }}</strong></div>
                                         <div class="mini">Driver fees <strong>€{{ overall_total_driver_fees|floatformat:2|intcomma }}</strong></div>
-                                        <div class="mini">Overall profit <strong>€{{ overall_total_profit|floatformat:2|intcomma }}</strong> <span class="totals-mini-hint">(margin − expenses)</span></div>
+                                        <div class="mini">KT margin <strong>€{{ overall_total_margin|floatformat:2|intcomma }}</strong></div>
                                     </div>
                                     <div class="totals-jobtype-grid">
                                         <div class="jobtype jobtype-driving">
