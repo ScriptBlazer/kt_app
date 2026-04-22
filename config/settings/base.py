@@ -100,6 +100,11 @@ CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
         'LOCATION': 'unique-snowflake',
+        'OPTIONS': {
+            # Keep cache memory bounded on low-RAM hosts.
+            'MAX_ENTRIES': 50,
+            'CULL_FREQUENCY': 3,
+        },
     }
 }
 

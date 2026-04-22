@@ -1,62 +1,61 @@
 from django.shortcuts import render
-from django.db.models import Sum
+from django.db.models import Count, Max, Sum
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden
+from django.core.cache import cache
 from people.models import Agent, Driver, Staff
 from django.utils import timezone
 from jobs.models import Job
 from shuttle.models import Shuttle
 from hotels.models import HotelBooking
 from expenses.models import Expense
-from shuttle.models import Shuttle
 from decimal import Decimal
 from common.models import Payment
-from django.db.models import Prefetch
 import pytz
 import json
 import logging
-from django.utils import timezone
+
+from billing.totals_reporting import (
+    calculate_agent_fee_and_profit,
+    hotel_has_outstanding_by_payments,
+    job_has_outstanding_by_payments,
+    paid_unpaid_segment,
+    shuttle_has_outstanding_by_payments,
+    sum_hotels_margin,
+    sum_hotels_open_gmv_unpaid_minus_own_payments,
+    sum_hotels_open_margin_unpaid_minus_own_payments,
+    sum_hotels_recorded_eur,
+    sum_jobs_margin,
+    sum_jobs_open_gmv_unpaid_minus_own_payments,
+    sum_jobs_open_margin_unpaid_minus_own_payments,
+    sum_jobs_recorded_eur,
+    sum_shuttles_margin,
+    sum_shuttles_open_gmv_unpaid_minus_own_payments,
+    sum_shuttles_open_margin_unpaid_minus_own_payments,
+    sum_shuttles_recorded_eur,
+    _hotel_agent_fee_from_subtotal_or_fallback,
+    _hotel_subtotal_or_fallback,
+    _job_agent_fee_from_subtotal_or_fallback,
+    _job_subtotal_or_fallback,
+)
 
 logger = logging.getLogger('kt')
 
 # Set the timezone to Hungary (Budapest)
 budapest_tz = pytz.timezone('Europe/Budapest')
+TOTALS_CACHE_TTL_SECONDS = 30
 
 
-def calculate_agent_fee_and_profit(job):
-    job_price = job.job_price_in_euros or Decimal('0.00')
-    driver_fee = job.driver_fee_in_euros or Decimal('0.00')
-
-    if job.agent_percentage == '5':
-        agent_fee_amount = job_price * Decimal('0.05')
-    elif job.agent_percentage == '10':
-        agent_fee_amount = job_price * Decimal('0.10')
-    elif job.agent_percentage == '50':
-        if job_price > Decimal('0.00'):
-            agent_fee_amount = (job_price - driver_fee) * Decimal('0.50')
-        else:
-            agent_fee_amount = Decimal('0.00')  # Agent fee is 0 when job price is 0
-    else:
-        agent_fee_amount = Decimal('0.00')
-
-    profit = job_price - driver_fee - agent_fee_amount
-    return agent_fee_amount, profit
-
-
-def calculate_hotel_agent_fee_and_profit(hotel):
-    customer_pays = hotel.customer_pays_in_euros or Decimal('0.00')
-    agent_percentage = hotel.agent_percentage or '0'
-
-    agent_fee_amount = Decimal('0.00')
-    if agent_percentage == '5':
-        agent_fee_amount = customer_pays * Decimal('0.05')
-    elif agent_percentage == '10':
-        agent_fee_amount = customer_pays * Decimal('0.10')
-    elif agent_percentage == '50':
-        agent_fee_amount = customer_pays * Decimal('0.50')
-
-    profit = customer_pays - agent_fee_amount
-    return agent_fee_amount, profit
+def _totals_data_fingerprint() -> str:
+    """
+    Build a lightweight cache-busting fingerprint from row counts/max IDs.
+    This keeps totals cache small-lived while avoiding stale responses after writes.
+    """
+    model_stats = []
+    for model in (Job, Shuttle, HotelBooking, Payment, Expense):
+        agg = model.objects.aggregate(row_count=Count('id'), max_id=Max('id'))
+        model_stats.append(f"{agg['row_count'] or 0}:{agg['max_id'] or 0}")
+    return "|".join(model_stats)
 
 
 def get_agent_totals(jobs, hotels):
@@ -92,7 +91,7 @@ def get_agent_totals(jobs, hotels):
 
     # Calculate totals for Jobs
     for job in jobs:
-        agent_fee_amount, _ = calculate_agent_fee_and_profit(job)
+        agent_fee_amount = _job_agent_fee_from_subtotal_or_fallback(job)
         agent_name = job.agent_name.name if job.agent_name else "None"
         job_month = job.job_date.month
         job_year = job.job_date.year
@@ -100,7 +99,7 @@ def get_agent_totals(jobs, hotels):
 
     # Calculate totals for Hotels
     for hotel in hotels:
-        agent_fee_amount, _ = calculate_hotel_agent_fee_and_profit(hotel)
+        agent_fee_amount = _hotel_agent_fee_from_subtotal_or_fallback(hotel)
         agent_name = hotel.agent.name if hotel.agent else "None"
         check_in_month = hotel.check_in.month
         check_in_year = hotel.check_in.year
@@ -112,13 +111,19 @@ def get_agent_totals(jobs, hotels):
 @login_required
 def totals(request):
 
-    show_totals = False  # Set to True when ready to show totals
+    show_totals = True  # Set to True when ready to show totals
     if not show_totals:
         return render(request, 'billing/totals.html', {'show_totals': show_totals})
 
     now = timezone.now().astimezone(budapest_tz)
     current_year = now.year
     current_month = now.month
+    totals_cache_key = (
+        f"billing:totals:v2:{current_year}:{current_month}:{_totals_data_fingerprint()}"
+    )
+    cached_context = cache.get(totals_cache_key)
+    if cached_context is not None:
+        return render(request, 'billing/totals.html', cached_context)
 
     # Fetch all expense types dynamically from the Expense model
     expense_types = [expense_type[0] for expense_type in Expense.EXPENSE_TYPES]
@@ -126,41 +131,53 @@ def totals(request):
     
 
     """All jobs totals"""
-    all_driving = Job.objects.filter(is_confirmed=True).order_by('-job_date')
-    all_shuttle = Shuttle.objects.filter(is_confirmed=True)
-    all_hotels = HotelBooking.objects.filter(is_confirmed=True)
+    all_driving = Job.objects.filter(is_confirmed=True).prefetch_related('payments').order_by('-job_date')
+    all_shuttle = Shuttle.objects.filter(is_confirmed=True).prefetch_related('payments')
+    all_hotels = HotelBooking.objects.filter(is_confirmed=True).prefetch_related('payments')
     all_expenses = Expense.objects.all()
 
-    # Overall unpaid
+    # Customer gross (GMV), EUR — job amounts customers pay
+    overall_driving_income = all_driving.aggregate(Sum('job_price_in_euros'))['job_price_in_euros__sum'] or Decimal('0.00')
+    overall_shuttle_income = all_shuttle.aggregate(Sum('price'))['price__sum'] or Decimal('0.00')
+    overall_hotel_income = all_hotels.aggregate(Sum('customer_pays_in_euros'))['customer_pays_in_euros__sum'] or Decimal('0.00')
+    overall_total_income = overall_driving_income + overall_shuttle_income + overall_hotel_income
+
+    # Unpaid is based on booking status flags; paid is handled from payment sums below.
     unpaid_driving = all_driving.filter(is_paid=False)
     unpaid_shuttle = all_shuttle.filter(is_paid=False)
     unpaid_hotels = all_hotels.filter(is_paid=False)
-    
-    # Total income
-    overall_total_income = all_driving.aggregate(Sum('job_price_in_euros'))['job_price_in_euros__sum'] or Decimal('0.00')
-    overall_driving_income = all_driving.aggregate(Sum('job_price_in_euros'))['job_price_in_euros__sum'] or Decimal('0.00')
-    overall_shuttle_income = Shuttle.objects.aggregate(Sum('price'))['price__sum'] or Decimal('0.00')
-    overall_hotel_income = all_hotels.aggregate(Sum('customer_pays_in_euros'))['customer_pays_in_euros__sum'] or Decimal('0.00')
+    overall_unpaid_driving = sum_jobs_open_gmv_unpaid_minus_own_payments(unpaid_driving)
+    overall_unpaid_shuttle = sum_shuttles_open_gmv_unpaid_minus_own_payments(unpaid_shuttle)
+    overall_unpaid_hotels = sum_hotels_open_gmv_unpaid_minus_own_payments(unpaid_hotels)
 
-    # Unpaid total 
-    overall_unpaid_driving = unpaid_driving.aggregate(Sum('job_price_in_euros'))['job_price_in_euros__sum'] or Decimal('0.00')
-    overall_unpaid_shuttle = unpaid_shuttle.aggregate(Sum('price'))['price__sum'] or Decimal('0.00')
-    overall_unpaid_hotels = unpaid_hotels.aggregate(Sum('customer_pays_in_euros'))['customer_pays_in_euros__sum'] or Decimal('0.00')
+    # KT margin (subtotal-backed); shuttle == price until model has separate margin
+    overall_driving_margin = sum_jobs_margin(all_driving)
+    overall_shuttle_margin = sum_shuttles_margin(all_shuttle)
+    overall_hotel_margin = sum_hotels_margin(all_hotels)
+    overall_total_margin = overall_driving_margin + overall_shuttle_margin + overall_hotel_margin
+
+    overall_unpaid_driving_margin = sum_jobs_open_margin_unpaid_minus_own_payments(unpaid_driving)
+    overall_unpaid_shuttle_margin = sum_shuttles_open_margin_unpaid_minus_own_payments(unpaid_shuttle)
+    overall_unpaid_hotels_margin = sum_hotels_open_margin_unpaid_minus_own_payments(unpaid_hotels)
+    overall_unpaid_margin_total = (
+        overall_unpaid_driving_margin + overall_unpaid_shuttle_margin + overall_unpaid_hotels_margin
+    )
 
     # Fees and expenses
     overall_total_driver_fees = all_driving.aggregate(Sum('driver_fee_in_euros'))['driver_fee_in_euros__sum'] or Decimal('0.00')
     overall_total_agent_fees = Decimal('0.00')
     overall_expenses_total = Expense.objects.aggregate(Sum('expense_amount_in_euros'))['expense_amount_in_euros__sum'] or Decimal('0.00')
 
-    # Profits 
+    # Profits (KT margin; driving/hotel from subtotal logic)
     overall_driving_profit = Decimal('0.00')
-    overall_shuttle_profit = Shuttle.objects.aggregate(Sum('price'))['price__sum'] or Decimal('0.00')
+    overall_shuttle_profit = overall_shuttle_margin
     overall_hotel_profit = Decimal('0.00')
 
     # Create all driving job breakdowns
     all_driving_breakdowns = []
     for job in all_driving:
-        agent_fee_amount, profit = calculate_agent_fee_and_profit(job)
+        agent_fee_amount = _job_agent_fee_from_subtotal_or_fallback(job)
+        profit = _job_subtotal_or_fallback(job)
         overall_total_agent_fees += agent_fee_amount
         overall_driving_profit += profit
         all_driving_breakdowns.append({
@@ -176,7 +193,7 @@ def totals(request):
 
     all_shuttle_breakdowns = []
     for shuttle in all_shuttle:
-        profit = overall_shuttle_profit
+        profit = shuttle.price or Decimal('0.00')
         all_shuttle_breakdowns.append({
             'customer_name': shuttle.customer_name,
             'shuttle_date': shuttle.shuttle_date,
@@ -188,7 +205,9 @@ def totals(request):
 
     all_hotel_breakdowns = []
     for hotel in all_hotels:
-        agent_fee_amount, profit = calculate_hotel_agent_fee_and_profit(hotel)
+        agent_fee_amount = _hotel_agent_fee_from_subtotal_or_fallback(hotel)
+        profit = _hotel_subtotal_or_fallback(hotel)
+        overall_total_agent_fees += agent_fee_amount
         overall_hotel_profit += profit
         all_hotel_breakdowns.append({
             'customer_name': hotel.customer_name,
@@ -202,10 +221,13 @@ def totals(request):
             'profit': profit,
         })
 
-    # Create the unpaid driving job breakdowns
+    # Outstanding (partial or full) vs summed payments — same rules as segments
     unpaid_driving_breakdowns = []
-    for job in unpaid_driving:
-        agent_fee_amount, profit = calculate_agent_fee_and_profit(job)
+    for job in all_driving:
+        if not job_has_outstanding_by_payments(job):
+            continue
+        agent_fee_amount = _job_agent_fee_from_subtotal_or_fallback(job)
+        profit = _job_subtotal_or_fallback(job)
         unpaid_driving_breakdowns.append({
             'customer_name': job.customer_name,
             'job_date': job.job_date,
@@ -217,9 +239,10 @@ def totals(request):
             'profit': profit,
         })
 
-    # Create the unpaid shuttle job breakdowns
     unpaid_shuttle_breakdowns = []
-    for shuttle in unpaid_shuttle:
+    for shuttle in all_shuttle:
+        if not shuttle_has_outstanding_by_payments(shuttle):
+            continue
         profit = shuttle.price
         unpaid_shuttle_breakdowns.append({
             'customer_name': shuttle.customer_name,
@@ -231,9 +254,11 @@ def totals(request):
         })
 
     unpaid_hotel_breakdowns = []
-    for hotel in unpaid_hotels:
-        # Call the calculate_hotel_agent_fee_and_profit function to calculate agent fee and profit
-        agent_fee_amount, profit = calculate_hotel_agent_fee_and_profit(hotel)
+    for hotel in all_hotels:
+        if not hotel_has_outstanding_by_payments(hotel):
+            continue
+        agent_fee_amount = _hotel_agent_fee_from_subtotal_or_fallback(hotel)
+        profit = _hotel_subtotal_or_fallback(hotel)
         
         unpaid_hotel_breakdowns.append({
             'customer_name': hotel.customer_name,
@@ -250,7 +275,7 @@ def totals(request):
     # Extract agent totals for driving, shuttles, and hotels
     driving_agent_totals = []
     for job in all_driving:
-        agent_fee_amount, _ = calculate_agent_fee_and_profit(job)
+        agent_fee_amount = _job_agent_fee_from_subtotal_or_fallback(job)
         if job.agent_name:
             driving_agent_totals.append({
                 'agent_name': job.agent_name.name,
@@ -261,7 +286,7 @@ def totals(request):
 
     hotel_agent_totals = []
     for hotel in all_hotels:
-        agent_fee_amount, _ = calculate_hotel_agent_fee_and_profit(hotel)
+        agent_fee_amount = _hotel_agent_fee_from_subtotal_or_fallback(hotel)
         if hotel.agent:
             hotel_agent_totals.append({
                 'agent_name': hotel.agent.name,
@@ -272,6 +297,36 @@ def totals(request):
 
     overall_unpaid_total = overall_unpaid_driving + overall_unpaid_shuttle + overall_unpaid_hotels
     overall_total_profit = overall_driving_profit + overall_shuttle_profit + overall_hotel_profit - overall_expenses_total
+    overall_jobs_paid = sum_jobs_recorded_eur(all_driving)
+    overall_shuttles_paid = sum_shuttles_recorded_eur(all_shuttle)
+    overall_hotels_paid = sum_hotels_recorded_eur(all_hotels)
+    overall_all_paid = overall_jobs_paid + overall_shuttles_paid + overall_hotels_paid
+
+    # Donuts: primary = KT margin; secondary GMV in template uses *_gmv_segment
+    overall_total_margin_segment = paid_unpaid_segment(
+        overall_total_margin, overall_unpaid_margin_total, paid_override=overall_all_paid
+    )
+    overall_total_gmv_segment = paid_unpaid_segment(
+        overall_total_income, overall_unpaid_total, paid_override=overall_all_paid
+    )
+    overall_driving_margin_segment = paid_unpaid_segment(
+        overall_driving_margin, overall_unpaid_driving_margin, paid_override=overall_jobs_paid
+    )
+    overall_driving_gmv_segment = paid_unpaid_segment(
+        overall_driving_income, overall_unpaid_driving, paid_override=overall_jobs_paid
+    )
+    overall_shuttle_margin_segment = paid_unpaid_segment(
+        overall_shuttle_margin, overall_unpaid_shuttle_margin, paid_override=overall_shuttles_paid
+    )
+    overall_shuttle_gmv_segment = paid_unpaid_segment(
+        overall_shuttle_income, overall_unpaid_shuttle, paid_override=overall_shuttles_paid
+    )
+    overall_hotel_margin_segment = paid_unpaid_segment(
+        overall_hotel_margin, overall_unpaid_hotels_margin, paid_override=overall_hotels_paid
+    )
+    overall_hotel_gmv_segment = paid_unpaid_segment(
+        overall_hotel_income, overall_unpaid_hotels, paid_override=overall_hotels_paid
+    )
 
     logger.info(f"Overall Driving Profit: {overall_driving_profit:.2f}")
     logger.info(f"Overall Shuttle Profit: {overall_shuttle_profit:.2f}")
@@ -287,11 +342,6 @@ def totals(request):
     monthly_hotels = all_hotels.filter(check_in__year=current_year, check_in__month=current_month)
     monthly_expenses = all_expenses.filter(expense_date__year=current_year, expense_date__month=current_month, expense_type__in=expense_types)
 
-    # Monthly unpaid
-    unpaid_monthly_driving = monthly_driving.filter(is_paid=False)
-    unpaid_monthly_shuttle = monthly_shuttles.filter(is_paid=False)
-    unpaid_monthly_hotels = monthly_hotels.filter(is_paid=False)
-
     # Monthly totals
     monthly_driving_income = monthly_driving.aggregate(Sum('job_price_in_euros'))['job_price_in_euros__sum'] or Decimal('0.00')
     monthly_shuttle_income = monthly_shuttles.aggregate(Sum('price'))['price__sum'] or Decimal('0.00')
@@ -302,17 +352,33 @@ def totals(request):
     monthly_total_expenses = monthly_expenses.aggregate(Sum('expense_amount_in_euros'))['expense_amount_in_euros__sum'] or Decimal('0.00')
 
     monthly_driving_profit = Decimal('0.00')
-    monthly_shuttle_profit = monthly_shuttles.aggregate(Sum('price'))['price__sum'] or Decimal('0.00')
+    monthly_shuttle_profit = Decimal('0.00')
     monthly_hotel_profit = Decimal('0.00')
     monthly_total_profit = Decimal('0.00')
 
-    monthly_unpaid_driving_total = unpaid_monthly_driving.aggregate(Sum('job_price_in_euros'))['job_price_in_euros__sum'] or Decimal('0.00')
-    monthly_unpaid_shuttle_total = unpaid_monthly_shuttle.aggregate(Sum('price'))['price__sum'] or Decimal('0.00')
-    monthly_unpaid_hotels_total = unpaid_monthly_hotels.aggregate(Sum('customer_pays_in_euros'))['customer_pays_in_euros__sum'] or Decimal('0.00')
+    unpaid_monthly_driving = monthly_driving.filter(is_paid=False)
+    unpaid_monthly_shuttle = monthly_shuttles.filter(is_paid=False)
+    unpaid_monthly_hotels = monthly_hotels.filter(is_paid=False)
+    monthly_unpaid_driving_total = sum_jobs_open_gmv_unpaid_minus_own_payments(unpaid_monthly_driving)
+    monthly_unpaid_shuttle_total = sum_shuttles_open_gmv_unpaid_minus_own_payments(unpaid_monthly_shuttle)
+    monthly_unpaid_hotels_total = sum_hotels_open_gmv_unpaid_minus_own_payments(unpaid_monthly_hotels)
+
+    monthly_driving_margin = sum_jobs_margin(monthly_driving)
+    monthly_shuttle_margin = sum_shuttles_margin(monthly_shuttles)
+    monthly_hotel_margin = sum_hotels_margin(monthly_hotels)
+    monthly_total_margin = monthly_driving_margin + monthly_shuttle_margin + monthly_hotel_margin
+    monthly_unpaid_driving_margin = sum_jobs_open_margin_unpaid_minus_own_payments(unpaid_monthly_driving)
+    monthly_unpaid_shuttle_margin = sum_shuttles_open_margin_unpaid_minus_own_payments(unpaid_monthly_shuttle)
+    monthly_unpaid_hotels_margin = sum_hotels_open_margin_unpaid_minus_own_payments(unpaid_monthly_hotels)
+    monthly_unpaid_margin_total = (
+        monthly_unpaid_driving_margin + monthly_unpaid_shuttle_margin + monthly_unpaid_hotels_margin
+    )
+    monthly_shuttle_profit = monthly_shuttle_margin
 
     monthly_driving_breakdowns = []
     for job in monthly_driving:
-        agent_fee_amount, profit = calculate_agent_fee_and_profit(job)
+        agent_fee_amount = _job_agent_fee_from_subtotal_or_fallback(job)
+        profit = _job_subtotal_or_fallback(job)
         monthly_total_agent_fees += agent_fee_amount
         monthly_driving_profit += profit
         monthly_driving_breakdowns.append({
@@ -329,7 +395,7 @@ def totals(request):
     # Create the unpaid shuttle job breakdowns
     monthly_shuttle_breakdowns = []
     for shuttle in monthly_shuttles:
-        profit = monthly_shuttle_profit
+        profit = shuttle.price or Decimal('0.00')
         monthly_shuttle_breakdowns.append({
             'customer_name': shuttle.customer_name,
             'shuttle_date': shuttle.shuttle_date,
@@ -341,9 +407,10 @@ def totals(request):
 
     monthly_hotel_breakdowns = []
     for hotel in monthly_hotels:
-        # Call the calculate_hotel_agent_fee_and_profit function to calculate agent fee and profit
-        agent_fee_amount, profit = calculate_hotel_agent_fee_and_profit(hotel)
-        monthly_hotel_profit = monthly_hotel_income - agent_fee_amount
+        agent_fee_amount = _hotel_agent_fee_from_subtotal_or_fallback(hotel)
+        profit = _hotel_subtotal_or_fallback(hotel)
+        monthly_total_agent_fees += agent_fee_amount
+        monthly_hotel_profit += profit
         
         monthly_hotel_breakdowns.append({
             'customer_name': hotel.customer_name,
@@ -361,6 +428,34 @@ def totals(request):
     monthly_total_profit = monthly_driving_profit + monthly_shuttle_profit + monthly_hotel_profit
     monthly_unpaid_total = monthly_unpaid_driving_total + monthly_unpaid_shuttle_total + monthly_unpaid_hotels_total
     monthly_total_income = monthly_driving_income + monthly_shuttle_income + monthly_hotel_income
+    monthly_jobs_paid = sum_jobs_recorded_eur(monthly_driving)
+    monthly_shuttles_paid = sum_shuttles_recorded_eur(monthly_shuttles)
+    monthly_hotels_paid = sum_hotels_recorded_eur(monthly_hotels)
+    monthly_all_paid = monthly_jobs_paid + monthly_shuttles_paid + monthly_hotels_paid
+    monthly_total_margin_segment = paid_unpaid_segment(
+        monthly_total_margin, monthly_unpaid_margin_total, paid_override=monthly_all_paid
+    )
+    monthly_total_gmv_segment = paid_unpaid_segment(
+        monthly_total_income, monthly_unpaid_total, paid_override=monthly_all_paid
+    )
+    monthly_driving_margin_segment = paid_unpaid_segment(
+        monthly_driving_margin, monthly_unpaid_driving_margin, paid_override=monthly_jobs_paid
+    )
+    monthly_driving_gmv_segment = paid_unpaid_segment(
+        monthly_driving_income, monthly_unpaid_driving_total, paid_override=monthly_jobs_paid
+    )
+    monthly_shuttle_margin_segment = paid_unpaid_segment(
+        monthly_shuttle_margin, monthly_unpaid_shuttle_margin, paid_override=monthly_shuttles_paid
+    )
+    monthly_shuttle_gmv_segment = paid_unpaid_segment(
+        monthly_shuttle_income, monthly_unpaid_shuttle_total, paid_override=monthly_shuttles_paid
+    )
+    monthly_hotel_margin_segment = paid_unpaid_segment(
+        monthly_hotel_margin, monthly_unpaid_hotels_margin, paid_override=monthly_hotels_paid
+    )
+    monthly_hotel_gmv_segment = paid_unpaid_segment(
+        monthly_hotel_income, monthly_unpaid_hotels_total, paid_override=monthly_hotels_paid
+    )
     monthly_overall_profit = monthly_driving_profit + monthly_shuttle_profit + monthly_hotel_profit - monthly_total_expenses
 
     logger.info(f"Monthly Driving Profit: {monthly_driving_profit:.2f}")
@@ -371,16 +466,10 @@ def totals(request):
 
 
     """All yearly totals"""
-    # Fetch jobs for the current year (ordered by date descending)
-    yearly_driving = Job.objects.filter(job_date__year=current_year, is_confirmed=True).order_by('-job_date')
-    yearly_shuttles = Shuttle.objects.filter(shuttle_date__year=current_year, is_confirmed=True)
-    yearly_hotels = HotelBooking.objects.filter(check_in__year=current_year, is_confirmed=True)
+    yearly_driving = all_driving.filter(job_date__year=current_year)
+    yearly_shuttles = all_shuttle.filter(shuttle_date__year=current_year)
+    yearly_hotels = all_hotels.filter(check_in__year=current_year)
     yearly_expenses = Expense.objects.filter(expense_date__year=current_year, expense_type__in=expense_types)
-
-    # Yearly unpaid
-    unpaid_yearly_driving = yearly_driving.filter(is_paid=False)
-    unpaid_yearly_shuttle = yearly_shuttles.filter(is_paid=False)
-    unpaid_yearly_hotels = yearly_hotels.filter(is_paid=False)
 
     # Yearly totals
     yearly_driving_income = yearly_driving.aggregate(Sum('job_price_in_euros'))['job_price_in_euros__sum'] or Decimal('0.00')
@@ -391,26 +480,72 @@ def totals(request):
     yearly_total_expenses = yearly_expenses.aggregate(Sum('expense_amount_in_euros'))['expense_amount_in_euros__sum'] or Decimal('0.00')
     yearly_total_agent_fees = Decimal('0.00')
 
-    yearly_unpaid_driving_total = unpaid_yearly_driving.aggregate(Sum('job_price_in_euros'))['job_price_in_euros__sum'] or Decimal('0.00')
-    yearly_unpaid_shuttle_total = unpaid_yearly_shuttle.aggregate(Sum('price'))['price__sum'] or Decimal('0.00')
-    yearly_unpaid_hotels_total = unpaid_yearly_hotels.aggregate(Sum('customer_pays_in_euros'))['customer_pays_in_euros__sum'] or Decimal('0.00')
+    unpaid_yearly_driving = yearly_driving.filter(is_paid=False)
+    unpaid_yearly_shuttle = yearly_shuttles.filter(is_paid=False)
+    unpaid_yearly_hotels = yearly_hotels.filter(is_paid=False)
+    yearly_unpaid_driving_total = sum_jobs_open_gmv_unpaid_minus_own_payments(unpaid_yearly_driving)
+    yearly_unpaid_shuttle_total = sum_shuttles_open_gmv_unpaid_minus_own_payments(unpaid_yearly_shuttle)
+    yearly_unpaid_hotels_total = sum_hotels_open_gmv_unpaid_minus_own_payments(unpaid_yearly_hotels)
+
+    yearly_driving_margin = sum_jobs_margin(yearly_driving)
+    yearly_shuttle_margin = sum_shuttles_margin(yearly_shuttles)
+    yearly_hotel_margin = sum_hotels_margin(yearly_hotels)
+    yearly_total_margin = yearly_driving_margin + yearly_shuttle_margin + yearly_hotel_margin
+    yearly_unpaid_driving_margin = sum_jobs_open_margin_unpaid_minus_own_payments(unpaid_yearly_driving)
+    yearly_unpaid_shuttle_margin = sum_shuttles_open_margin_unpaid_minus_own_payments(unpaid_yearly_shuttle)
+    yearly_unpaid_hotels_margin = sum_hotels_open_margin_unpaid_minus_own_payments(unpaid_yearly_hotels)
+    yearly_unpaid_margin_total = (
+        yearly_unpaid_driving_margin + yearly_unpaid_shuttle_margin + yearly_unpaid_hotels_margin
+    )
 
     yearly_driving_profit = Decimal('0.00')
-    yearly_shuttle_profit = yearly_shuttles.aggregate(Sum('price'))['price__sum'] or Decimal('0.00')
-    yearly_hotel_profit = yearly_hotel_profit = Decimal('0.00')
+    yearly_shuttle_profit = yearly_shuttle_margin
+    yearly_hotel_profit = Decimal('0.00')
 
     # Calculate profits 
     for job in yearly_driving:
-        agent_fee_amount, profit = calculate_agent_fee_and_profit(job)
+        agent_fee_amount = _job_agent_fee_from_subtotal_or_fallback(job)
+        profit = _job_subtotal_or_fallback(job)
+        yearly_total_agent_fees += agent_fee_amount
         yearly_driving_profit += profit
 
     for hotel in yearly_hotels:
-        agent_fee_amount, profit = calculate_hotel_agent_fee_and_profit(hotel)
+        agent_fee_amount = _hotel_agent_fee_from_subtotal_or_fallback(hotel)
+        profit = _hotel_subtotal_or_fallback(hotel)
+        yearly_total_agent_fees += agent_fee_amount
         yearly_hotel_profit += profit
 
     # Total yearly income and profit
     yearly_unpaid_total = yearly_unpaid_driving_total + yearly_unpaid_shuttle_total + yearly_unpaid_hotels_total
     yearly_total_income = yearly_driving_income + yearly_shuttle_income + yearly_hotel_income
+    yearly_jobs_paid = sum_jobs_recorded_eur(yearly_driving)
+    yearly_shuttles_paid = sum_shuttles_recorded_eur(yearly_shuttles)
+    yearly_hotels_paid = sum_hotels_recorded_eur(yearly_hotels)
+    yearly_all_paid = yearly_jobs_paid + yearly_shuttles_paid + yearly_hotels_paid
+    yearly_total_margin_segment = paid_unpaid_segment(
+        yearly_total_margin, yearly_unpaid_margin_total, paid_override=yearly_all_paid
+    )
+    yearly_total_gmv_segment = paid_unpaid_segment(
+        yearly_total_income, yearly_unpaid_total, paid_override=yearly_all_paid
+    )
+    yearly_driving_margin_segment = paid_unpaid_segment(
+        yearly_driving_margin, yearly_unpaid_driving_margin, paid_override=yearly_jobs_paid
+    )
+    yearly_driving_gmv_segment = paid_unpaid_segment(
+        yearly_driving_income, yearly_unpaid_driving_total, paid_override=yearly_jobs_paid
+    )
+    yearly_shuttle_margin_segment = paid_unpaid_segment(
+        yearly_shuttle_margin, yearly_unpaid_shuttle_margin, paid_override=yearly_shuttles_paid
+    )
+    yearly_shuttle_gmv_segment = paid_unpaid_segment(
+        yearly_shuttle_income, yearly_unpaid_shuttle_total, paid_override=yearly_shuttles_paid
+    )
+    yearly_hotel_margin_segment = paid_unpaid_segment(
+        yearly_hotel_margin, yearly_unpaid_hotels_margin, paid_override=yearly_hotels_paid
+    )
+    yearly_hotel_gmv_segment = paid_unpaid_segment(
+        yearly_hotel_income, yearly_unpaid_hotels_total, paid_override=yearly_hotels_paid
+    )
     yearly_total_profit = yearly_driving_profit + yearly_shuttle_profit + yearly_hotel_profit
     yearly_overall_profit = yearly_driving_profit + yearly_shuttle_profit + yearly_hotel_profit - yearly_total_expenses
 
@@ -424,10 +559,23 @@ def totals(request):
 
     """Render all totals"""
     # Render the template with context
-    return render(request, 'billing/totals.html', {
+    context = {
         'now': now,
         'show_totals': show_totals,
 
+        'overall_total_margin': overall_total_margin,
+        'overall_unpaid_margin_total': overall_unpaid_margin_total,
+        'overall_total_margin_segment': overall_total_margin_segment,
+        'overall_total_gmv_segment': overall_total_gmv_segment,
+        'overall_driving_margin_segment': overall_driving_margin_segment,
+        'overall_driving_gmv_segment': overall_driving_gmv_segment,
+        'overall_shuttle_margin_segment': overall_shuttle_margin_segment,
+        'overall_shuttle_gmv_segment': overall_shuttle_gmv_segment,
+        'overall_hotel_margin_segment': overall_hotel_margin_segment,
+        'overall_hotel_gmv_segment': overall_hotel_gmv_segment,
+
+        'monthly_total_margin': monthly_total_margin,
+        'monthly_unpaid_margin_total': monthly_unpaid_margin_total,
         'monthly_total_income': monthly_total_income,
         'monthly_hotel_income': monthly_hotel_income,
         'monthly_shuttle_income': monthly_shuttle_income,
@@ -439,8 +587,15 @@ def totals(request):
         'monthly_unpaid_shuttle_total': monthly_unpaid_shuttle_total,
         'monthly_unpaid_hotels_total': monthly_unpaid_hotels_total,
         'monthly_unpaid_total': monthly_unpaid_total,
+        'monthly_total_margin_segment': monthly_total_margin_segment,
+        'monthly_total_gmv_segment': monthly_total_gmv_segment,
+        'monthly_driving_margin_segment': monthly_driving_margin_segment,
+        'monthly_driving_gmv_segment': monthly_driving_gmv_segment,
+        'monthly_shuttle_margin_segment': monthly_shuttle_margin_segment,
+        'monthly_shuttle_gmv_segment': monthly_shuttle_gmv_segment,
+        'monthly_hotel_margin_segment': monthly_hotel_margin_segment,
+        'monthly_hotel_gmv_segment': monthly_hotel_gmv_segment,
         'monthly_driving_profit': monthly_driving_profit,
-        'monthly_hotel_profit': monthly_hotel_profit,
         'monthly_hotel_profit': monthly_hotel_profit,
         'monthly_total_profit': monthly_total_profit,
         'monthly_overall_profit': monthly_overall_profit,
@@ -455,6 +610,16 @@ def totals(request):
         'yearly_shuttle_income': yearly_shuttle_income,
         'yearly_driving_income': yearly_driving_income,
         'yearly_unpaid_total': yearly_unpaid_total,
+        'yearly_total_margin': yearly_total_margin,
+        'yearly_unpaid_margin_total': yearly_unpaid_margin_total,
+        'yearly_total_margin_segment': yearly_total_margin_segment,
+        'yearly_total_gmv_segment': yearly_total_gmv_segment,
+        'yearly_driving_margin_segment': yearly_driving_margin_segment,
+        'yearly_driving_gmv_segment': yearly_driving_gmv_segment,
+        'yearly_shuttle_margin_segment': yearly_shuttle_margin_segment,
+        'yearly_shuttle_gmv_segment': yearly_shuttle_gmv_segment,
+        'yearly_hotel_margin_segment': yearly_hotel_margin_segment,
+        'yearly_hotel_gmv_segment': yearly_hotel_gmv_segment,
         'yearly_hotel_income': yearly_hotel_income,
         'yearly_total_profit': yearly_total_profit,
         'yearly_overall_profit': yearly_overall_profit, 
@@ -472,6 +637,9 @@ def totals(request):
         'overall_unpaid_driving': overall_unpaid_driving,
         'overall_unpaid_shuttle': overall_unpaid_shuttle,
         'overall_unpaid_hotels': overall_unpaid_hotels,
+        'overall_unpaid_driving_margin': overall_unpaid_driving_margin,
+        'overall_unpaid_shuttle_margin': overall_unpaid_shuttle_margin,
+        'overall_unpaid_hotels_margin': overall_unpaid_hotels_margin,
         'overall_unpaid_total': overall_unpaid_total,
         'overall_expenses_total': overall_expenses_total,
 
@@ -486,7 +654,9 @@ def totals(request):
         'driving_agent_totals': driving_agent_totals,
         'hotel_agent_totals': hotel_agent_totals,
         'agent_totals': get_agent_totals(all_driving, all_hotels),
-    })
+    }
+    cache.set(totals_cache_key, context, TOTALS_CACHE_TTL_SECONDS)
+    return render(request, 'billing/totals.html', context)
 
     
 

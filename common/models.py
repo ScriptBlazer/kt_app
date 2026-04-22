@@ -50,12 +50,31 @@ class Payment(models.Model):
         return self.payment_amount + self.cc_fee if self.payment_amount else Decimal('0.00')
 
     def save(self, *args, **kwargs):
-        # Perform currency conversion to euros
+        was_adding = self._state.adding
+        old_summary = None
+        if not was_adding and self.pk:
+            from common.payment_audit import payment_audit_summary
+
+            try:
+                prev = Payment.objects.select_related(
+                    'paid_to_driver', 'paid_to_agent', 'paid_to_staff'
+                ).get(pk=self.pk)
+                old_summary = payment_audit_summary(prev)
+            except Payment.DoesNotExist:
+                pass
+
         self.convert_to_euros()
         super().save(*args, **kwargs)
+
+        from common.payment_audit import log_payment_saved_for_parent
+
+        log_payment_saved_for_parent(self, was_adding, old_summary)
         sync_parent_is_paid_after_payment_change(self)
 
     def delete(self, *args, **kwargs):
+        from common.payment_audit import log_payment_deleted_for_parent
+
+        log_payment_deleted_for_parent(self)
         job_id = self.job_id
         shuttle_id = self.shuttle_id
         hotel_booking_id = self.hotel_booking_id

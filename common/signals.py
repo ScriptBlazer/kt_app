@@ -27,6 +27,8 @@ def _store_audit(instance, created, raw):
     ts = now_budapest()
     before = getattr(instance, '_audit_field_snapshot_before', None)
     changes = compute_field_changes(instance, before)
+    if not changes:
+        return
     log_audit(instance, 'updated', user, ts, changes=changes)
 
 

@@ -1,0 +1,101 @@
+{% load humanize %}
+<header class="totals-hero">
+    <h2 id="totals-heading">KT margin — what we made vs still owed</h2>
+    <p class="totals-meta">These figures are KT’s share on each booking (from stored subtotal where present). <strong>Paid</strong> is all recorded payment money linked to the bookings shown in this section. <strong>Unpaid</strong> starts from bookings still marked unpaid, then subtracts payments on those same unpaid bookings (never below zero per booking). Shuttle uses trip price as margin until costs are modeled separately.</p>
+</header>
+<section class="totals-guide" aria-label="How KT margin cards work">
+    <h3>How to read these cards</h3>
+    <div class="totals-guide-grid">
+        <div class="totals-guide-item">
+            <strong>Total (center of donut)</strong>
+            <p>Your full KT margin for confirmed bookings in that bucket.</p>
+        </div>
+        <div class="totals-guide-item">
+            <strong>Paid</strong>
+            <p>All payment money recorded for those bookings in that time range.</p>
+        </div>
+        <div class="totals-guide-item">
+            <strong>Unpaid</strong>
+            <p>KT margin still open on bookings marked unpaid, minus any partial payments on those same bookings.</p>
+        </div>
+        <div class="totals-guide-item">
+            <strong>Driving / Shuttle / Hotel</strong>
+            <p>Each card shows that service type only; snapshots combine all three.</p>
+        </div>
+    </div>
+</section>
+
+<h3 class="totals-section-title">All-time</h3>
+<div class="totals-grid">
+    <article class="totals-card totals-card--driving" data-empty="{% if overall_driving_margin_segment.empty %}true{% else %}false{% endif %}">
+        <h3>Driving</h3>
+        <div class="totals-donut-wrap" aria-hidden="true">
+            <div class="totals-donut" style="--paid-deg: {{ overall_driving_margin_segment.paid_deg }}deg;"></div>
+            <div class="totals-donut-center">
+                <span class="totals-donut-total">{{ overall_driving_margin_segment.total|floatformat:2|intcomma }}</span>
+                <span class="totals-donut-label">KT margin</span>
+            </div>
+        </div>
+        <div class="totals-segbar" title="Share paid">
+            <div class="totals-segbar-fill" style="width: {{ overall_driving_margin_segment.paid_pct }}%;"></div>
+        </div>
+        <dl class="totals-stats">
+            <div>
+                <dt>Paid</dt>
+                <dd>€{{ overall_driving_margin_segment.paid|floatformat:2|intcomma }}</dd>
+            </div>
+            <div class="totals-stat--unpaid">
+                <dt>Unpaid</dt>
+                <dd>€{{ overall_driving_margin_segment.unpaid|floatformat:2|intcomma }}</dd>
+            </div>
+        </dl>
+    </article>
+
+    <article class="totals-card totals-card--shuttle" data-empty="{% if overall_shuttle_margin_segment.empty %}true{% else %}false{% endif %}">
+        <h3>Shuttle</h3>
+        <div class="totals-donut-wrap" aria-hidden="true">
+            <div class="totals-donut" style="--paid-deg: {{ overall_shuttle_margin_segment.paid_deg }}deg;"></div>
+            <div class="totals-donut-center">
+                <span class="totals-donut-total">{{ overall_shuttle_margin_segment.total|floatformat:2|intcomma }}</span>
+                <span class="totals-donut-label">KT margin</span>
+            </div>
+        </div>
+        <div class="totals-segbar" title="Share paid">
+            <div class="totals-segbar-fill" style="width: {{ overall_shuttle_margin_segment.paid_pct }}%;"></div>
+        </div>
+        <dl class="totals-stats">
+            <div>
+                <dt>Paid</dt>
+                <dd>€{{ overall_shuttle_margin_segment.paid|floatformat:2|intcomma }}</dd>
+            </div>
+            <div class="totals-stat--unpaid">
+                <dt>Unpaid</dt>
+                <dd>€{{ overall_shuttle_margin_segment.unpaid|floatformat:2|intcomma }}</dd>
+            </div>
+        </dl>
+    </article>
+
+    <article class="totals-card totals-card--hotel" data-empty="{% if overall_hotel_margin_segment.empty %}true{% else %}false{% endif %}">
+        <h3>Hotel</h3>
+        <div class="totals-donut-wrap" aria-hidden="true">
+            <div class="totals-donut" style="--paid-deg: {{ overall_hotel_margin_segment.paid_deg }}deg;"></div>
+            <div class="totals-donut-center">
+                <span class="totals-donut-total">{{ overall_hotel_margin_segment.total|floatformat:2|intcomma }}</span>
+                <span class="totals-donut-label">KT margin</span>
+            </div>
+        </div>
+        <div class="totals-segbar" title="Share paid">
+            <div class="totals-segbar-fill" style="width: {{ overall_hotel_margin_segment.paid_pct }}%;"></div>
+        </div>
+        <dl class="totals-stats">
+            <div>
+                <dt>Paid</dt>
+                <dd>€{{ overall_hotel_margin_segment.paid|floatformat:2|intcomma }}</dd>
+            </div>
+            <div class="totals-stat--unpaid">
+                <dt>Unpaid</dt>
+                <dd>€{{ overall_hotel_margin_segment.unpaid|floatformat:2|intcomma }}</dd>
+            </div>
+        </dl>
+    </article>
+</div>
