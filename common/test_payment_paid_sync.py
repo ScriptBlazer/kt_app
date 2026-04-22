@@ -121,6 +121,49 @@ class AutoIsPaidJobTests(TestCase):
         self.assertFalse(job.is_paid)
 
     @patch('jobs.models.get_exchange_rate', return_value=Decimal('1'))
+    def test_zero_price_job_not_paid_without_recorded_payment(self, _mock_rate):
+        job = Job.objects.create(
+            customer_name='C',
+            customer_number='1',
+            job_date=timezone.now().date(),
+            job_time=timezone.now().time(),
+            job_price=Decimal('0.00'),
+            job_currency='EUR',
+            payment_type='Cash',
+            pick_up_location='X',
+            no_of_passengers=1,
+            vehicle_type='Car',
+            driver=self.driver,
+        )
+        job.refresh_from_db()
+        self.assertFalse(job.is_paid)
+
+    @patch('jobs.models.get_exchange_rate', return_value=Decimal('1'))
+    def test_zero_price_job_paid_with_nonzero_recorded_payment(self, _mock_rate):
+        job = Job.objects.create(
+            customer_name='C',
+            customer_number='1',
+            job_date=timezone.now().date(),
+            job_time=timezone.now().time(),
+            job_price=Decimal('0.00'),
+            job_currency='EUR',
+            payment_type='Cash',
+            pick_up_location='X',
+            no_of_passengers=1,
+            vehicle_type='Car',
+            driver=self.driver,
+        )
+        Payment.objects.create(
+            job=job,
+            payment_amount=Decimal('1.00'),
+            payment_currency='EUR',
+            payment_type='Cash',
+            paid_to_driver=self.driver,
+        )
+        job.refresh_from_db()
+        self.assertTrue(job.is_paid)
+
+    @patch('jobs.models.get_exchange_rate', return_value=Decimal('1'))
     def test_job_unpaid_when_payment_deleted_below_threshold(self, _mock_rate):
         job = Job.objects.create(
             customer_name='C',
@@ -264,6 +307,19 @@ class AutoIsPaidShuttleTests(TestCase):
         self.shuttle.refresh_from_db()
         self.assertTrue(self.shuttle.is_paid)
 
+    def test_zero_price_shuttle_not_paid_without_recorded_payment(self):
+        zero_shuttle = Shuttle.objects.create(
+            customer_name='SZ',
+            customer_number='2',
+            shuttle_date=timezone.now().astimezone(self.bt).date(),
+            shuttle_direction='buda_keres',
+            no_of_passengers=2,
+            driver=self.driver,
+            price=Decimal('0.00'),
+        )
+        zero_shuttle.refresh_from_db()
+        self.assertFalse(zero_shuttle.is_paid)
+
 
 class AutoIsPaidHotelTests(TestCase):
     @patch('hotels.models.get_exchange_rate', return_value=Decimal('1'))
@@ -336,5 +392,30 @@ class AutoIsPaidHotelTests(TestCase):
         self.assertTrue(booking.is_paid)
         booking.customer_pays = Decimal('200.00')
         booking.save()
+        booking.refresh_from_db()
+        self.assertFalse(booking.is_paid)
+
+    @patch('hotels.models.get_exchange_rate', return_value=Decimal('1'))
+    def test_zero_customer_pays_hotel_not_paid_without_recorded_payment(self, _mock):
+        agent = Agent.objects.create(name='HC')
+        t0 = timezone.now()
+        booking = HotelBooking.objects.create(
+            customer_name='Guest3',
+            customer_number='3',
+            check_in=t0 + timezone.timedelta(days=1),
+            check_out=t0 + timezone.timedelta(days=2),
+            no_of_people=1,
+            hotel_name='Hilton',
+            rooms=1,
+            no_of_beds=1,
+            hotel_tier=3,
+            hotel_price=Decimal('200.00'),
+            hotel_price_currency='EUR',
+            customer_pays=Decimal('0.00'),
+            customer_pays_currency='EUR',
+            agent=agent,
+            agent_percentage='10%',
+            payment_type='Cash',
+        )
         booking.refresh_from_db()
         self.assertFalse(booking.is_paid)

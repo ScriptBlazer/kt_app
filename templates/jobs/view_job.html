@@ -152,6 +152,15 @@
         {% endfor %}
     </div>
     <br>
+    <div class="driver-payment-toggle-row">
+        <strong>Show payment on driver link:</strong>
+        <label class="switch-toggle" for="show_payment_on_link_toggle">
+            <input type="checkbox" id="show_payment_on_link_toggle" {% if job.show_payment_on_link %}checked{% endif %}>
+            <span class="slider"></span>
+        </label>
+        <span id="show-payment-toggle-label" class="toggle-state-label">{% if job.show_payment_on_link %}Shown{% else %}Hidden{% endif %}</span>
+    </div>
+    <br>
     <form method="POST" action="{% url 'jobs:update_job_status' job.id %}">
         {% csrf_token %}
 
@@ -178,10 +187,10 @@
         <p><strong>Freelancer Job:</strong> 
             <input class="sbig" type="checkbox" id="is_freelancer" name="is_freelancer" {% if job.is_freelancer %}checked{% endif %}>
         </p>
-    
-    
+
         <button type="submit" class="button">Update Status</button>
     </form>
+    
 
     <div class="button-group">
         <a href="{% url 'jobs:edit_job' job.id %}" class="button">Edit</a>
@@ -234,6 +243,57 @@
 
 {% block extra_scripts %}
 <script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const toggle = document.getElementById('show_payment_on_link_toggle');
+        const label = document.getElementById('show-payment-toggle-label');
+        if (!toggle || !label) return;
+
+        toggle.addEventListener('change', function () {
+            const intendedState = toggle.checked;
+            label.textContent = intendedState ? 'Shown' : 'Hidden';
+
+            fetch("{% url 'jobs:toggle_show_payment_on_link' job.id %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: `show_payment_on_link=${intendedState}`,
+            })
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error('Failed to save toggle.');
+                }
+                return response.json();
+            })
+            .then((data) => {
+                const savedState = Boolean(data.show_payment_on_link);
+                toggle.checked = savedState;
+                label.textContent = savedState ? 'Shown' : 'Hidden';
+            })
+            .catch(() => {
+                toggle.checked = !intendedState;
+                label.textContent = toggle.checked ? 'Shown' : 'Hidden';
+                alert('Could not update payment visibility. Please try again.');
+            });
+        });
+    });
+
     // Function to copy job details in the specified order with conditional fields
     function copyJobDetails() {
         let jobDetails = `*Name:* {{ job.customer_name|default_if_none:""|escapejs }}

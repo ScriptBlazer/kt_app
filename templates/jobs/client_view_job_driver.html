@@ -96,11 +96,11 @@
             </div>
             {% endif %}
 
-            {% if job.job_price_in_euros %}
-            <div class="timeline-step">
-                <div class="dot"></div>
-                <div class="card"><strong>Job Price:</strong> €{{ job.job_price_in_euros|intcomma }}</div>
-            </div>
+            {% if job.show_payment_on_link and job.job_price_in_euros %}
+                <div class="timeline-step">
+                    <div class="dot"></div>
+                    <div class="card"><strong>Job Price:</strong> €{{ job.job_price_in_euros|intcomma }}</div>
+                </div>
             {% endif %}
 
             {% if job.job_description %}
@@ -125,16 +125,20 @@
                 </div>
             </div>
 
-            <div class="timeline-step" style="--i:13;">
-                <div class="dot"></div>
-                <div class="card"><strong>Payment:</strong> 
-                    {% if job.is_paid %}
-                        ✅ Paid
-                    {% else %}
-                        ❌ Not Paid
-                    {% endif %}
+            {% if job.show_payment_on_link %}
+                <div class="timeline-step" style="--i:13;">
+                    <div class="dot"></div>
+                    <div class="card"><strong>Payment:</strong> 
+                        {% if job.is_paid %}
+                            ✅ Paid
+                        {% elif has_recorded_payments %}
+                            Balance: €{{ payment_balance|floatformat:2|intcomma }}
+                        {% else %}
+                            ❌ Not Paid
+                        {% endif %}
+                    </div>
                 </div>
-            </div>
+            {% endif %}
 
         <p class="footer">Kerestir Travel &copy; 2024</p>
     </div>
