@@ -138,6 +138,8 @@
                 <div class="card"><strong>Payment:</strong> 
                     {% if guest.is_paid %}
                         ✅ Paid
+                    {% elif has_recorded_payments %}
+                        Balance: €{{ payment_balance|floatformat:2|intcomma }}
                     {% else %}
                         ❌ Not Paid
                     {% endif %}

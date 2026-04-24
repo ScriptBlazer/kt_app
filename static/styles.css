@@ -1155,6 +1155,61 @@ input[type="checkbox"][name$="-DELETE"] {
     display: none;
 }
 
+.driver-payment-toggle-row {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.switch-toggle {
+    position: relative;
+    display: inline-block;
+    width: 46px;
+    height: 24px;
+}
+
+.switch-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.switch-toggle .slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background-color: #c9c9c9;
+    transition: 0.2s;
+    border-radius: 999px;
+}
+
+.switch-toggle .slider::before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    top: 3px;
+    background-color: #fff;
+    transition: 0.2s;
+    border-radius: 50%;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+.switch-toggle input:checked + .slider {
+    background-color: #4caf50;
+}
+
+.switch-toggle input:checked + .slider::before {
+    transform: translateX(22px);
+}
+
+.toggle-state-label {
+    min-width: 56px;
+    font-weight: 600;
+}
+
 /* Pagination controls */
 /* Expenses list: active filter chips */
 .expense-filter-tags {

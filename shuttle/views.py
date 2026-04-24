@@ -1,5 +1,6 @@
 from shuttle.models import Shuttle, ShuttleDay, ShuttleDailyCost
 from shuttle.forms import ShuttleForm, DriverAssignmentForm, ShuttleDailyCostForm
+from decimal import Decimal
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import Http404
 from django.views.decorators.http import require_POST
@@ -24,6 +25,7 @@ import pytz
 import logging
 import re
 from common.utils import scramble_date, now_budapest
+from common.payment_paid_sync import sum_complete_payments_eur
 logger = logging.getLogger('kt')
 
 
@@ -458,7 +460,14 @@ def client_view_shuttle(request, lookup):
     shuttle = Shuttle.objects.filter(public_id=lookup).first()
     if not shuttle:
         return render(request, 'errors/404.html', status=404)
-    return render(request, 'shuttle/client_view_shuttle.html', {'shuttle': shuttle})
+    recorded_payments_eur = sum_complete_payments_eur(shuttle.payments)
+    payment_balance = max((shuttle.price or Decimal('0.00')) - recorded_payments_eur, Decimal('0.00'))
+    has_recorded_payments = recorded_payments_eur > Decimal('0.00')
+    return render(request, 'shuttle/client_view_shuttle.html', {
+        'shuttle': shuttle,
+        'payment_balance': payment_balance,
+        'has_recorded_payments': has_recorded_payments,
+    })
 
 
 def shuttle_summary_view(request, scrambled):
@@ -482,6 +491,11 @@ def shuttle_summary_view(request, scrambled):
     total_price = sum(s.price or 0 for s in shuttles)
     total_drivers = driver_costs.values('driver').distinct().count()
     total_costs = sum(cost.driver_fee_in_euros or 0 for cost in driver_costs)
+
+    for shuttle in shuttles:
+        recorded_payments_eur = sum_complete_payments_eur(shuttle.payments)
+        shuttle.payment_balance = max((shuttle.price or Decimal('0.00')) - recorded_payments_eur, Decimal('0.00'))
+        shuttle.has_recorded_payments = recorded_payments_eur > Decimal('0.00')
 
     context = {
         'date': target_date,

@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from decimal import Decimal
 from hotels.forms import HotelBookingForm
 from django.urls import reverse
 from hotels.models import HotelBooking, HotelBookingBedType, BedType
@@ -14,6 +15,7 @@ from django.forms import modelformset_factory
 import logging
 import pytz
 from django.core.exceptions import ValidationError
+from common.payment_paid_sync import sum_complete_payments_eur
 logger = logging.getLogger('kt')
 
 # Set the timezone to Hungary
@@ -348,7 +350,14 @@ def client_view_guest(request, public_id):
     except HotelBooking.DoesNotExist:
         return render(request, "errors/404.html", status=404)
 
-    return render(request, 'hotels/client_view_guest.html', {'guest': guest})
+    recorded_payments_eur = sum_complete_payments_eur(guest.payments)
+    payment_balance = max((guest.customer_pays_in_euros or Decimal('0.00')) - recorded_payments_eur, Decimal('0.00'))
+    has_recorded_payments = recorded_payments_eur > Decimal('0.00')
+    return render(request, 'hotels/client_view_guest.html', {
+        'guest': guest,
+        'payment_balance': payment_balance,
+        'has_recorded_payments': has_recorded_payments,
+    })
 
 
 def client_view_guest_tefilas_rabim(request, public_id):

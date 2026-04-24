@@ -46,6 +46,8 @@
                         {% endif %}
                         {% if shuttle.is_paid %}
                             <p><strong>Payment:</strong> ✅ Paid</p>
+                        {% elif shuttle.has_recorded_payments %}
+                            <p><strong>Payment:</strong> Balance: €{{ shuttle.payment_balance|floatformat:2|intcomma }}</p>
                         {% else %}
                             <p><strong>Payment:</strong> ❌ Not Paid</p>
                         {% endif %}

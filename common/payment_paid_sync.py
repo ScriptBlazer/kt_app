@@ -49,8 +49,10 @@ def sync_job_is_paid_from_payments(job_id: int) -> None:
     target = job.job_price_in_euros
     if target is None:
         return
-    total = sum_complete_payments_eur(job.payments)
-    should_pay = payments_meet_target_eur(total, target)
+    complete_payments = _complete_payments_base_qs(job.payments.all())
+    has_recorded_payment = complete_payments.exists()
+    total = complete_payments.aggregate(s=Sum('payment_amount_in_euros'))['s'] or Decimal('0')
+    should_pay = has_recorded_payment and payments_meet_target_eur(total, target)
     if job.is_paid != should_pay:
         Job.objects.filter(pk=job_id).update(is_paid=should_pay)
 
@@ -60,8 +62,10 @@ def sync_shuttle_is_paid_from_payments(shuttle_id: int) -> None:
 
     shuttle = Shuttle.objects.get(pk=shuttle_id)
     target = shuttle.price
-    total = sum_complete_payments_eur(shuttle.payments)
-    should_pay = payments_meet_target_eur(total, target)
+    complete_payments = _complete_payments_base_qs(shuttle.payments.all())
+    has_recorded_payment = complete_payments.exists()
+    total = complete_payments.aggregate(s=Sum('payment_amount_in_euros'))['s'] or Decimal('0')
+    should_pay = has_recorded_payment and payments_meet_target_eur(total, target)
     if shuttle.is_paid != should_pay:
         Shuttle.objects.filter(pk=shuttle_id).update(is_paid=should_pay)
 
@@ -73,8 +77,10 @@ def sync_hotel_is_paid_from_payments(booking_id: int) -> None:
     target = guest.customer_pays_in_euros
     if target is None:
         return
-    total = sum_complete_payments_eur(guest.payments)
-    should_pay = payments_meet_target_eur(total, target)
+    complete_payments = _complete_payments_base_qs(guest.payments.all())
+    has_recorded_payment = complete_payments.exists()
+    total = complete_payments.aggregate(s=Sum('payment_amount_in_euros'))['s'] or Decimal('0')
+    should_pay = has_recorded_payment and payments_meet_target_eur(total, target)
     if guest.is_paid != should_pay:
         HotelBooking.objects.filter(pk=booking_id).update(is_paid=should_pay)
 

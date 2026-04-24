@@ -19,7 +19,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden
 from decimal import Decimal
 import logging
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, JsonResponse
 import pytz
 from common.utils import (
     assign_job_color,
@@ -27,6 +27,7 @@ from common.utils import (
     form_and_formset_error_summary,
     get_home_exchange_rate_banner_context,
 )
+from common.payment_paid_sync import sum_complete_payments_eur
 import datetime
 from django.utils.html import escape
 from operator import attrgetter
@@ -601,6 +602,19 @@ def update_job_status(request, job_id):
     return render(request, 'jobs/view_job.html', {'job': job, 'error_message': error_message}, status=400)
 
 
+@login_required
+@require_POST
+def toggle_show_payment_on_link(request, job_id):
+    job = get_object_or_404(Job, pk=job_id)
+    show_payment_on_link = request.POST.get('show_payment_on_link') == 'true'
+    job.show_payment_on_link = show_payment_on_link
+    job.save(update_fields=['show_payment_on_link'])
+    return JsonResponse({
+        'ok': True,
+        'show_payment_on_link': job.show_payment_on_link,
+    })
+
+
 def client_job_view(request, lookup):
     # Only allow access via public_id — block numeric IDs
     if lookup.isdigit():
@@ -611,7 +625,15 @@ def client_job_view(request, lookup):
     except Job.DoesNotExist:
         return render(request, "errors/404.html", status=404)
 
-    return render(request, 'jobs/client_view_job.html', {'job': job})
+    recorded_payments_eur = sum_complete_payments_eur(job.payments)
+    payment_balance = max((job.job_price_in_euros or Decimal('0.00')) - recorded_payments_eur, Decimal('0.00'))
+    has_recorded_payments = recorded_payments_eur > Decimal('0.00')
+
+    return render(request, 'jobs/client_view_job.html', {
+        'job': job,
+        'payment_balance': payment_balance,
+        'has_recorded_payments': has_recorded_payments,
+    })
 
 
 def client_view_job_driver(request, public_id):
@@ -624,4 +646,12 @@ def client_view_job_driver(request, public_id):
     except Job.DoesNotExist:
         return render(request, "errors/404.html", status=404)
 
-    return render(request, 'jobs/client_view_job_driver.html', {'job': job})
+    recorded_payments_eur = sum_complete_payments_eur(job.payments)
+    payment_balance = max((job.job_price_in_euros or Decimal('0.00')) - recorded_payments_eur, Decimal('0.00'))
+    has_recorded_payments = recorded_payments_eur > Decimal('0.00')
+
+    return render(request, 'jobs/client_view_job_driver.html', {
+        'job': job,
+        'payment_balance': payment_balance,
+        'has_recorded_payments': has_recorded_payments,
+    })

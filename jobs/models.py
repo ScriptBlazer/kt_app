@@ -75,6 +75,7 @@ class Job(models.Model):
     is_confirmed = models.BooleanField(default=False)
     is_completed = models.BooleanField(default=False)
     is_paid = models.BooleanField(default=False)
+    show_payment_on_link = models.BooleanField(default=False)
     payment_type = models.CharField(max_length=10, choices=PAYMENT_TYPE_CHOICES, null=True, blank=True)
 
     # Exchange Rate for Currency Conversion
